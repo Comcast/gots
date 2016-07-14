@@ -10,9 +10,8 @@ gots (Go Transport Streams) is a library for working with MPEG transport streams
 ## Bug / Feature Reporting
 Add requests to github issues. To submit a PR see [CONTRIBUTING](./CONTRIBUTING)
 ## Tests
-The included Makefile has a single target called `test`
 ```bash
-make test
+go test -race ./...
 ```
 ## License 
 This software is licensed under the MIT license. For full text see [LICENSE](./LICENSE)
