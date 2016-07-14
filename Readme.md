@@ -1,6 +1,7 @@
 [![GoDoc](https://godoc.org/github.com/Comcast/gots?status.svg)](https://godoc.org/github.com/Comcast/gots)
 [![Build Status](https://travis-ci.org/Comcast/gots.svg?branch=master)](https://travis-ci.org/Comcast/gots)
 [![Go Report Card](https://goreportcard.com/badge/github.com/Comcast/gots)](https://goreportcard.com/report/github.com/Comcast/gots)
+[![GoCover](http://gocover.io/_badge/github.com/comcast/gots)](http://gocover.io/github.com/comcast/gots)
 
 
 # goTS (Go Transport Streams)
@@ -10,9 +11,8 @@ gots (Go Transport Streams) is a library for working with MPEG transport streams
 ## Bug / Feature Reporting
 Add requests to github issues. To submit a PR see [CONTRIBUTING](./CONTRIBUTING)
 ## Tests
-The included Makefile has a single target called `test`
 ```bash
-make test
+go test -race ./...
 ```
 ## License 
 This software is licensed under the MIT license. For full text see [LICENSE](./LICENSE)
