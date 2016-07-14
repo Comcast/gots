@@ -1,4 +1,7 @@
-# goTS
+[![GoDoc](http://godoc.org/badge.png)](http://godoc.org/Comcast/gots)
+
+
+# goTS (Go Transport Streams)
 
 gots (Go Transport Streams) is a library for working with MPEG transport streams. It provides abstractions for reading packet information and program specific information (psi)
 
@@ -10,7 +13,7 @@ The included Makefile has a single target called `test`
 make test
 ```
 ## License 
-See [LICENSE](./LICENSE)
+This software is licensed under the MIT license. For full text see [LICENSE](./LICENSE)
 ## Examples
 This is a simple example that extracts all PIDs from a ts file and prints them. [CLI example parser can be found here](cli/parsefile.go)
 ```go
