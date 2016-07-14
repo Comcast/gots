@@ -22,27 +22,5 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-// Package packet is used for reading and manipulating packets in an MPEG transport stream
-package packet
-
-const (
-	// PacketSize is the expected size of a packet in bytes
-	PacketSize = 188
-	// SyncByte is the expected value of the sync byte
-	SyncByte = 71 // 0x47
-)
-
-// Packet is the basic unit in a transport stream.
-type Packet []byte
-
-// Accumulator is used to gather multiple packets
-// and return their concatenated payloads.
-// Accumulator is not thread safe.
-type Accumulator interface {
-	// Add adds a packet to the accumulator and returns true if done.
-	Add(Packet) (bool, error)
-	// Parse returns the concatenated payloads of all the packets that have been added to the accumulator
-	Parse() ([]byte, error)
-	// Packets returns the accumulated packets
-	Packets() []Packet
-}
+// AdaptationField provides functions for accessing and reading packet adaptation fields
+package adaptationfield
