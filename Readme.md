@@ -1,4 +1,4 @@
-[![GoDoc](http://godoc.org/badge.png)](http://godoc.org/Comcast/gots)
+[![GoDoc](http://godoc.org/badge.png)](http://godoc.org/github.com/Comcast/gots)
 
 
 # goTS (Go Transport Streams)
