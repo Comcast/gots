@@ -1,8 +1,8 @@
 package adaptationfield
 
 import (
-	"github.comcast.com/viper-cog/libmpegts"
-	"github.comcast.com/viper-cog/libmpegts/packet"
+	"github.com/comcast/gots"
+	"github.com/comcast/gots/packet"
 )
 
 var emptyByteSlice []byte

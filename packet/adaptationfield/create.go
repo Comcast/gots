@@ -1,6 +1,6 @@
 package adaptationfield
 
-import "github.comcast.com/viper-cog/libmpegts/packet"
+import "github.com/comcast/gots/packet"
 
 func SetPrivateData(pkt *packet.Packet, af []byte) {
 	offset := 6
