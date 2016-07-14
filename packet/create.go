@@ -29,6 +29,7 @@ var (
 )
 
 var (
+	// TestPatPacket is a minimal PAT packet for testing. It contains a single program stream with no payload.
 	TestPatPacket = []byte{
 		0x47, 0x40, 0x00, 0x10, 0x00, 0x00, 0xb0, 0x0d, 0x00, 0x01, 0xcb, 0x00,
 		0x00, 0x00, 0x01, 0xe0, 0x64, 0x68, 0xd6, 0x84, 0x2e, 0xff, 0xff, 0xff,
@@ -141,7 +142,7 @@ func WithHasPayloadFlag(pkt *Packet) {
 	(*pkt)[3] = byte((*pkt)[3] | 0x10)
 }
 
-// WithHasAdaptationFIeld is an option function for creating a packet with an adaptation field
+// WithHasAdaptationFieldFlag is an option function for creating a packet with an adaptation field
 func WithHasAdaptationFieldFlag(pkt *Packet) {
 	(*pkt)[3] = (*pkt)[3] | 0x20
 }
