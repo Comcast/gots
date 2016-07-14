@@ -1,0 +1,5 @@
+*.test
+.DS_Store
+.*.swp
+*.ts
+cli
