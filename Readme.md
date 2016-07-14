@@ -1,6 +1,7 @@
 [![GoDoc](https://godoc.org/github.com/Comcast/gots?status.svg)](https://godoc.org/github.com/Comcast/gots)
 [![Build Status](https://travis-ci.org/Comcast/gots.svg?branch=master)](https://travis-ci.org/Comcast/gots)
 [![Go Report Card](https://goreportcard.com/badge/github.com/Comcast/gots)](https://goreportcard.com/report/github.com/Comcast/gots)
+[![Coverage Status](https://img.shields.io/coveralls/Comcast/gots.svg)](https://coveralls.io/r/Comcast/gots?branch=master)
 
 
 # goTS (Go Transport Streams)
