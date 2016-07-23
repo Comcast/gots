@@ -9,7 +9,7 @@
 gots (Go Transport Streams) is a library for working with MPEG transport streams. It provides abstractions for reading packet information and program specific information (psi)
 
 ## Bug / Feature Reporting
-Add requests to github issues. To submit a PR see [CONTRIBUTING](./CONTRIBUTING)
+Add requests to Github issues. To submit a PR see [CONTRIBUTING](./CONTRIBUTING)
 ## Tests
 ```bash
 go test -race ./...
