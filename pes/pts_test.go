@@ -117,13 +117,3 @@ func TestAdd(t *testing.T) {
 		t.Error("PTS addition 2 test failed")
 	}
 }
-
-func TestInsertPTS(t *testing.T) {
-	var pts uint64 = 0x1DEADBEEF
-	b := make([]byte, 5)
-	InsertPTS(b, pts)
-	if ExtractTime(b) != 0x1DEADBEEF {
-		t.Error("Insert PTS test 1 failed")
-	}
-
-}
