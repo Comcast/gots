@@ -88,3 +88,29 @@ func (p PTS) Add(x PTS) PTS {
 	}
 	return PTS(result)
 }
+
+// ExtractTime extracts a PTS time
+func ExtractTime(bytes []byte) uint64 {
+	var a, b, c, d, e uint64
+	a = uint64((bytes[0] >> 1) & 0x07)
+	b = uint64(bytes[1])
+	c = uint64((bytes[2] >> 1) & 0x7f)
+	d = uint64(bytes[3])
+	e = uint64((bytes[4] >> 1) & 0x7f)
+	return (a << 30) | (b << 22) | (c << 15) | (d << 7) | e
+}
+
+// InsertPTS insterts a given pts time into a byte slice and sets the
+// marker bits.  len(b) >= 5
+func InsertPTS(b []byte, pts uint64) {
+	b[0] = byte(pts >> 29 & 0x0f) // PTS[32..30]
+	b[1] = byte(pts >> 22 & 0xff) // PTS[29..22]
+	b[2] = byte(pts >> 14 & 0xff) // PTS[21..15]
+	b[3] = byte(pts >> 7 & 0xff)  // PTS[14..8]
+	b[4] = byte(pts&0xff) << 1    // PTS[7..0]
+
+	// Set the marker bits as appropriate
+	b[0] |= 0x21
+	b[2] |= 0x01
+	b[4] |= 0x01
+}
