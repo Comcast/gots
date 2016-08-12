@@ -105,6 +105,17 @@ type pESHeader struct {
 	data                  []byte
 }
 
+// ExtractTime extracts a PTS time
+func ExtractTime(bytes []byte) uint64 {
+	var a, b, c, d, e uint64
+	a = uint64((bytes[0] >> 1) & 0x07)
+	b = uint64(bytes[1])
+	c = uint64((bytes[2] >> 1) & 0x7f)
+	d = uint64(bytes[3])
+	e = uint64((bytes[4] >> 1) & 0x7f)
+	return (a << 30) | (b << 22) | (c << 15) | (d << 7) | e
+}
+
 // NewPESHeader creates a new PES header with the provided bytes.
 // pesBytes is the packet payload that contains the PES data
 func NewPESHeader(pesBytes []byte) (PESHeader, error) {
