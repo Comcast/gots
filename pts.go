@@ -22,16 +22,33 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-package pes
+package mpegts
 
+import "math"
+
+const ()
+
+// PTS constants
 const (
-	// MaxPts is the max value allowed for a PTS time, 2^33 - 1
-	MaxPts = 8589934591
+	PTS_DTS_INDICATOR_BOTH     = 3 // 11
+	PTS_DTS_INDICATOR_ONLY_PTS = 2 // 10
+	PTS_DTS_INDICATOR_NONE     = 0 // 00
+
+	// PTS_MAX is the highest value the PTS can hold before it rolls over, since its a 33 bit timestamp.
+	PTS_MAX = 8589934591 // 2^33 - 1
+	// Used as a sentinel values for algorithms working against PTS
+	PtsNegativeInfinity = PTS(math.MaxUint64 - 1)
+	PtsPositiveInfinity = PTS(math.MaxUint64)
+	PtsClockRate        = 90000
+
 	// UpperPtsRolloverThreshold is the threshold for a rollover on the upper end, maxPts = 30 min
 	UpperPtsRolloverThreshold = 8427934591
 	// LowerPtsRolloverThreshold is the threshold for a rollover on the lower end, 30 min
 	LowerPtsRolloverThreshold = 162000000
 )
+
+// PTS represents PTS time
+type PTS uint64
 
 // After checks if this PTS is after the other PTS
 func (p PTS) After(other PTS) bool {
@@ -87,4 +104,30 @@ func (p PTS) Add(x PTS) PTS {
 		result = result - PTS_MAX
 	}
 	return PTS(result)
+}
+
+// ExtractTime extracts a PTS time
+func ExtractTime(bytes []byte) uint64 {
+	var a, b, c, d, e uint64
+	a = uint64((bytes[0] >> 1) & 0x07)
+	b = uint64(bytes[1])
+	c = uint64((bytes[2] >> 1) & 0x7f)
+	d = uint64(bytes[3])
+	e = uint64((bytes[4] >> 1) & 0x7f)
+	return (a << 30) | (b << 22) | (c << 15) | (d << 7) | e
+}
+
+// InsertPTS insterts a given pts time into a byte slice and sets the
+// marker bits.  len(b) >= 5
+func InsertPTS(b []byte, pts uint64) {
+	b[0] = byte(pts >> 29 & 0x0f) // PTS[32..30]
+	b[1] = byte(pts >> 22 & 0xff) // PTS[29..22]
+	b[2] = byte(pts >> 14 & 0xff) // PTS[21..15]
+	b[3] = byte(pts >> 7 & 0xff)  // PTS[14..8]
+	b[4] = byte(pts&0xff) << 1    // PTS[7..0]
+
+	// Set the marker bits as appropriate
+	b[0] |= 0x21
+	b[2] |= 0x01
+	b[4] |= 0x01
 }

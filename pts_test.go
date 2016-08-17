@@ -21,7 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
-package pes
+package mpegts
 
 import "testing"
 
@@ -116,4 +116,14 @@ func TestAdd(t *testing.T) {
 	if PTS(2000) != PTS(1500).Add(PTS(500)) {
 		t.Error("PTS addition 2 test failed")
 	}
+}
+
+func TestInsertPTS(t *testing.T) {
+	var pts uint64 = 0x1DEADBEEF
+	b := make([]byte, 5)
+	InsertPTS(b, pts)
+	if ExtractTime(b) != 0x1DEADBEEF {
+		t.Error("Insert PTS test 1 failed")
+	}
+
 }
