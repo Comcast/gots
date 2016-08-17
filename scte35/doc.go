@@ -160,3 +160,8 @@ type SegmentationDescriptor interface {
 	// equal (i.e. a duplicate)
 	Equal(sd SegmentationDescriptor) bool
 }
+
+// SCTE done func is the same as the PMT because they're both psi
+func SCTE35AccumulatorDoneFunc(b []byte) (bool, error) {
+	return psi.PmtAccumulatorDoneFunc(b)
+}

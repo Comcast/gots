@@ -129,7 +129,7 @@ func (s *scte35) parseTable(data []byte) error {
 			return gots.ErrInvalidSCTE35Length
 		}
 		for bytesRead := uint16(0); bytesRead < descLoopLen; {
-			d := &segmentationDescriptor{}
+			d := &segmentationDescriptor{spliceInfo: s}
 			descTag := readByte()
 			descLen := readByte()
 			// Make sure a bad descriptorLen doesn't kill us
@@ -147,7 +147,7 @@ func (s *scte35) parseTable(data []byte) error {
 				}
 				s.descriptors = append(s.descriptors, d)
 			}
-			bytesRead = 2 + uint16(descLen)
+			bytesRead += 2 + uint16(descLen)
 		}
 	} else {
 		return gots.ErrUnknownTableID
@@ -272,7 +272,7 @@ func (d *segmentationDescriptor) UPID() []byte {
 }
 
 func (d *segmentationDescriptor) Compare(c SegmentationDescriptor) int {
-	return int(segWeight(d.TypeID()) - segWeight(c.TypeID()))
+	return int(segWeight(d.TypeID())) - int(segWeight(c.TypeID()))
 }
 
 func (d *segmentationDescriptor) CanClose(out SegmentationDescriptor) bool {
@@ -322,11 +322,9 @@ func (d *segmentationDescriptor) Equal(c SegmentationDescriptor) bool {
 // Modeled after the work done in DASH-R for its advertising support.
 func segWeight(typeID SegDescType) SegDescType {
 	var typeVal int8
-	typeVal = int8(typeID)
+	typeVal = int8(typeID & 0xfe)
 	if typeVal == SegDescDistributorAdvertisementStart ||
-		typeVal == SegDescDistributorAdvertisementEnd ||
-		typeVal == SegDescDistributorPoStart ||
-		typeVal == SegDescDistributorPoEnd {
+		typeVal == SegDescDistributorPoStart {
 		typeVal = typeVal - 0x2
 	}
 	if typeVal >= 0x40 {

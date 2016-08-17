@@ -75,6 +75,7 @@ type PmtStreamType interface {
 	IsStreamWherePresentationLagsEbp() bool
 	IsAudioContent() bool
 	IsVideoContent() bool
+	IsSCTE35Content() bool
 }
 
 // PAT interface represents operations on a Program Association Table. Currently only single program transport streams (SPTS)are supported
