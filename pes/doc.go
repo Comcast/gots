@@ -25,8 +25,6 @@ SOFTWARE.
 // Package pes contains interfaces and operations for packetized elementary stream headers.
 package pes
 
-import "math"
-
 // stream_id possibilities
 const (
 	STREAM_ID_ALL_AUDIO_STREAMS           uint8 = 184
@@ -53,19 +51,6 @@ const (
 	STREAM_ID_PROGRAM_STREAM_DIRECTORY          = 255
 )
 
-// PTS constants
-const (
-	PTS_DTS_INDICATOR_BOTH     = 3 // 11
-	PTS_DTS_INDICATOR_ONLY_PTS = 2 // 10
-	PTS_DTS_INDICATOR_NONE     = 0 // 00
-	// PTS_MAX is the highest value the PTS can hold before it rolls over, since its a 33 bit timestamp.
-	PTS_MAX = 8589934591 // 2^33 - 1
-	// Used as a sentinel values for algorithms working against PTS
-	PtsNegativeInfinity = PTS(math.MaxUint64 - 1)
-	PtsPositiveInfinity = PTS(math.MaxUint64)
-	PtsClockRate        = 90000
-)
-
 // PESHeader represents operations available on a packetized elementary stream header.
 type PESHeader interface {
 	// HasPTS returns true if the header has a PTS time
@@ -81,6 +66,3 @@ type PESHeader interface {
 	// PacketStartCodePrefix returns the packet_start_code_prefix. Note that this is a 24 bit value.
 	PacketStartCodePrefix() uint32
 }
-
-// PTS represents PTS time
-type PTS uint64

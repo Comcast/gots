@@ -29,7 +29,6 @@ import (
 	"encoding/binary"
 
 	"github.com/comcast/gots"
-	"github.com/comcast/gots/pes"
 	"github.com/comcast/gots/psi"
 )
 
@@ -45,7 +44,7 @@ type segmentationDescriptor struct {
 	typeID       SegDescType
 	eventID      uint32
 	hasDuration  bool
-	duration     pes.PTS
+	duration     mpegts.PTS
 	upidType     SegUPIDType
 	upid         []byte
 	segNum       uint8
@@ -56,7 +55,7 @@ type segmentationDescriptor struct {
 type scte35 struct {
 	command     SpliceCommandType
 	hasPTS      bool
-	pts         pes.PTS
+	pts         mpegts.PTS
 	descriptors []SegmentationDescriptor
 
 	data []byte
@@ -208,7 +207,7 @@ func (s *scte35) HasPTS() bool {
 	return s.hasPTS
 }
 
-func (s *scte35) PTS() pes.PTS {
+func (s *scte35) PTS() mpegts.PTS {
 	return s.pts
 }
 
@@ -260,7 +259,7 @@ func (d *segmentationDescriptor) HasDuration() bool {
 	return d.hasDuration
 }
 
-func (d *segmentationDescriptor) Duration() pes.PTS {
+func (d *segmentationDescriptor) Duration() mpegts.PTS {
 	return d.duration
 }
 
@@ -345,6 +344,6 @@ func abs(num int8) int8 {
 	}
 }
 
-func uint40(buf []byte) pes.PTS {
-	return (pes.PTS(buf[0]&0x1) << 32) | (pes.PTS(buf[1]) << 24) | (pes.PTS(buf[2]) << 16) | (pes.PTS(buf[3]) << 8) | (pes.PTS(buf[4]))
+func uint40(buf []byte) mpegts.PTS {
+	return (mpegts.PTS(buf[0]&0x1) << 32) | (mpegts.PTS(buf[1]) << 24) | (mpegts.PTS(buf[2]) << 16) | (mpegts.PTS(buf[3]) << 8) | (mpegts.PTS(buf[4]))
 }

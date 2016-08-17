@@ -25,9 +25,7 @@ SOFTWARE.
 // Package scte35 is for handling scte35 splice signals
 package scte35
 
-import (
-	"github.com/comcast/gots/pes"
-)
+import "github.com/comcast/gots"
 
 // SpliceCommandType - not really needed for processing but included for
 // backwards compatibility/porting
@@ -107,7 +105,7 @@ type SCTE35 interface {
 	// HasPTS returns true if there is a pts time
 	HasPTS() bool
 	// PTS returns the PTS time of the signal if it exists
-	PTS() pes.PTS
+	PTS() mpegts.PTS
 	// Command returns the signal's splice command
 	Command() SpliceCommandType
 	// Descriptors returns a slice of the signals SegmentationDescriptors
@@ -148,7 +146,7 @@ type SegmentationDescriptor interface {
 	// HasDuration returns true if there is a duration associated with the descriptor
 	HasDuration() bool
 	// Duration returns the duration of the descriptor
-	Duration() pes.PTS
+	Duration() mpegts.PTS
 	// UPIDType returns the type of the upid
 	UPIDType() SegUPIDType
 	// UPID returns the upid of the descriptor
