@@ -308,7 +308,7 @@ func TestNullPacketIsNull(t *testing.T) {
 
 	if isNull, _ := IsNull(p); isNull == false {
 		pid, e := Pid(p)
-		t.Errorf("Packets with PID == 8191 should be null. PID was %v and error was %v", pid, e)
+		t.Errorf("Packets with PID == %d should be null. PID was %v and error was %v", NullPacketPid, pid, e)
 	}
 }
 
@@ -322,7 +322,7 @@ func TestNonNullPacketIsNotNull(t *testing.T) {
 			"053598e7f47c066bf03c90c6233c0405369fd5f8e20957e40437f784")
 
 	if isNull, _ := IsNull(packet1); isNull == true {
-		t.Error("Packets with PID != 8191 should not be null.")
+		t.Errorf("Packets with PID != %d should not be null.", NullPacketPid)
 	}
 }
 
