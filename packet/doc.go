@@ -30,6 +30,8 @@ const (
 	PacketSize = 188
 	// SyncByte is the expected value of the sync byte
 	SyncByte = 71 // 0x47
+	// NullPacketPid is the pid reserved for null packets
+	NullPacketPid = uint16(8191)
 )
 
 // Packet is the basic unit in a transport stream.

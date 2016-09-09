@@ -97,7 +97,7 @@ func IsNull(packet Packet) (bool, error) {
 		return false, mpegts.ErrInvalidPacketLength
 	}
 
-	if pid(packet) == 8191 {
+	if pid(packet) == NullPacketPid {
 		return true, nil
 	}
 	return false, nil
