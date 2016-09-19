@@ -44,12 +44,19 @@ func (st pmtStreamType) IsStreamWherePresentationLagsEbp() bool {
 }
 
 func (st pmtStreamType) IsAudioContent() bool {
-	return st.IsStreamWherePresentationLagsEbp() // quick hack
+	return st.code == PmtStreamTypeAac ||
+		st.code == PmtStreamTypeAc3 ||
+		st.code == PmtStreamTypeEc3
 }
 
 func (st pmtStreamType) IsVideoContent() bool {
 	return st.code == PmtStreamTypeMpeg4VideoH264 ||
-		st.code == PmtStreamTypeMpeg4VideoH265
+		st.code == PmtStreamTypeMpeg4VideoH265 ||
+		st.code == PmtStreamTypeMpeg4Video
+}
+
+func (st pmtStreamType) IsSCTEContent() bool {
+	return st.code == PmtStreamTypeScte35
 }
 
 func (st pmtStreamType) String() string {
