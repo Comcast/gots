@@ -37,7 +37,7 @@ var emptyByteSlice []byte
 // flag is contained in the second bit of the second byte of the Packet.
 func PayloadUnitStartIndicator(packet Packet) (bool, error) {
 	if badLen(packet) {
-		return false, mpegts.ErrInvalidPacketLength
+		return false, gots.ErrInvalidPacketLength
 	}
 	return payloadUnitStartIndicator(packet), nil
 }
@@ -50,7 +50,7 @@ func payloadUnitStartIndicator(packet Packet) bool {
 // bits that span the last 5 bits of second byte and all bits in the byte.
 func Pid(packet Packet) (uint16, error) {
 	if badLen(packet) {
-		return 0, mpegts.ErrInvalidPacketLength
+		return 0, gots.ErrInvalidPacketLength
 	}
 	return pid(packet), nil
 }
@@ -62,7 +62,7 @@ func pid(packet Packet) uint16 {
 // contained in the 3rd bit of the 4th byte of the Packet.
 func ContainsPayload(packet Packet) (bool, error) {
 	if badLen(packet) {
-		return false, mpegts.ErrInvalidPacketLength
+		return false, gots.ErrInvalidPacketLength
 	}
 	return containsPayload(packet), nil
 }
@@ -73,7 +73,7 @@ func containsPayload(packet Packet) bool {
 // ContainsAdaptationField is a flag that indicates the packet has an adaptation field.
 func ContainsAdaptationField(packet Packet) (bool, error) {
 	if badLen(packet) {
-		return false, mpegts.ErrInvalidPacketLength
+		return false, gots.ErrInvalidPacketLength
 	}
 	return hasAdaptField(packet), nil
 }
@@ -85,7 +85,7 @@ func hasAdaptField(packet Packet) bool {
 // only when a payload is present (see ContainsPayload() above).
 func ContinuityCounter(packet Packet) (uint8, error) {
 	if badLen(packet) {
-		return 0, mpegts.ErrInvalidPacketLength
+		return 0, gots.ErrInvalidPacketLength
 	}
 	return packet[3] & uint8(0x0f), nil
 }
@@ -94,7 +94,7 @@ func ContinuityCounter(packet Packet) (uint8, error) {
 // (i.e., PID == 0x1ff (8192)).
 func IsNull(packet Packet) (bool, error) {
 	if badLen(packet) {
-		return false, mpegts.ErrInvalidPacketLength
+		return false, gots.ErrInvalidPacketLength
 	}
 
 	if pid(packet) == NullPacketPid {
@@ -106,7 +106,7 @@ func IsNull(packet Packet) (bool, error) {
 // IsPat returns true if the proved packet is a PAT
 func IsPat(packet Packet) (bool, error) {
 	if badLen(packet) {
-		return false, mpegts.ErrInvalidPacketLength
+		return false, gots.ErrInvalidPacketLength
 	}
 
 	if pid(packet) == 0 {
@@ -139,10 +139,10 @@ func payloadStart(packet Packet) int {
 // does not have a payload, an empty byte slice is returned
 func Payload(packet Packet) ([]byte, error) {
 	if badLen(packet) {
-		return emptyByteSlice, mpegts.ErrInvalidPacketLength
+		return emptyByteSlice, gots.ErrInvalidPacketLength
 	}
 	if !containsPayload(packet) {
-		return emptyByteSlice, mpegts.ErrNoPayload
+		return emptyByteSlice, gots.ErrNoPayload
 	}
 	start := payloadStart(packet)
 	pay := packet[start:]
@@ -153,7 +153,7 @@ func Payload(packet Packet) ([]byte, error) {
 // a continuity counter that is increased by one
 func IncrementCC(packet Packet) (Packet, error) {
 	if badLen(packet) {
-		return emptyByteSlice, mpegts.ErrInvalidPacketLength
+		return emptyByteSlice, gots.ErrInvalidPacketLength
 	}
 	newPacket := make([]byte, len(packet))
 	copy(newPacket, packet)
@@ -168,7 +168,7 @@ func IncrementCC(packet Packet) (Packet, error) {
 // a continuity counter that zero
 func ZeroCC(packet Packet) (Packet, error) {
 	if badLen(packet) {
-		return emptyByteSlice, mpegts.ErrInvalidPacketLength
+		return emptyByteSlice, gots.ErrInvalidPacketLength
 	}
 	newPacket := make([]byte, len(packet))
 	copy(newPacket, packet)
@@ -185,7 +185,7 @@ func increment4BitInt(cc uint8) uint8 {
 // the continuity counter provided
 func SetCC(packet Packet, newCC uint8) (Packet, error) {
 	if badLen(packet) {
-		return emptyByteSlice, mpegts.ErrInvalidPacketLength
+		return emptyByteSlice, gots.ErrInvalidPacketLength
 	}
 	newPacket := make([]byte, len(packet))
 	copy(newPacket, packet)
@@ -199,7 +199,7 @@ func SetCC(packet Packet, newCC uint8) (Packet, error) {
 // otherwise returns an error
 func PESHeader(packet Packet) ([]byte, error) {
 	if badLen(packet) {
-		return emptyByteSlice, mpegts.ErrInvalidPacketLength
+		return emptyByteSlice, gots.ErrInvalidPacketLength
 	}
 	if containsPayload(packet) && payloadUnitStartIndicator(packet) {
 		dataOffset := payloadStart(packet)
@@ -212,13 +212,13 @@ func PESHeader(packet Packet) ([]byte, error) {
 			return pay, nil
 		}
 	}
-	return emptyByteSlice, mpegts.ErrNoPayload
+	return emptyByteSlice, gots.ErrNoPayload
 }
 
 // Header Returns a slice containing the Packer Header.
 func Header(packet Packet) ([]byte, error) {
 	if badLen(packet) {
-		return emptyByteSlice, mpegts.ErrInvalidPacketLength
+		return emptyByteSlice, gots.ErrInvalidPacketLength
 	}
 	start := payloadStart(packet)
 	return packet[0:start], nil

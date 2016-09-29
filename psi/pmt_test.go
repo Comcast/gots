@@ -588,7 +588,7 @@ func TestIsPMTErrorConditions(t *testing.T) {
 		t.Error("nil PAT should return false for any PMT")
 	}
 
-	if errExpectInvalidArg != mpegts.ErrNilPAT {
+	if errExpectInvalidArg != gots.ErrNilPAT {
 		t.Error("Nil Pat should return nil pat error")
 	}
 

@@ -48,7 +48,7 @@ func ReadEncoderBoundaryPoint(data io.Reader) (ebp EncoderBoundaryPoint, err err
 	case CableLabsEbpTag:
 		ebp, err = readCableLabsEbp(data)
 	default:
-		ebp, err = nil, mpegts.ErrUnrecognizedEbpType
+		ebp, err = nil, gots.ErrUnrecognizedEbpType
 	}
 
 	return ebp, err

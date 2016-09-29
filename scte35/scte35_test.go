@@ -55,7 +55,7 @@ func TestSpliceInsertSignal(t *testing.T) {
 
 	s, err := NewSCTE35(base64Bytes)
 
-	if err != mpegts.ErrSCTE35UnsupportedSpliceCommand {
+	if err != gots.ErrSCTE35UnsupportedSpliceCommand {
 		t.Error("SpliceInsert does not return splice command not supported err")
 	}
 	if s != nil {

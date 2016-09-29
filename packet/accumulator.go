@@ -53,13 +53,13 @@ func NewAccumulator(f doneFunc) Accumulator {
 // Returns an error if the packet is not valid.
 func (a *accumulator) Add(pkt Packet) (bool, error) {
 	if badLen(pkt) {
-		return false, mpegts.ErrInvalidPacketLength
+		return false, gots.ErrInvalidPacketLength
 	}
 	if payloadUnitStartIndicator(pkt) {
 		a.packets = make([]Packet, 0)
 	} else if len(a.packets) == 0 {
 		// First packet must have payload unit start indicator
-		return false, mpegts.ErrNoPayloadUnitStartIndicator
+		return false, gots.ErrNoPayloadUnitStartIndicator
 	}
 	a.packets = append(a.packets, pkt)
 	b, err := a.Parse()

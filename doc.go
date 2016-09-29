@@ -23,4 +23,4 @@ SOFTWARE.
 */
 
 // Package mpegts proves utility functions for mpegts streams
-package mpegts
+package gots

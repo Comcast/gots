@@ -97,7 +97,7 @@ func (p *pmt) parseTable(pmtBytes []byte) error {
 						data := pmtBytes[startPos:endPos]
 						descriptors = append(descriptors, NewPmtDescriptor(tag, data))
 					} else {
-						return mpegts.ErrParsePMTDescriptor
+						return gots.ErrParsePMTDescriptor
 					}
 					descriptorOffset += descriptorLength
 				}
@@ -107,7 +107,7 @@ func (p *pmt) parseTable(pmtBytes []byte) error {
 			elementaryStreams = append(elementaryStreams, es)
 		}
 	} else {
-		return mpegts.ErrUnknownTableID
+		return gots.ErrUnknownTableID
 	}
 	p.pids = pids
 	p.elementaryStreams = elementaryStreams
@@ -227,7 +227,7 @@ func FilterPMTPacketsToPids(packets []packet.Packet, pids []uint16) []packet.Pac
 	fPMT[pointerField+2] = sectionLengthBytes[1]
 
 	// Recalculate the CRC
-	fPMT = append(fPMT, mpegts.ComputeCRC(fPMT[pointerField:])...)
+	fPMT = append(fPMT, gots.ComputeCRC(fPMT[pointerField:])...)
 
 	var filteredPMTPackets []packet.Packet
 	for _, pkt := range packets {
@@ -263,7 +263,7 @@ func FilterPMTPacketsToPids(packets []packet.Packet, pids []uint16) []packet.Pac
 func IsPMT(pkt packet.Packet, pat PAT) (bool, error) {
 	if pat == nil {
 
-		return false, mpegts.ErrNilPAT
+		return false, gots.ErrNilPAT
 	}
 
 	pmtPid := pat.ProgramMapPid()

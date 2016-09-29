@@ -105,7 +105,7 @@ type SCTE35 interface {
 	// HasPTS returns true if there is a pts time
 	HasPTS() bool
 	// PTS returns the PTS time of the signal if it exists
-	PTS() mpegts.PTS
+	PTS() gots.PTS
 	// Command returns the signal's splice command
 	Command() SpliceCommandType
 	// Descriptors returns a slice of the signals SegmentationDescriptors
@@ -146,7 +146,7 @@ type SegmentationDescriptor interface {
 	// HasDuration returns true if there is a duration associated with the descriptor
 	HasDuration() bool
 	// Duration returns the duration of the descriptor
-	Duration() mpegts.PTS
+	Duration() gots.PTS
 	// UPIDType returns the type of the upid
 	UPIDType() SegUPIDType
 	// UPID returns the upid of the descriptor
