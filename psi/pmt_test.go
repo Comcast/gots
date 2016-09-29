@@ -28,6 +28,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/Comcast/gots"
 	"github.com/Comcast/gots/packet"
 )
 

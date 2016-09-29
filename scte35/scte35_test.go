@@ -29,6 +29,8 @@ import (
 	"io"
 	"strings"
 	"testing"
+
+	"github.com/Comcast/gots"
 )
 
 var testScte = []byte{
