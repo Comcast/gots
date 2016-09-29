@@ -28,6 +28,7 @@ import (
 	"bytes"
 	"encoding/binary"
 
+	"github.com/Comcast/gots"
 	"github.com/Comcast/gots/psi"
 )
 

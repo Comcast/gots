@@ -29,6 +29,7 @@ import (
 	"encoding/binary"
 	"fmt"
 
+	"github.com/Comcast/gots"
 	"github.com/Comcast/gots/packet"
 )
 
