@@ -25,8 +25,6 @@ SOFTWARE.
 // Package scte35 is for handling scte35 splice signals
 package scte35
 
-import "github.com/comcast/gots"
-
 // SpliceCommandType - not really needed for processing but included for
 // backwards compatibility/porting
 type SpliceCommandType uint16

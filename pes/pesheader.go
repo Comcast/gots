@@ -27,8 +27,6 @@ package pes
 import (
 	"errors"
 	"fmt"
-
-	"github.com/comcast/gots"
 )
 
 /*

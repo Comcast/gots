@@ -24,10 +24,7 @@ SOFTWARE.
 
 package psi
 
-import (
-	"github.com/comcast/gots"
-	"github.com/comcast/gots/packet"
-)
+import "github.com/Comcast/gots/packet"
 
 const (
 	// PatPid is the PID of a PAT. By definition this value is zero.

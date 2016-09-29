@@ -1,6 +1,6 @@
 package adaptationfield
 
-import "github.com/comcast/gots/packet"
+import "github.com/Comcast/gots/packet"
 
 func SetPrivateData(pkt *packet.Packet, af []byte) {
 	offset := 6

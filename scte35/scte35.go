@@ -28,8 +28,7 @@ import (
 	"bytes"
 	"encoding/binary"
 
-	"github.com/comcast/gots"
-	"github.com/comcast/gots/psi"
+	"github.com/Comcast/gots/psi"
 )
 
 // Descriptor tag types and identifiers - only segmentation descriptors are used for now

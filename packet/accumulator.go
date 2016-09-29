@@ -26,8 +26,6 @@ package packet
 
 import (
 	"bytes"
-
-	"github.com/comcast/gots"
 )
 
 var (

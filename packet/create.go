@@ -24,8 +24,6 @@ SOFTWARE.
 
 package packet
 
-import "github.com/comcast/gots"
-
 var (
 	required = []func(*Packet){setSyncByte}
 )
