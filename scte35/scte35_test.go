@@ -30,7 +30,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/comcast/gots"
+	"github.com/Comcast/gots"
 )
 
 var testScte = []byte{

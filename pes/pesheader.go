@@ -28,7 +28,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/comcast/gots"
+	"github.com/Comcast/gots"
 )
 
 /*
