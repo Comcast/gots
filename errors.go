@@ -60,6 +60,14 @@ var (
 	ErrSCTE35UnsupportedSpliceCommand = errors.New("SCTE35 cue can't be parsed because only time_signal with a pts value and splice_null commands are supported")
 	// ErrSCTE35InvalidDescriptorID is returned when a segmentation descriptor is found with an id that is not CUEI
 	ErrSCTE35InvalidDescriptorID = errors.New("SCTE35 segmentation descriptor has a id that is not \"CUEI\"")
+	// ErrSCTE35DuplicateSignal is returned when a duplicate or equivalent descriptor is received by state
+	ErrSCTE35DuplicateDescriptor = errors.New("Duplicate or equivalent descriptor received by scte35.State")
+	// ErrSCTE35InvalidDescriptor is returned when a descriptor is invalid given the current state (i.e. a ProgramResumption received when no it breakaway)
+	ErrSCTE35InvalidDescriptor = errors.New("Invalid descriptor given the current state")
+	// ErrSCTE35MissingOut is returned when an in descriptor is received by state with no matching out
+	ErrSCTE35MissingOut = errors.New("In descriptor received with no matching out")
+	// ErrSCTE35DescriptorNotFound is returned when a descriptor is closed that's not in the open list
+	ErrSCTE35DescriptorNotFound = errors.New("Cannot close descriptor that's not in the open list")
 	// ErrNilPAT is returned when a PAT is passed into a function for which it cannot be nil.
 	ErrNilPAT = errors.New("Nil PAT not allowed here.")
 )

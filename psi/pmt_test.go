@@ -54,6 +54,10 @@ func (es *testPmtElementaryStream) IsVideoContent() bool {
 	return !es.presentationLagsEbp
 }
 
+func (es *testPmtElementaryStream) IsSCTE35Content() bool {
+	return false
+}
+
 func (es *testPmtElementaryStream) IsStreamWherePresentationLagsEbp() bool {
 	return es.presentationLagsEbp
 }

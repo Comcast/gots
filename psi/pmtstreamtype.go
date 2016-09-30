@@ -55,7 +55,7 @@ func (st pmtStreamType) IsVideoContent() bool {
 		st.code == PmtStreamTypeMpeg4Video
 }
 
-func (st pmtStreamType) IsSCTEContent() bool {
+func (st pmtStreamType) IsSCTE35Content() bool {
 	return st.code == PmtStreamTypeScte35
 }
 

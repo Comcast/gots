@@ -47,4 +47,6 @@ type Accumulator interface {
 	Parse() ([]byte, error)
 	// Packets returns the accumulated packets
 	Packets() []Packet
+	// Reset clears all packets in the accumulator
+	Reset()
 }

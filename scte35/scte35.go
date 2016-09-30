@@ -39,19 +39,6 @@ const (
 	minDescLen = 15 // min desc len does not include descriptor tag or len
 )
 
-type segmentationDescriptor struct {
-	// common fields we care about for sorting/identifying, but is not necessarily needed for users of this lib
-	typeID       SegDescType
-	eventID      uint32
-	hasDuration  bool
-	duration     gots.PTS
-	upidType     SegUPIDType
-	upid         []byte
-	segNum       uint8
-	segsExpected uint8
-	spliceInfo   SCTE35
-}
-
 type scte35 struct {
 	command     SpliceCommandType
 	hasPTS      bool
@@ -129,7 +116,7 @@ func (s *scte35) parseTable(data []byte) error {
 			return gots.ErrInvalidSCTE35Length
 		}
 		for bytesRead := uint16(0); bytesRead < descLoopLen; {
-			d := &segmentationDescriptor{}
+			d := &segmentationDescriptor{spliceInfo: s}
 			descTag := readByte()
 			descLen := readByte()
 			// Make sure a bad descriptorLen doesn't kill us
@@ -147,59 +134,13 @@ func (s *scte35) parseTable(data []byte) error {
 				}
 				s.descriptors = append(s.descriptors, d)
 			}
-			bytesRead = 2 + uint16(descLen)
+			bytesRead += 2 + uint16(descLen)
 		}
 	} else {
 		return gots.ErrUnknownTableID
 	}
 	// Check CRC?
 	s.data = data
-	return nil
-}
-
-func (d *segmentationDescriptor) parseDescriptor(data []byte) error {
-	buf := bytes.NewBuffer(data)
-	// closure to ignore EOF error from buf.ReadByte().  We've already checked
-	// the length, we don't need to continually check it after every ReadByte
-	// call
-	readByte := func() byte {
-		b, _ := buf.ReadByte()
-		return b
-	}
-	if binary.BigEndian.Uint32(buf.Next(4)) != segDescID {
-		return gots.ErrSCTE35InvalidDescriptorID
-	}
-	d.eventID = binary.BigEndian.Uint32(buf.Next(4))
-	if readByte()&0x80 == 0 { // Cancel indicator
-		flags := readByte()
-		if flags&0x80 == 0 {
-			// skip over component info
-			ct := readByte()
-			if int(ct)*6 > buf.Len()-5 {
-				return gots.ErrInvalidSCTE35Length
-			}
-			for ; ct > 0; ct-- {
-				buf.Next(6)
-			}
-		}
-		d.hasDuration = flags&0x40 != 0
-		if d.hasDuration {
-			if buf.Len() < 10 {
-				return gots.ErrInvalidSCTE35Length
-			}
-			d.duration = uint40(buf.Next(5))
-		}
-		// upid unneeded now...
-		d.upidType = SegUPIDType(readByte())
-		upidLen := int(readByte())
-		if buf.Len() < upidLen+3 {
-			return gots.ErrInvalidSCTE35Length
-		}
-		d.upid = buf.Next(upidLen)
-		d.typeID = SegDescType(readByte())
-		d.segNum = readByte()
-		d.segsExpected = readByte()
-	}
 	return nil
 }
 
@@ -221,118 +162,6 @@ func (s *scte35) Descriptors() []SegmentationDescriptor {
 
 func (s *scte35) Data() []byte {
 	return s.data
-}
-
-func (d *segmentationDescriptor) SCTE35() SCTE35 {
-	return d.spliceInfo
-}
-
-func (d *segmentationDescriptor) TypeID() SegDescType {
-	return d.typeID
-}
-
-func (d *segmentationDescriptor) IsOut() bool {
-	switch d.TypeID() {
-	case SegDescProgramStart, SegDescChapterStart,
-		SegDescProviderAdvertisementStart, SegDescDistributorAdvertisementStart,
-		SegDescPlacementOpportunityStart, SegDescUnscheduledEventStart, SegDescNetworkStart,
-		SegDescDistributorPoStart, SegDescProgramOverlapStart, SegDescProgramBlackoutOverride:
-		return true
-	default:
-		return false
-	}
-}
-
-func (d *segmentationDescriptor) IsIn() bool {
-	switch d.TypeID() {
-	case SegDescProgramEnd, SegDescChapterEnd,
-		SegDescProviderAdvertisementEnd, SegDescDistributorAdvertisementEnd,
-		SegDescPlacementOpportunityEnd, SegDescUnscheduledEventEnd, SegDescNetworkEnd,
-		SegDescDistributorPoEnd:
-		return true
-	default:
-		return false
-	}
-}
-
-func (d *segmentationDescriptor) HasDuration() bool {
-	return d.hasDuration
-}
-
-func (d *segmentationDescriptor) Duration() gots.PTS {
-	return d.duration
-}
-
-func (d *segmentationDescriptor) UPIDType() SegUPIDType {
-	return d.upidType
-}
-
-func (d *segmentationDescriptor) UPID() []byte {
-	return d.upid
-}
-
-func (d *segmentationDescriptor) Compare(c SegmentationDescriptor) int {
-	return int(segWeight(d.TypeID()) - segWeight(c.TypeID()))
-}
-
-func (d *segmentationDescriptor) CanClose(out SegmentationDescriptor) bool {
-	// if we're not an in, we can't close anything.  This should be checked before the client calls this, but just in case...
-	if !d.IsIn() {
-		return false
-	}
-
-	// We have to handle two cases, the normal in closes an out and the trumping
-	// case.  In the normal case, the in segNum has to match segsExpected, in the
-	// trumping case it doesn't matter, so handle these two separately.
-	// Check the normal case, the subtraction check will fail if in isn't an in or out isn't an out
-	if d.TypeID()-out.TypeID() == 1 && d.segNum == d.segsExpected {
-		return true
-	}
-	// check the trumping case next
-	if d.Compare(out) > 0 {
-		return true
-	}
-	return false
-}
-
-// Determines equality for two segmentation descriptors
-// Equality in this sense means that two "in" events are duplicates
-// A lot of debate went in to what actually constitutes a "duplicate".  We get
-// all sorts of things from different providers/transcoders, so in the end, we
-// just settled on PTS and segmentation type
-func (d *segmentationDescriptor) Equal(c SegmentationDescriptor) bool {
-	if d == nil || c == nil {
-		return false
-	}
-	if d.TypeID() != c.TypeID() {
-		return false
-	}
-	if !d.SCTE35().HasPTS() || c.SCTE35().HasPTS() {
-		return false
-	}
-	if d.SCTE35().PTS() != c.SCTE35().PTS() {
-		return false
-	}
-	return true
-}
-
-// Recalculates the segmentation descriptor type such that higher precedence segmentation descriptor types
-// have higher values.  Advertising-based segmentation descriptor types are normalized so their values are
-// the same for both provider and distributor ad start (0x00) and end (0x01).
-// Modeled after the work done in DASH-R for its advertising support.
-func segWeight(typeID SegDescType) SegDescType {
-	var typeVal int8
-	typeVal = int8(typeID)
-	if typeVal == SegDescDistributorAdvertisementStart ||
-		typeVal == SegDescDistributorAdvertisementEnd ||
-		typeVal == SegDescDistributorPoStart ||
-		typeVal == SegDescDistributorPoEnd {
-		typeVal = typeVal - 0x2
-	}
-	if typeVal >= 0x40 {
-		return SegDescType(typeVal)
-	}
-	return SegDescType(abs(typeVal - 0x30))
 }
 
 func abs(num int8) int8 {

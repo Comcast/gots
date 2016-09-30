@@ -25,10 +25,11 @@ SOFTWARE.
 // Package scte35 is for handling scte35 splice signals
 package scte35
 
-import "github.com/Comcast/gots"
+import (
+	"github.com/Comcast/gots"
+	"github.com/Comcast/gots/psi"
+)
 
-// SpliceCommandType - not really needed for processing but included for
-// backwards compatibility/porting
 type SpliceCommandType uint16
 
 const (
@@ -68,10 +69,10 @@ const (
 	SegDescProviderAdvertisementEnd                  = 0x31
 	SegDescDistributorAdvertisementStart             = 0x32
 	SegDescDistributorAdvertisementEnd               = 0x33
-	SegDescPlacementOpportunityStart                 = 0x34
-	SegDescPlacementOpportunityEnd                   = 0x35
-	SegDescDistributorPoStart                        = 0x36
-	SegDescDistributorPoEnd                          = 0x37
+	SegDescProviderPOStart                           = 0x34
+	SegDescProviderPOEnd                             = 0x35
+	SegDescDistributorPOStart                        = 0x36
+	SegDescDistributorPOEnd                          = 0x37
 	SegDescUnscheduledEventStart                     = 0x40
 	SegDescUnscheduledEventEnd                       = 0x41
 	SegDescNetworkStart                              = 0x50
@@ -97,7 +98,8 @@ const (
 	SegUPIDATSCID                  = 0x0b
 	SegUPIDMPU                     = 0x0c
 	SegUPIDMID                     = 0x0d
-	SegUPIDURN                     = 0x0e
+	SegUPADSINFO                   = 0x0e
+	SegUPIDURN                     = 0x0f
 )
 
 // SCTE35 represent operations available on a SCTE35 message.
@@ -108,35 +110,19 @@ type SCTE35 interface {
 	PTS() gots.PTS
 	// Command returns the signal's splice command
 	Command() SpliceCommandType
-	// Descriptors returns a slice of the signals SegmentationDescriptors
+	// Descriptors returns a slice of the signals SegmentationDescriptors sorted
+	// by descriptor weight (least important signals first)
 	Descriptors() []SegmentationDescriptor
 	// Data returns the raw data bytes of the scte signal
 	Data() []byte
 }
 
-// SegmentationDescriptor describes the segmentation descriptor interface.  The intended usage is
-// to maintain a sorted list of descriptors.  When a new signal is received for
-// every descriptor returned from the signal, walk the list, using Compare() to
-// find the place in the list.  If Compare()==0, check if is Equal() for
-// duplicates and then CanClose() to see if can close the signal and remove
-// from the list.  If Compare() goes from < to > and signal is an out, insert
-// it into the list.  Some pseudo code is below (additional edge
-// cases/bookkeeping not included):
-// scte,_ := ParseSCTE35(bytes)
-// for _,d := range(scte.Descriptors()) {
-//   for i,o := range(sortedDescs) {
-//     if d.Equal(o) { break } // ignore duplicates
-//     if d.Compare(o)>0 { continue } // d trumps current
-//     if d.Compare(o)==0 && d.CanClose(o) {
-//       sortedDescs=sortedDescs[i:] && break
-//     } else if d.Compare(o)<0 && d.IsOut() {
-//       sortedDescs.InsertAt(d,i) && break
-//     }
-//   }
-// }
+// SegmentationDescriptor describes the segmentation descriptor interface.
 type SegmentationDescriptor interface {
 	// SCTE35 returns the SCTE35 signal this segmentation descriptor was found in.
 	SCTE35() SCTE35
+	// EventID returns the event id
+	EventID() uint32
 	// TypeID returns the segmentation type for descriptor
 	TypeID() SegDescType
 	// IsOut returns true if a signal is an out
@@ -151,12 +137,40 @@ type SegmentationDescriptor interface {
 	UPIDType() SegUPIDType
 	// UPID returns the upid of the descriptor
 	UPID() []byte
-	// Compare returns results in terms of trumping rules, <0 if sd is less than, 0
-	// if equal, and >0 if greater
-	Compare(sd SegmentationDescriptor) int
 	// CanClose returns true if this descriptor can close the passed in descriptor
 	CanClose(out SegmentationDescriptor) bool
 	// Equal returns true/false if segmentation descriptor is functionally
 	// equal (i.e. a duplicate)
 	Equal(sd SegmentationDescriptor) bool
+}
+
+// State maintains current state for all signals and descriptors.  The intended
+// usage is to call ParseSCTE35() on raw data to create a signal, and then call
+// ProcessSignal with that signal.  This returns the list of descriptors closed
+// by that signal. If signals have a duration and need to be closed implicitly
+// after some timer has passed, then Close() can be used for that.  Some
+// example code is below.
+// s := scte35.NewState()
+// scte,_ := scte.ParseSCTE35(bytes)
+// for _,d := range(scte.Descriptors()) {
+//   closed = s.ProcessDescriptor(d)
+//   ...handle closed signals appropriately here
+//   if d.HasDuration() {
+//     time.AfterFunc(d.Duration() + someFudgeDelta,
+//                    func() { closed = s.Close(d) })
+//   }
+// }
+type State interface {
+	// Open returns a list of open signals
+	Open() []SegmentationDescriptor
+	// Process takes a scte35 descriptor and returns a list of descriptors closed by it
+	ProcessDescriptor(desc SegmentationDescriptor) ([]SegmentationDescriptor, error)
+	// Close acts like Process and acts as if an appropriate close has been
+	// received for this given descriptor.
+	Close(desc SegmentationDescriptor) ([]SegmentationDescriptor, error)
+}
+
+// SCTE done func is the same as the PMT because they're both psi
+func SCTE35AccumulatorDoneFunc(b []byte) (bool, error) {
+	return psi.PmtAccumulatorDoneFunc(b)
 }

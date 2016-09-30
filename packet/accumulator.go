@@ -55,6 +55,14 @@ func (a *accumulator) Add(pkt Packet) (bool, error) {
 	if badLen(pkt) {
 		return false, gots.ErrInvalidPacketLength
 	}
+	// technically we could get a packet without a payload.  Check this and
+	// return false if we get one
+	p, err := ContainsPayload(pkt)
+	if err != nil {
+		return false, err
+	} else if !p {
+		return false, nil
+	}
 	if payloadUnitStartIndicator(pkt) {
 		a.packets = make([]Packet, 0)
 	} else if len(a.packets) == 0 {
@@ -90,4 +98,8 @@ func (a *accumulator) Parse() ([]byte, error) {
 
 func (a *accumulator) Packets() []Packet {
 	return a.packets
+}
+
+func (a *accumulator) Reset() {
+	a.packets = nil
 }
