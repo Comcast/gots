@@ -58,7 +58,7 @@ func HasAdaptationFieldExtension(packet packet.Packet) bool {
 // AdaptationField of the Packet. If either of these optional fields are missing an empty byte array is returned with an error
 func EncoderBoundaryPoint(pkt packet.Packet) ([]byte, error) {
 	if badLen(pkt) {
-		return emptyByteSlice, mpegts.ErrInvalidPacketLength
+		return emptyByteSlice, gots.ErrInvalidPacketLength
 	}
 	hasAdapt, err := packet.ContainsAdaptationField(pkt)
 	if err != nil {
@@ -71,7 +71,7 @@ func EncoderBoundaryPoint(pkt packet.Packet) ([]byte, error) {
 		}
 		return ebp, nil
 	}
-	return nil, mpegts.ErrNoEBP
+	return nil, gots.ErrNoEBP
 }
 
 // PCR is the Program Clock Reference.
@@ -80,7 +80,7 @@ func EncoderBoundaryPoint(pkt packet.Packet) ([]byte, error) {
 // Final 9 bits are PCR extension.
 func PCR(packet packet.Packet) ([]byte, error) {
 	if !HasPCR(packet) {
-		return emptyByteSlice, mpegts.ErrNoPCR
+		return emptyByteSlice, gots.ErrNoPCR
 	}
 	offset := 6
 	return packet[offset : offset+6], nil
@@ -92,10 +92,10 @@ func PCR(packet packet.Packet) ([]byte, error) {
 // Final 9 bits are original PCR extension.
 func OPCR(packet packet.Packet) ([]byte, error) {
 	if badLen(packet) {
-		return emptyByteSlice, mpegts.ErrInvalidPacketLength
+		return emptyByteSlice, gots.ErrInvalidPacketLength
 	}
 	if !HasOPCR(packet) {
-		return emptyByteSlice, mpegts.ErrNoOPCR
+		return emptyByteSlice, gots.ErrNoOPCR
 	}
 	offset := 6
 	if HasPCR(packet) {
@@ -109,10 +109,10 @@ func OPCR(packet packet.Packet) ([]byte, error) {
 // HasSplicingPoint to check for the existence of a splice countdown.
 func SpliceCountdown(packet packet.Packet) (uint8, error) {
 	if badLen(packet) {
-		return 0, mpegts.ErrInvalidPacketLength
+		return 0, gots.ErrInvalidPacketLength
 	}
 	if !HasSplicingPoint(packet) {
-		return 0, mpegts.ErrNoSplicePoint
+		return 0, gots.ErrNoSplicePoint
 	}
 	offset := 6
 	if HasPCR(packet) {
@@ -129,10 +129,10 @@ func SpliceCountdown(packet packet.Packet) (uint8, error) {
 // HasTransportPrivateData to check for the existence of private data.
 func TransportPrivateData(packet packet.Packet) ([]byte, error) {
 	if badLen(packet) {
-		return emptyByteSlice, mpegts.ErrInvalidPacketLength
+		return emptyByteSlice, gots.ErrInvalidPacketLength
 	}
 	if !HasTransportPrivateData(packet) {
-		return emptyByteSlice, mpegts.ErrNoPrivateTransportData
+		return emptyByteSlice, gots.ErrNoPrivateTransportData
 	}
 	offset := 6
 	if HasPCR(packet) {

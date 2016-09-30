@@ -44,7 +44,7 @@ type segmentationDescriptor struct {
 	typeID       SegDescType
 	eventID      uint32
 	hasDuration  bool
-	duration     mpegts.PTS
+	duration     gots.PTS
 	upidType     SegUPIDType
 	upid         []byte
 	segNum       uint8
@@ -55,7 +55,7 @@ type segmentationDescriptor struct {
 type scte35 struct {
 	command     SpliceCommandType
 	hasPTS      bool
-	pts         mpegts.PTS
+	pts         gots.PTS
 	descriptors []SegmentationDescriptor
 
 	data []byte
@@ -81,14 +81,14 @@ func (s *scte35) parseTable(data []byte) error {
 		return b
 	}
 	if buf.Len() < int(uint16(psi.PointerField(data))+psi.PSIHeaderLen+15) {
-		return mpegts.ErrInvalidSCTE35Length
+		return gots.ErrInvalidSCTE35Length
 	}
 	if psi.TableID(data) == 0xfc {
 		// read over the table header - +1 to skip protocol version
 		headerLen := psi.PSIHeaderLen + uint16(psi.PointerField(data)) + 1
 		buf.Next(int(headerLen))
 		if readByte()&0x80 != 0 {
-			return mpegts.ErrSCTE35EncryptionUnsupported
+			return gots.ErrSCTE35EncryptionUnsupported
 		}
 		// unread this byte, because it contains the top bit of our pts offset
 		err := buf.UnreadByte()
@@ -111,22 +111,22 @@ func (s *scte35) parseTable(data []byte) error {
 					return err
 				}
 				if buf.Len() < 11 {
-					return mpegts.ErrInvalidSCTE35Length
+					return gots.ErrInvalidSCTE35Length
 				}
 				s.pts = uint40(buf.Next(5)) & 0x01ffffffff
 				// add the pts adjustment to get the real
 				// value, we won't need it anymore after that
 				s.pts += ptsAdjustment
 			} else {
-				return mpegts.ErrSCTE35UnsupportedSpliceCommand
+				return gots.ErrSCTE35UnsupportedSpliceCommand
 			}
 		case SpliceNull:
 		default:
-			return mpegts.ErrSCTE35UnsupportedSpliceCommand
+			return gots.ErrSCTE35UnsupportedSpliceCommand
 		}
 		descLoopLen := binary.BigEndian.Uint16(buf.Next(2))
 		if buf.Len() < int(descLoopLen+psi.CrcLen) {
-			return mpegts.ErrInvalidSCTE35Length
+			return gots.ErrInvalidSCTE35Length
 		}
 		for bytesRead := uint16(0); bytesRead < descLoopLen; {
 			d := &segmentationDescriptor{}
@@ -134,7 +134,7 @@ func (s *scte35) parseTable(data []byte) error {
 			descLen := readByte()
 			// Make sure a bad descriptorLen doesn't kill us
 			if descLoopLen-bytesRead-2 < uint16(descLen) || descLen < minDescLen {
-				return mpegts.ErrInvalidSCTE35Length
+				return gots.ErrInvalidSCTE35Length
 			}
 			if descTag != segDescTag {
 				// Not interested in descriptors that are not
@@ -150,7 +150,7 @@ func (s *scte35) parseTable(data []byte) error {
 			bytesRead = 2 + uint16(descLen)
 		}
 	} else {
-		return mpegts.ErrUnknownTableID
+		return gots.ErrUnknownTableID
 	}
 	// Check CRC?
 	s.data = data
@@ -167,7 +167,7 @@ func (d *segmentationDescriptor) parseDescriptor(data []byte) error {
 		return b
 	}
 	if binary.BigEndian.Uint32(buf.Next(4)) != segDescID {
-		return mpegts.ErrSCTE35InvalidDescriptorID
+		return gots.ErrSCTE35InvalidDescriptorID
 	}
 	d.eventID = binary.BigEndian.Uint32(buf.Next(4))
 	if readByte()&0x80 == 0 { // Cancel indicator
@@ -176,7 +176,7 @@ func (d *segmentationDescriptor) parseDescriptor(data []byte) error {
 			// skip over component info
 			ct := readByte()
 			if int(ct)*6 > buf.Len()-5 {
-				return mpegts.ErrInvalidSCTE35Length
+				return gots.ErrInvalidSCTE35Length
 			}
 			for ; ct > 0; ct-- {
 				buf.Next(6)
@@ -185,7 +185,7 @@ func (d *segmentationDescriptor) parseDescriptor(data []byte) error {
 		d.hasDuration = flags&0x40 != 0
 		if d.hasDuration {
 			if buf.Len() < 10 {
-				return mpegts.ErrInvalidSCTE35Length
+				return gots.ErrInvalidSCTE35Length
 			}
 			d.duration = uint40(buf.Next(5))
 		}
@@ -193,7 +193,7 @@ func (d *segmentationDescriptor) parseDescriptor(data []byte) error {
 		d.upidType = SegUPIDType(readByte())
 		upidLen := int(readByte())
 		if buf.Len() < upidLen+3 {
-			return mpegts.ErrInvalidSCTE35Length
+			return gots.ErrInvalidSCTE35Length
 		}
 		d.upid = buf.Next(upidLen)
 		d.typeID = SegDescType(readByte())
@@ -207,7 +207,7 @@ func (s *scte35) HasPTS() bool {
 	return s.hasPTS
 }
 
-func (s *scte35) PTS() mpegts.PTS {
+func (s *scte35) PTS() gots.PTS {
 	return s.pts
 }
 
@@ -259,7 +259,7 @@ func (d *segmentationDescriptor) HasDuration() bool {
 	return d.hasDuration
 }
 
-func (d *segmentationDescriptor) Duration() mpegts.PTS {
+func (d *segmentationDescriptor) Duration() gots.PTS {
 	return d.duration
 }
 
@@ -344,6 +344,6 @@ func abs(num int8) int8 {
 	}
 }
 
-func uint40(buf []byte) mpegts.PTS {
-	return (mpegts.PTS(buf[0]&0x1) << 32) | (mpegts.PTS(buf[1]) << 24) | (mpegts.PTS(buf[2]) << 16) | (mpegts.PTS(buf[3]) << 8) | (mpegts.PTS(buf[4]))
+func uint40(buf []byte) gots.PTS {
+	return (gots.PTS(buf[0]&0x1) << 32) | (gots.PTS(buf[1]) << 24) | (gots.PTS(buf[2]) << 16) | (gots.PTS(buf[3]) << 8) | (gots.PTS(buf[4]))
 }

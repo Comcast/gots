@@ -74,7 +74,7 @@ func TestReadEncoderBoundaryPoint(t *testing.T) {
 	}
 
 	ebp, err = ReadEncoderBoundaryPoint(bytes.NewBuffer([]byte{0xAB}))
-	if err != mpegts.ErrUnrecognizedEbpType {
+	if err != gots.ErrUnrecognizedEbpType {
 		t.Errorf("ReadEncoderBoundaryPoint() read wrong type of EBP")
 	}
 

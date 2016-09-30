@@ -46,7 +46,7 @@ type pat []byte
 // treats it as TS packet and builds a PAT from the packet payload.
 func NewPAT(patBytes []byte) (PAT, error) {
 	if len(patBytes) < 13 {
-		return nil, mpegts.ErrInvalidPATLength
+		return nil, gots.ErrInvalidPATLength
 	}
 
 	if len(patBytes) == 188 {

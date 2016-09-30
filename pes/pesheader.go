@@ -143,16 +143,16 @@ func NewPESHeader(pesBytes []byte) (PESHeader, error) {
 
 			pes.ptsDtsIndicator = ptsDtsIndicator
 
-			if (ptsDtsIndicator == mpegts.PTS_DTS_INDICATOR_BOTH ||
-				ptsDtsIndicator == mpegts.PTS_DTS_INDICATOR_ONLY_PTS) &&
+			if (ptsDtsIndicator == gots.PTS_DTS_INDICATOR_BOTH ||
+				ptsDtsIndicator == gots.PTS_DTS_INDICATOR_ONLY_PTS) &&
 				CheckLength(pesBytes, "PTS", 14) {
 
-				pes.pts = mpegts.ExtractTime(pesBytes[9:14])
+				pes.pts = gots.ExtractTime(pesBytes[9:14])
 
-				if pes.ptsDtsIndicator == mpegts.PTS_DTS_INDICATOR_BOTH &&
+				if pes.ptsDtsIndicator == gots.PTS_DTS_INDICATOR_BOTH &&
 					CheckLength(pesBytes, "DTS", 19) {
 
-					pes.dts = mpegts.ExtractTime(pesBytes[14:19])
+					pes.dts = gots.ExtractTime(pesBytes[14:19])
 				}
 			}
 
@@ -198,7 +198,7 @@ func (pes *pESHeader) Data() []byte {
 }
 
 func (pes *pESHeader) HasPTS() bool {
-	return (pes.ptsDtsIndicator & mpegts.PTS_DTS_INDICATOR_ONLY_PTS) != 0
+	return (pes.ptsDtsIndicator & gots.PTS_DTS_INDICATOR_ONLY_PTS) != 0
 }
 
 func (pes *pESHeader) Format() string {
@@ -215,9 +215,9 @@ func (pes *pESHeader) Format() string {
 	if pes.optionalFieldsExist() {
 		ptsDtsIndicator := pes.ptsDtsIndicator
 		f += fmt.Sprintf("PTS DTS Indicator: %b\n", pes.ptsDtsIndicator)
-		if ptsDtsIndicator == mpegts.PTS_DTS_INDICATOR_BOTH || ptsDtsIndicator == mpegts.PTS_DTS_INDICATOR_ONLY_PTS {
+		if ptsDtsIndicator == gots.PTS_DTS_INDICATOR_BOTH || ptsDtsIndicator == gots.PTS_DTS_INDICATOR_ONLY_PTS {
 			f += fmt.Sprintf("PTS: %d\n", pes.pts)
-			if ptsDtsIndicator == mpegts.PTS_DTS_INDICATOR_BOTH {
+			if ptsDtsIndicator == gots.PTS_DTS_INDICATOR_BOTH {
 				f += fmt.Sprintf("DTS: %d\n", pes.dts)
 			}
 		}

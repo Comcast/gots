@@ -190,7 +190,7 @@ func WithPES(pkt *Packet, pts uint64) {
 	pay[7] = 0x80
 	// Header len
 	pay[8] = 14
-	mpegts.InsertPTS(pay[9:14], pts)
+	gots.InsertPTS(pay[9:14], pts)
 	SetPayload(pkt, pay)
 	WithHasPayloadFlag(pkt)
 }
