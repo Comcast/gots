@@ -247,7 +247,7 @@ func (d *segmentationDescriptor) CanClose(out SegmentationDescriptor) bool {
 // Equality in this sense means that two "in" events are duplicates
 // A lot of debate went in to what actually constitutes a "duplicate".  We get
 // all sorts of things from different providers/transcoders, so in the end, we
-// just settled on PTS and segmentation type
+// just settled on PTS, event id, and segmentation type
 func (d *segmentationDescriptor) Equal(c SegmentationDescriptor) bool {
 	if d == nil || c == nil {
 		return false
@@ -259,6 +259,9 @@ func (d *segmentationDescriptor) Equal(c SegmentationDescriptor) bool {
 		return false
 	}
 	if d.SCTE35().PTS() != c.SCTE35().PTS() {
+		return false
+	}
+	if d.EventID() != c.EventID() {
 		return false
 	}
 	return true

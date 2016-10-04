@@ -26,15 +26,24 @@ package scte35
 
 import "github.com/Comcast/gots"
 
+const receivedRingLen = 10
+
+type receivedElem struct {
+	pts   gots.PTS
+	descs []SegmentationDescriptor
+}
+
 type state struct {
-	open        []SegmentationDescriptor
-	blackoutIdx int
-	inBlackout  bool
+	open         []SegmentationDescriptor
+	received     []*receivedElem
+	receivedHead int
+	blackoutIdx  int
+	inBlackout   bool
 }
 
 // NewState returns an initialized state object
 func NewState() State {
-	return &state{}
+	return &state{received: make([]*receivedElem, receivedRingLen)}
 }
 
 func (s *state) Open() []SegmentationDescriptor {
@@ -50,12 +59,30 @@ func (s *state) Open() []SegmentationDescriptor {
 func (s *state) ProcessDescriptor(desc SegmentationDescriptor) ([]SegmentationDescriptor, error) {
 	var err error
 	var closed []SegmentationDescriptor
-	// check if this is a duplicate
-	for _, d := range s.open {
-		if desc.Equal(d) {
-			return nil, gots.ErrSCTE35DuplicateDescriptor
+	// check if desc has a pts because we can't handle if it doesn't
+	if !desc.SCTE35().HasPTS() {
+		return nil, gots.ErrSCTE35UnsupportedSpliceCommand
+	}
+	// check if this is a duplicate - if not, add it to the received list and
+	// drop the old received if we're over the length limit
+	descAdded := false
+	pts := desc.SCTE35().PTS()
+	for _, e := range s.received {
+		if e != nil && e.pts == pts {
+			for _, d := range e.descs {
+				if desc.Equal(d) {
+					return nil, gots.ErrSCTE35DuplicateDescriptor
+				}
+			}
+			e.descs = append(e.descs, desc)
+			descAdded = true
 		}
 	}
+	if !descAdded {
+		s.received[s.receivedHead] = &receivedElem{pts: pts, descs: []SegmentationDescriptor{desc}}
+		s.receivedHead = (s.receivedHead + 1) % receivedRingLen
+	}
+
 	// first close signals until one returns false, then handle the breakaway
 	for i := len(s.open) - 1; i >= 0; i-- {
 		d := s.open[i]
@@ -67,40 +94,71 @@ func (s *state) ProcessDescriptor(desc SegmentationDescriptor) ([]SegmentationDe
 	}
 	// remove all closed descriptors
 	s.open = s.open[0 : len(s.open)-len(closed)]
-	if desc.IsOut() {
-		s.open = append(s.open, desc)
-		// if there was anything in the close list, that means we missed the out
-		// for that descriptor
-		if len(closed) != 0 {
-			err = gots.ErrSCTE35MissingOut
-		}
-	} else if len(closed) != 0 {
-		// check for validity - if a descriptor is closed, the closing descriptor
-		// must be of the appropriate closing type
-		switch desc.TypeID() {
-		case SegDescProgramEnd,
-			SegDescChapterEnd,
-			SegDescProviderAdvertisementEnd, SegDescProviderPOEnd,
-			SegDescDistributorAdvertisementEnd, SegDescDistributorPOEnd,
-			SegDescUnscheduledEventEnd, SegDescNetworkEnd:
-			if closed[len(closed)-1].TypeID() != desc.TypeID()-1 {
-				err = gots.ErrSCTE35MissingOut
-			}
-		}
-	}
+
+	// validation logic
+	switch desc.TypeID() {
 	// breakaway handling
-	if desc.TypeID() == SegDescProgramBreakaway {
+	case SegDescProgramBreakaway:
 		s.inBlackout = true
 		s.blackoutIdx = len(s.open)
+		// append breakaway to match against resumption even though it's an in
 		s.open = append(s.open, desc)
-	} else if desc.TypeID() == SegDescProgramResumption {
+	case SegDescProgramResumption:
 		if s.inBlackout {
 			s.inBlackout = false
+			s.open = s.open[0:s.blackoutIdx]
+			// TODO: verify that there is a program start that has a matching event id
 		} else {
 			// ProgramResumption can only come after a breakaway
 			err = gots.ErrSCTE35InvalidDescriptor
 		}
-		s.open = s.open[0:s.blackoutIdx]
+		fallthrough
+	// out signals
+	case SegDescProgramStart, SegDescChapterStart,
+		SegDescProviderAdvertisementStart, SegDescDistributorAdvertisementStart,
+		SegDescProviderPOStart, SegDescDistributorPOStart,
+		SegDescUnscheduledEventStart, SegDescNetworkStart,
+		SegDescProgramOverlapStart:
+		if len(closed) != 0 {
+			err = gots.ErrSCTE35MissingOut
+		}
+		s.open = append(s.open, desc)
+	// in signals
+	// SegDescProgramEnd treated individually since it is expected to normally
+	// close program resumption AND program start
+	case SegDescProgramEnd:
+		if len(closed) == 0 {
+			err = gots.ErrSCTE35MissingOut
+			break
+		}
+		for _, d := range closed {
+			if d.TypeID() != SegDescProgramStart &&
+				d.TypeID() != SegDescProgramResumption {
+				err = gots.ErrSCTE35MissingOut
+				break
+			}
+		}
+	case SegDescChapterEnd,
+		SegDescProviderAdvertisementEnd, SegDescProviderPOEnd,
+		SegDescDistributorAdvertisementEnd, SegDescDistributorPOEnd,
+		SegDescUnscheduledEventEnd, SegDescNetworkEnd:
+		var openDesc SegmentationDescriptor
+		// descriptor matches out, but doesn't close it.  Check event id against open
+		if len(closed) == 0 || closed[len(closed)-1].TypeID() != desc.TypeID()-1 {
+			if len(s.open) == 0 {
+				err = gots.ErrSCTE35MissingOut
+				break
+			} else {
+				openDesc = s.open[len(s.open)-1]
+			}
+		} else {
+			openDesc = closed[len(closed)-1]
+		}
+		if openDesc.EventID() != desc.EventID() {
+			err = gots.ErrSCTE35MissingOut
+		}
+	default:
+		// no validating
 	}
 	return closed, err
 }
