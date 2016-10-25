@@ -27,7 +27,7 @@ import (
 	"encoding/hex"
 	"testing"
 
-	"github.com/Comcast/gots/packet"
+	"github.com/comcast/gots/packet"
 )
 
 func TestPESHeader(t *testing.T) {

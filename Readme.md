@@ -1,6 +1,6 @@
-[![GoDoc](https://godoc.org/github.com/Comcast/gots?status.svg)](https://godoc.org/github.com/Comcast/gots)
+[![GoDoc](https://godoc.org/github.com/comcast/gots?status.svg)](https://godoc.org/github.com/comcast/gots)
 [![Build Status](https://travis-ci.org/Comcast/gots.svg?branch=master)](https://travis-ci.org/Comcast/gots)
-[![Go Report Card](https://goreportcard.com/badge/github.com/Comcast/gots)](https://goreportcard.com/report/github.com/Comcast/gots)
+[![Go Report Card](https://goreportcard.com/badge/github.com/comcast/gots)](https://goreportcard.com/report/github.com/comcast/gots)
 [![Coverage Status](https://coveralls.io/repos/github/Comcast/gots/badge.svg?branch=master)](https://coveralls.io/github/Comcast/gots?branch=master)
 
 

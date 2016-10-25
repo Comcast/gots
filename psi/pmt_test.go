@@ -28,8 +28,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/Comcast/gots"
-	"github.com/Comcast/gots/packet"
+	"github.com/comcast/gots"
+	"github.com/comcast/gots/packet"
 )
 
 type testPmtElementaryStream struct {
