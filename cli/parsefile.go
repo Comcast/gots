@@ -58,6 +58,13 @@ func main() {
 		err := file.Close()
 		fmt.Println("Cannot close File", file.Name(), err)
 	}(tsFile)
+     //Verify SyncByte and seek to the start of sync byte
+     isSync, index :=verifySync(tsFile)
+     if isSync{
+      	_, err = tsFile.Seek(index, 0)
+     }else{
+     	_, err = tsFile.Seek(0, 0)
+     }
 	pat, err := extractPat(tsFile)
 	if err != nil {
 		println(err)
@@ -200,3 +207,36 @@ func extractPmt(buf io.Reader, pid uint16) (psi.PMT, error) {
 	}
 	return pmt, nil
 }
+func verifySync(buf io.Reader) (bool,int64){
+   //function find the first sync byte of the array   
+  	pkt := make([]byte, 1)
+    var i int64 = 0
+	for {
+		 read, err := buf.Read(pkt)
+         if err!=nil && err != io.EOF {
+         	println(err)
+         }
+         if read == 0 {
+             break
+         }
+        if int(pkt[0]) == packet.SyncByte {
+           	//check next 188 byte
+        	nextPkt := make([]byte,188)
+            nextRead, err := buf.Read(nextPkt)
+            if err != nil && err != io.EOF {
+         		println(err)
+         	}
+         	if nextRead == 0 {
+            	break
+         	}
+           	if nextPkt[187] == packet.SyncByte {
+        	 	return true,i
+        	 }
+        }
+		i++;
+  	}  
+  return false,0
+}
+
+
+
