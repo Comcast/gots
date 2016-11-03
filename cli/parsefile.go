@@ -58,13 +58,18 @@ func main() {
 		err := file.Close()
 		fmt.Println("Cannot close File", file.Name(), err)
 	}(tsFile)
-     //Verify SyncByte and seek to the start of sync byte
-     isSync, index :=verifySync(tsFile)
-     if isSync{
-      	_, err = tsFile.Seek(index, 0)
-     }else{
-     	_, err = tsFile.Seek(0, 0)
-     }
+    // Verify if sync-byte is present and seek to the first sync-byte
+	syncIndex, err := sync(tsFile)
+	if err == nil {
+		_, err = tsFile.Seek(syncIndex, 0)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+	} else {
+		fmt.Println(err)
+		return
+	}
 	pat, err := extractPat(tsFile)
 	if err != nil {
 		println(err)
@@ -207,36 +212,33 @@ func extractPmt(buf io.Reader, pid uint16) (psi.PMT, error) {
 	}
 	return pmt, nil
 }
-func verifySync(buf io.Reader) (bool,int64){
-   //function find the first sync byte of the array   
-  	pkt := make([]byte, 1)
-    var i int64 = 0
-	for {
-		 read, err := buf.Read(pkt)
-         if err!=nil && err != io.EOF {
-         	println(err)
-         }
-         if read == 0 {
-             break
-         }
-        if int(pkt[0]) == packet.SyncByte {
-           	//check next 188 byte
-        	nextPkt := make([]byte,188)
-            nextRead, err := buf.Read(nextPkt)
-            if err != nil && err != io.EOF {
-         		println(err)
-         	}
-         	if nextRead == 0 {
-            	break
-         	}
-           	if nextPkt[187] == packet.SyncByte {
-        	 	return true,i
-        	 }
-        }
-		i++;
-  	}  
-  return false,0
+func sync(buf io.Reader) (int64, error) {
+	// function find the first sync byte of the array
+	data := make([]byte, 1)
+	for i := int64(0); ;i++ {
+		read, err := buf.Read(data)
+		if err != nil && err != io.EOF {
+			println(err)
+		}
+		if read == 0 {
+			break
+		}
+		if int(data[0]) == packet.SyncByte {
+			// check next 188th byte
+			nextData := make([]byte, packet.PacketSize)
+			nextRead, err := buf.Read(nextData)
+			if err != nil && err != io.EOF {
+				println(err)
+			}
+			if nextRead == 0 {
+				break
+			}
+			if nextData[187] == packet.SyncByte {
+				return i,nil
+			}
+		}
+	}
+	return  0,fmt.Errorf("Sync-byte not found.")
 }
-
 
 
