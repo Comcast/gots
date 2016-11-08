@@ -81,6 +81,8 @@ type PmtStreamType interface {
 // PAT interface represents operations on a Program Association Table. Currently only single program transport streams (SPTS)are supported
 type PAT interface {
 	NumPrograms() int
+	ProgramMapPid() uint16 // DEPRECATED
+	ProgramNumber() uint16 // DEPRECATED
 	ProgramMap() map[uint16]uint16
 }
 
