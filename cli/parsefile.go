@@ -56,9 +56,11 @@ func main() {
 	}
 	defer func(file *os.File) {
 		err := file.Close()
-		fmt.Println("Cannot close File", file.Name(), err)
+		if err != nil {
+			fmt.Println("Cannot close File", file.Name(), err)
+		}
 	}(tsFile)
-    // Verify if sync-byte is present and seek to the first sync-byte
+	// Verify if sync-byte is present and seek to the first sync-byte
 	syncIndex, err := sync(tsFile)
 	if err == nil {
 		_, err = tsFile.Seek(syncIndex, 0)
@@ -76,13 +78,18 @@ func main() {
 		return
 	}
 	printPat(pat)
+
 	if *showPmt {
-		pmt, err := extractPmt(tsFile, pat.ProgramMapPid())
-		if err != nil {
-			println(err)
+		pm := pat.ProgramMap()
+		for pn, pid := range pm {
+			pmt, err := extractPmt(tsFile, pid)
+			if err != nil {
+				panic(err)
+			}
+			printPmt(pn, pmt)
 		}
-		printPmt(pmt)
 	}
+
 	pkt := make([]byte, packet.PacketSize, packet.PacketSize)
 	var offset int64
 	var numPackets uint64
@@ -125,8 +132,8 @@ func main() {
 
 }
 
-func printPmt(pmt psi.PMT) {
-	println("PMT")
+func printPmt(pn uint16, pmt psi.PMT) {
+	printlnf("Program #%v PMT", pn)
 	printlnf("\tPIDs %v", pmt.Pids())
 	println("\tElementary Streams")
 	for _, es := range pmt.ElementaryStreams() {
@@ -139,9 +146,8 @@ func printPmt(pmt psi.PMT) {
 
 func printPat(pat psi.PAT) {
 	println("Pat")
-	printlnf("\tPMT PID %12v", pat.ProgramMapPid())
-	printlnf("\tProgramNumber %6v", pat.ProgramNumber())
-	printlnf("\tNumber of Programs %v", pat.ProgramNumber())
+	printlnf("\tPMT PIDs %v", pat.ProgramMap())
+	printlnf("\tNumber of Programs %v", pat.NumPrograms())
 }
 
 func extractPat(buf io.Reader) (psi.PAT, error) {
@@ -215,7 +221,7 @@ func extractPmt(buf io.Reader, pid uint16) (psi.PMT, error) {
 func sync(buf io.Reader) (int64, error) {
 	// function find the first sync byte of the array
 	data := make([]byte, 1)
-	for i := int64(0); ;i++ {
+	for i := int64(0); ; i++ {
 		read, err := buf.Read(data)
 		if err != nil && err != io.EOF {
 			println(err)
@@ -234,11 +240,9 @@ func sync(buf io.Reader) (int64, error) {
 				break
 			}
 			if nextData[187] == packet.SyncByte {
-				return i,nil
+				return i, nil
 			}
 		}
 	}
-	return  0,fmt.Errorf("Sync-byte not found.")
+	return 0, fmt.Errorf("Sync-byte not found.")
 }
-
-

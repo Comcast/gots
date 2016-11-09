@@ -61,7 +61,6 @@ func NewPMT(pmtBytes []byte) (PMT, error) {
 		return nil, err
 	}
 	return pmt, nil
-
 }
 
 func (p *pmt) parseTable(pmtBytes []byte) error {
@@ -132,12 +131,14 @@ func (p *pmt) RemoveElementaryStreams(removePids []uint16) {
 			}
 		}
 	}
+
 	var filteredPids []uint16
+
 	for _, es := range p.elementaryStreams {
 		filteredPids = append(filteredPids, es.ElementaryPid())
 	}
-	p.pids = filteredPids
 
+	p.pids = filteredPids
 }
 
 func (p *pmt) IsPidForStreamWherePresentationLagsEbp(pid uint16) bool {
@@ -262,20 +263,23 @@ func FilterPMTPacketsToPids(packets []packet.Packet, pids []uint16) []packet.Pac
 // of pkt.
 func IsPMT(pkt packet.Packet, pat PAT) (bool, error) {
 	if pat == nil {
-
 		return false, gots.ErrNilPAT
 	}
 
-	pmtPid := pat.ProgramMapPid()
+	pmtMap := pat.ProgramMap()
 	pid, err := packet.Pid(pkt)
 
 	if err != nil {
-
 		return false, err
 	}
 
-	return pid == pmtPid, nil
+	for _, map_pid := range pmtMap {
+		if pid == map_pid {
+			return true, nil
+		}
+	}
 
+	return false, nil
 }
 
 func safeSlice(byteArray []byte, start, end int) []byte {
@@ -297,5 +301,6 @@ func pidIn(pids []uint16, target uint16) bool {
 			return true
 		}
 	}
+
 	return false
 }

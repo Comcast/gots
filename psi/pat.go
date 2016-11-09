@@ -73,12 +73,54 @@ func (pat pat) NumPrograms() int {
 	return numPrograms
 }
 
-// ProgramMapPid returns the PID of the PMT
+// DEPRECATED - use ProgramMap for new code
 func (pat pat) ProgramMapPid() uint16 {
-	return (uint16(pat[11]) & 0x1f << 8) | uint16(pat[12])
+	if pat.NumPrograms() != 1 {
+		// This method has undefined behavior for multi program transport streams.
+		// Please use pat.ProgramMap() for a map of PNs and PIDs for PMTs
+		return 8192
+	}
+
+	pm := pat.ProgramMap()
+	for _, v := range pm {
+		return v
+	}
+
+	return 8192
 }
 
-// ProgramNumber returns the program number for this PAT
+// DEPRECATED - use ProgramMap for new code
 func (pat pat) ProgramNumber() uint16 {
-	return (uint16(pat[9]) << 8) | uint16(pat[10])
+	if pat.NumPrograms() != 1 {
+		// This method has undefined behavior for multi program transport streams.
+		// Please use pat.ProgramMap() for a map of PNs and PIDs for PMTs
+		return 0
+	}
+
+	pm := pat.ProgramMap()
+	for k := range pm {
+		return k
+	}
+
+	return 0
+}
+
+// ProgramMap returns a map of program numbers and PIDs of the PMTs
+func (pat pat) ProgramMap() map[uint16]uint16 {
+	m := make(map[uint16]uint16)
+
+	counter := 8 // skip table id et al
+
+	for i := 0; i < pat.NumPrograms(); i++ {
+		pn := (uint16(pat[counter+1]) << 8) | uint16(pat[counter+2])
+
+		// ignore the top three (reserved) bits
+		pid := uint16(pat[counter+3])&0x1f<<8 | uint16(pat[counter+4])
+
+		m[pn] = pid
+
+		counter += 4
+	}
+
+	return m
 }
