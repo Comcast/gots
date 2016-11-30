@@ -25,7 +25,6 @@ SOFTWARE.
 package psi
 
 import (
-	"fmt"
 	"io"
 
 	"github.com/Comcast/gots"
@@ -128,39 +127,37 @@ func (pat pat) ProgramMap() map[uint16]uint16 {
 	return m
 }
 
-// ReadPAT extracts a PAT from a reader. It will read until a PAT packet
-// is found or EOF is reached.
+// ReadPAT extracts a PAT from a reader of a TS stream. It will read until a
+// PAT packet is found or EOF is reached.
 // It returns a new PAT object parsed from the packet, if found, and otherwise
 // returns an error.
-func ReadPAT(buf io.Reader) (PAT, error) {
-	pkt := make([]byte, packet.PacketSize)
+func ReadPAT(r io.Reader) (PAT, error) {
+	pkt := make(packet.Packet, packet.PacketSize)
 	var pat PAT
-	for read, err := buf.Read(pkt); pat == nil; read, err = buf.Read(pkt) {
+	for pat == nil {
+		if _, err := io.ReadFull(r, pkt); err != nil {
+			if err == io.EOF || err == io.ErrUnexpectedEOF {
+				return nil, gots.ErrPATNotFound
+			}
+			return nil, err
+		}
+		isPat, err := packet.IsPat(pkt)
 		if err != nil {
 			return nil, err
 		}
-		if read <= 0 {
-			return nil, fmt.Errorf("Reached EOF without PAT")
-		}
-		pid, err := packet.Pid(pkt)
-		if err != nil {
-			return nil, err
-		}
-		if pid == 0 {
+		if isPat {
 			pay, err := packet.Payload(pkt)
 			if err != nil {
-				//println(err) TODO ?
-				continue
+				return nil, err
 			}
 			cp := make([]byte, len(pay))
 			copy(cp, pay)
 			pat, err := NewPAT(cp)
 			if err != nil {
-				//println(err) TODO ?
-				continue
+				return nil, err
 			}
 			return pat, nil
 		}
 	}
-	return nil, fmt.Errorf("No pat found")
+	return nil, gots.ErrPATNotFound
 }
