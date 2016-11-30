@@ -26,7 +26,6 @@ package packet
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 
 	"github.com/Comcast/gots"
@@ -234,30 +233,30 @@ func Equal(a, b Packet) bool {
 // Sync finds the offset of the next packet sync byte and returns the offset of
 // the sync w.r.t. the original reader position. It also checks the next 188th
 // byte to ensure a sync is found.
-func FindNextSync(buf io.Reader) (int64, error) {
+func FindNextSync(r io.Reader) (int64, error) {
 	data := make([]byte, 1)
 	for i := int64(0); ; i++ {
-		read, err := buf.Read(data)
-		if err != nil && err != io.EOF {
-			println(err)
-		}
-		if read == 0 {
+		_, err := io.ReadFull(r, data)
+		if err == io.EOF || err == io.ErrUnexpectedEOF {
 			break
+		}
+		if err != nil {
+			return 0, err
 		}
 		if int(data[0]) == SyncByte {
 			// check next 188th byte
 			nextData := make([]byte, PacketSize)
-			nextRead, err := buf.Read(nextData)
-			if err != nil && err != io.EOF {
-				println(err)
-			}
-			if nextRead == 0 {
+			_, err := io.ReadFull(r, nextData)
+			if err == io.EOF || err == io.ErrUnexpectedEOF {
 				break
+			}
+			if err != nil {
+				return 0, err
 			}
 			if nextData[187] == SyncByte {
 				return i, nil
 			}
 		}
 	}
-	return 0, fmt.Errorf("Sync-byte not found.")
+	return 0, gots.ErrSyncByteNotFound
 }

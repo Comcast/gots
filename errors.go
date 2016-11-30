@@ -76,4 +76,7 @@ var (
 	ErrSCTE35DescriptorNotFound = errors.New("Cannot close descriptor that's not in the open list")
 	// ErrNilPAT is returned when a PAT is passed into a function for which it cannot be nil.
 	ErrNilPAT = errors.New("Nil PAT not allowed here.")
+	// ErrSyncByteNotFound is returned when a packet sync byte could not be found
+	// when reading.
+	ErrSyncByteNotFound = errors.New("Sync-byte not found.")
 )
