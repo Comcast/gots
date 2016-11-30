@@ -351,3 +351,22 @@ func TestIsPat(t *testing.T) {
 		t.Error("Non PAT Packet shouldn't be counted as a PAT")
 	}
 }
+
+func TestFindNextSyncForSmoke(t *testing.T) {
+	bs, _ := hex.DecodeString("474000100000b00d0001c100000001e256f803e71bfffffff" +
+		"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
+		"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
+		"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
+		"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
+		"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
+		"ff4742")
+	r := bytes.NewReader(bs)
+
+	offset, err := FindNextSync(r)
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+	if offset != 0 {
+		t.Errorf("Incorrect offset returned for next sync marker")
+	}
+}

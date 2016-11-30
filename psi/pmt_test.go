@@ -24,6 +24,7 @@ SOFTWARE.
 package psi
 
 import (
+	"bytes"
 	"encoding/hex"
 	"fmt"
 	"testing"
@@ -625,5 +626,46 @@ func TestIsPMTErrorConditions(t *testing.T) {
 
 	if errExpectBadLen == nil {
 		t.Error("Bad PMT Length should return  an error, probably invalid packet length")
+	}
+}
+func TestReadPMTForSmoke(t *testing.T) {
+	bs, _ := hex.DecodeString("474000100000b00d0001c100000001e256f803e71bfffffff" +
+		"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
+		"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
+		"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
+		"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
+		"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
+		"ff474256100002b0300001c10000e131f0060504435545491be121f0042a027e1" +
+		"f86e225f00f52012a9700e9080c001f41850fa041ee3f6580ffffffffffffffff" +
+		"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
+		"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
+		"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
+		"fffffffffffffffffffffffffffffffffffffffffffffffffffff")
+	r := bytes.NewReader(bs)
+
+	pid := uint16(598)
+	pmt, err := ReadPMT(r, pid)
+	if err != nil {
+		t.Errorf("Unexpected error reading PMT: %v", err)
+	}
+	// sanity check (tests integration a bit)
+	if len(pmt.ElementaryStreams()) != 2 {
+		t.Errorf("PMT read is invalid, did not have expected number of streams")
+	}
+}
+func TestReadPMTIncomplete(t *testing.T) {
+	bs, _ := hex.DecodeString("474000100000b00d0001c100000001e256f803e71bfffffff" +
+		"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
+		"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
+		"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
+		"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
+		"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
+		"ff4742") // incomplete PMT packet
+	r := bytes.NewReader(bs)
+
+	pid := uint16(598)
+	_, err := ReadPMT(r, pid)
+	if err == nil {
+		t.Errorf("Expected to get error reading PMT, but did not")
 	}
 }
