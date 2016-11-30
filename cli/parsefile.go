@@ -72,7 +72,7 @@ func main() {
 		fmt.Println(err)
 		return
 	}
-	pat, err := extractPat(tsFile)
+	pat, err := psi.ReadPAT(tsFile)
 	if err != nil {
 		println(err)
 		return
@@ -82,7 +82,7 @@ func main() {
 	if *showPmt {
 		pm := pat.ProgramMap()
 		for pn, pid := range pm {
-			pmt, err := extractPmt(tsFile, pid)
+			pmt, err := psi.ReadPMT(tsFile, pid)
 			if err != nil {
 				panic(err)
 			}
@@ -150,74 +150,10 @@ func printPat(pat psi.PAT) {
 	printlnf("\tNumber of Programs %v", pat.NumPrograms())
 }
 
-func extractPat(buf io.Reader) (psi.PAT, error) {
-	pkt := make([]byte, packet.PacketSize)
-	var pat psi.PAT
-	for read, err := buf.Read(pkt); pat == nil; read, err = buf.Read(pkt) {
-		if err != nil {
-			return nil, err
-		}
-		if read <= 0 {
-			return nil, fmt.Errorf("Reached EOF without PAT")
-		}
-		pid, err := packet.Pid(pkt)
-		if err != nil {
-			return nil, err
-		}
-		if pid == 0 {
-			pay, err := packet.Payload(pkt)
-			if err != nil {
-				println(err)
-				continue
-			}
-			cp := make([]byte, len(pay))
-			copy(cp, pay)
-			pat, err := psi.NewPAT(cp)
-			if err != nil {
-				println(err)
-				continue
-			}
-			return pat, nil
-		}
-	}
-	return nil, fmt.Errorf("No pat found")
-}
 func printlnf(format string, a ...interface{}) {
 	fmt.Printf(format+"\n", a...)
 }
-func extractPmt(buf io.Reader, pid uint16) (psi.PMT, error) {
-	pkt := make([]byte, packet.PacketSize)
-	pmtAcc := packet.NewAccumulator(psi.PmtAccumulatorDoneFunc)
-	var pmt psi.PMT
-	for read, err := buf.Read(pkt); pmt == nil && read > 0; read, err = buf.Read(pkt) {
-		if err != nil {
-			return nil, err
-		}
-		currPid, err := packet.Pid(pkt)
-		if err != nil {
-			return nil, err
-		}
-		if currPid == pid {
-			done, err := pmtAcc.Add(pkt)
-			if err != nil {
-				return nil, err
-			}
-			if done {
-				b, err := pmtAcc.Parse()
-				if err != nil {
-					return nil, err
-				}
-				pmt, err = psi.NewPMT(b)
-				if err != nil {
-					return nil, err
-				}
 
-			}
-
-		}
-	}
-	return pmt, nil
-}
 func sync(buf io.Reader) (int64, error) {
 	// function find the first sync byte of the array
 	data := make([]byte, 1)

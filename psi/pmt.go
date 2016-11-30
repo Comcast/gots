@@ -28,6 +28,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"io"
 
 	"github.com/Comcast/gots"
 	"github.com/Comcast/gots/packet"
@@ -303,4 +304,41 @@ func pidIn(pids []uint16, target uint16) bool {
 	}
 
 	return false
+}
+
+// ReadPMT extracts a PMT from a reader. It will read until PMT
+// packet(s) are found or EOF is reached.
+// It returns a new PMT object parsed from the packet(s).
+func ReadPMT(buf io.Reader, pid uint16) (PMT, error) {
+	pkt := make([]byte, packet.PacketSize)
+	pmtAcc := packet.NewAccumulator(PmtAccumulatorDoneFunc)
+	var pmt PMT
+	for read, err := buf.Read(pkt); pmt == nil && read > 0; read, err = buf.Read(pkt) {
+		if err != nil {
+			return nil, err
+		}
+		currPid, err := packet.Pid(pkt)
+		if err != nil {
+			return nil, err
+		}
+		if currPid == pid {
+			done, err := pmtAcc.Add(pkt)
+			if err != nil {
+				return nil, err
+			}
+			if done {
+				b, err := pmtAcc.Parse()
+				if err != nil {
+					return nil, err
+				}
+				pmt, err = NewPMT(b)
+				if err != nil {
+					return nil, err
+				}
+
+			}
+
+		}
+	}
+	return pmt, nil
 }
