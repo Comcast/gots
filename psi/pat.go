@@ -137,7 +137,7 @@ func ReadPAT(r io.Reader) (PAT, error) {
 	for pat == nil {
 		if _, err := io.ReadFull(r, pkt); err != nil {
 			if err == io.EOF || err == io.ErrUnexpectedEOF {
-				return nil, gots.ErrPATNotFound
+				break
 			}
 			return nil, err
 		}
