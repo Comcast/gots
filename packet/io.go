@@ -25,15 +25,17 @@ SOFTWARE.
 package packet
 
 import (
+	"bufio"
 	"io"
 
 	"github.com/Comcast/gots"
 )
 
-// Sync finds the offset of the next packet sync byte and returns the offset of
-// the sync w.r.t. the original reader position. It also checks the next 188th
-// byte to ensure a sync is found.
-func FindNextSync(r io.Reader) (int64, error) {
+// Sync finds the offset of the next packet sync byte and advances the reader
+// to the packet start. It also checks the next 188th byte to ensure a sync is
+// found. It returns the offset of the sync w.r.t. the original reader
+// position.
+func Sync(r *bufio.Reader) (int64, error) {
 	data := make([]byte, 1)
 	for i := int64(0); ; i++ {
 		_, err := io.ReadFull(r, data)
@@ -45,8 +47,8 @@ func FindNextSync(r io.Reader) (int64, error) {
 		}
 		if int(data[0]) == SyncByte {
 			// check next 188th byte
-			nextData := make([]byte, PacketSize)
-			_, err := io.ReadFull(r, nextData)
+			rp := bufio.NewReaderSize(r, PacketSize) // extends only if needed
+			nextData, err := rp.Peek(PacketSize)
 			if err == io.EOF || err == io.ErrUnexpectedEOF {
 				break
 			}
@@ -54,6 +56,7 @@ func FindNextSync(r io.Reader) (int64, error) {
 				return 0, err
 			}
 			if nextData[187] == SyncByte {
+				r.UnreadByte()
 				return i, nil
 			}
 		}

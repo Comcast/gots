@@ -25,12 +25,13 @@ SOFTWARE.
 package packet
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/hex"
 	"testing"
 )
 
-func TestFindNextSyncForSmoke(t *testing.T) {
+func TestSyncForSmoke(t *testing.T) {
 	bs, _ := hex.DecodeString("474000100000b00d0001c100000001e256f803e71bfffffff" +
 		"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
 		"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
@@ -38,9 +39,9 @@ func TestFindNextSyncForSmoke(t *testing.T) {
 		"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
 		"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
 		"ff4742")
-	r := bytes.NewReader(bs)
+	r := bufio.NewReader(bytes.NewReader(bs))
 
-	offset, err := FindNextSync(r)
+	offset, err := Sync(r)
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
@@ -49,7 +50,7 @@ func TestFindNextSyncForSmoke(t *testing.T) {
 	}
 }
 
-func TestFindNextSyncNonZeroOffset(t *testing.T) {
+func TestSyncNonZeroOffset(t *testing.T) {
 	bs, _ := hex.DecodeString("ffffff474000100000b00d0001c100000001e256f803e71bfffffff" +
 		"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
 		"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
@@ -57,9 +58,9 @@ func TestFindNextSyncNonZeroOffset(t *testing.T) {
 		"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
 		"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
 		"ff4742")
-	r := bytes.NewReader(bs)
+	r := bufio.NewReader(bytes.NewReader(bs))
 
-	offset, err := FindNextSync(r)
+	offset, err := Sync(r)
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
@@ -68,13 +69,39 @@ func TestFindNextSyncNonZeroOffset(t *testing.T) {
 	}
 }
 
-func TestFindNextSyncNotFound(t *testing.T) {
+func TestSyncNotFound(t *testing.T) {
 	// no sync byte here
 	bs, _ := hex.DecodeString("ff4000100000b00d0001c100000001e256f803e71bfffffff")
-	r := bytes.NewReader(bs)
+	r := bufio.NewReader(bytes.NewReader(bs))
 
-	_, err := FindNextSync(r)
+	_, err := Sync(r)
 	if err == nil {
 		t.Errorf("Expected there to be an error, but there was not")
+	}
+}
+
+func TestSyncReaderPosAtPacketStart(t *testing.T) {
+	bs, _ := hex.DecodeString("ffffff474000100000b00d0001c100000001e256f803e71bfffffff" +
+		"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
+		"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
+		"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
+		"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
+		"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
+		"ff4742")
+	r := bufio.NewReader(bytes.NewReader(bs))
+
+	_, err := Sync(r)
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+	bytes := make([]byte, 3)
+	_, err = r.Read(bytes)
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+	wantHex := "474000"
+	gotHex := hex.EncodeToString(bytes)
+	if gotHex != wantHex {
+		t.Errorf("Reader not left in correct spot. Wanted next read %v, got %v", wantHex, gotHex)
 	}
 }

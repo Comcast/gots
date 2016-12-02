@@ -26,6 +26,7 @@ SOFTWARE.
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"flag"
 	"fmt"
@@ -61,18 +62,13 @@ func main() {
 		}
 	}(tsFile)
 	// Verify if sync-byte is present and seek to the first sync-byte
-	syncIndex, err := packet.FindNextSync(tsFile)
-	if err == nil {
-		_, err = tsFile.Seek(syncIndex, 0)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-	} else {
+	reader := bufio.NewReader(tsFile)
+	_, err = packet.Sync(reader)
+	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	pat, err := psi.ReadPAT(tsFile)
+	pat, err := psi.ReadPAT(reader)
 	if err != nil {
 		println(err)
 		return
@@ -82,7 +78,7 @@ func main() {
 	if *showPmt {
 		pm := pat.ProgramMap()
 		for pn, pid := range pm {
-			pmt, err := psi.ReadPMT(tsFile, pid)
+			pmt, err := psi.ReadPMT(reader, pid)
 			if err != nil {
 				panic(err)
 			}
@@ -90,16 +86,17 @@ func main() {
 		}
 	}
 
-	pkt := make([]byte, packet.PacketSize, packet.PacketSize)
-	var offset int64
+	pkt := make(packet.Packet, packet.PacketSize)
 	var numPackets uint64
 	ebps := make(map[uint64]ebp.EncoderBoundaryPoint)
 	for {
-		read, err := tsFile.ReadAt(pkt, offset)
-		if err == io.EOF || read == 0 {
-			break
+		if _, err := io.ReadFull(reader, pkt); err != nil {
+			if err == io.EOF || err == io.ErrUnexpectedEOF {
+				break
+			}
+			println(err)
+			return
 		}
-		offset += packet.PacketSize
 		numPackets++
 		if *showEbp {
 			ebpBytes, err := adaptationfield.EncoderBoundaryPoint(pkt)
