@@ -26,7 +26,7 @@ package scte35
 import (
 	"testing"
 
-	"github.com/Comcast/gots"
+	"github.com/comcast/gots"
 )
 
 // All signal data generated with scte_creator: https://github.comcast.com/mniebu200/scte_creator

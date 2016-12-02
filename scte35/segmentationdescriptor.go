@@ -28,7 +28,7 @@ import (
 	"bytes"
 	"encoding/binary"
 
-	"github.com/Comcast/gots"
+	"github.com/comcast/gots"
 )
 
 type segmentationDescriptor struct {

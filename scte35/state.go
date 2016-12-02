@@ -24,7 +24,7 @@ SOFTWARE.
 
 package scte35
 
-import "github.com/Comcast/gots"
+import "github.com/comcast/gots"
 
 const receivedRingLen = 10
 

@@ -27,7 +27,7 @@ package packet
 import (
 	"bytes"
 
-	"github.com/Comcast/gots"
+	"github.com/comcast/gots"
 )
 
 var emptyByteSlice []byte

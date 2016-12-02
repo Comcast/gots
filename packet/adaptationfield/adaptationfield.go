@@ -1,8 +1,8 @@
 package adaptationfield
 
 import (
-	"github.com/Comcast/gots"
-	"github.com/Comcast/gots/packet"
+	"github.com/comcast/gots"
+	"github.com/comcast/gots/packet"
 )
 
 var emptyByteSlice []byte
