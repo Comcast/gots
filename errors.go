@@ -43,6 +43,12 @@ var (
 	ErrNoPCR = errors.New("adaptation field has no Program Clock Reference")
 	// ErrNoOPCR is returned when an attempt is made to access an adaptation field OPCR that does not exist
 	ErrNoOPCR = errors.New("adaptation field has no Original Program Clock Reference")
+	// ErrPATNotFound is returned when expected PAT packet is not found when
+	// reading TS packets.
+	ErrPATNotFound = errors.New("No PAT was found while reading TS")
+	// ErrPMTNotFound is returned when expected PMT packet(s) are not found when
+	// reading TS packets.
+	ErrPMTNotFound = errors.New("No PMT was found while reading TS")
 	// ErrParsePMTDescriptor is returned when a PMT descriptor cannot be parsed
 	ErrParsePMTDescriptor = errors.New("unable to parse PMT descriptor")
 	// ErrInvalidPATLength is returned when a PAT cannot be parsed because there are not enough bytes
@@ -70,4 +76,7 @@ var (
 	ErrSCTE35DescriptorNotFound = errors.New("Cannot close descriptor that's not in the open list")
 	// ErrNilPAT is returned when a PAT is passed into a function for which it cannot be nil.
 	ErrNilPAT = errors.New("Nil PAT not allowed here.")
+	// ErrSyncByteNotFound is returned when a packet sync byte could not be found
+	// when reading.
+	ErrSyncByteNotFound = errors.New("Sync-byte not found.")
 )

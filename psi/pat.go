@@ -25,6 +25,8 @@ SOFTWARE.
 package psi
 
 import (
+	"io"
+
 	"github.com/Comcast/gots"
 	"github.com/Comcast/gots/packet"
 )
@@ -123,4 +125,39 @@ func (pat pat) ProgramMap() map[uint16]uint16 {
 	}
 
 	return m
+}
+
+// ReadPAT extracts a PAT from a reader of a TS stream. It will read until a
+// PAT packet is found or EOF is reached.
+// It returns a new PAT object parsed from the packet, if found, and otherwise
+// returns an error.
+func ReadPAT(r io.Reader) (PAT, error) {
+	pkt := make(packet.Packet, packet.PacketSize)
+	var pat PAT
+	for pat == nil {
+		if _, err := io.ReadFull(r, pkt); err != nil {
+			if err == io.EOF || err == io.ErrUnexpectedEOF {
+				break
+			}
+			return nil, err
+		}
+		isPat, err := packet.IsPat(pkt)
+		if err != nil {
+			return nil, err
+		}
+		if isPat {
+			pay, err := packet.Payload(pkt)
+			if err != nil {
+				return nil, err
+			}
+			cp := make([]byte, len(pay))
+			copy(cp, pay)
+			pat, err := NewPAT(cp)
+			if err != nil {
+				return nil, err
+			}
+			return pat, nil
+		}
+	}
+	return nil, gots.ErrPATNotFound
 }

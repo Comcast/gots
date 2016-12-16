@@ -24,6 +24,7 @@ SOFTWARE.
 package psi
 
 import (
+	"bytes"
 	"encoding/hex"
 	"reflect"
 	"testing"
@@ -103,5 +104,42 @@ func TestProgramMap(t *testing.T) {
 		if !reflect.DeepEqual(test.wantProgramMap, gotMap) {
 			t.Errorf("Wrong Program Map! got %v, want %v", gotMap, test.wantProgramMap)
 		}
+	}
+}
+
+func TestReadPATForSmoke(t *testing.T) {
+	// requires full packets so cannot use test data above
+	bs, _ := hex.DecodeString("474000100000b00d0001c100000001e256f803e71bfffffff" +
+		"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
+		"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
+		"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
+		"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
+		"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
+		"ff474256100002b0300001c10000e131f0060504435545491be121f0042a027e1" +
+		"f86e225f00f52012a9700e9080c001f41850fa041ee3f6580ffffffffffffffff" +
+		"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
+		"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
+		"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
+		"fffffffffffffffffffffffffffffffffffffffffffffffffffff")
+	r := bytes.NewReader(bs)
+	pat, err := ReadPAT(r)
+	if err != nil {
+		t.Errorf("Unexpected error reading PAT: %v", err)
+	}
+	// sanity check (tests integration a bit)
+	gotMap := pat.ProgramMap()
+	wantMap := map[uint16]uint16{1: 598}
+	if !reflect.DeepEqual(wantMap, gotMap) {
+		t.Errorf("PAT read is invalid, did not have expected program map")
+	}
+}
+
+func TestReadPATIncomplete(t *testing.T) {
+	bs, _ := hex.DecodeString("47400") // incomplete PAT packet
+	r := bytes.NewReader(bs)
+
+	_, err := ReadPAT(r)
+	if err == nil {
+		t.Errorf("Expected to get error reading PAT, but did not")
 	}
 }

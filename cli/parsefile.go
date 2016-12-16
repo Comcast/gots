@@ -26,6 +26,7 @@ SOFTWARE.
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"flag"
 	"fmt"
@@ -61,18 +62,13 @@ func main() {
 		}
 	}(tsFile)
 	// Verify if sync-byte is present and seek to the first sync-byte
-	syncIndex, err := sync(tsFile)
-	if err == nil {
-		_, err = tsFile.Seek(syncIndex, 0)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-	} else {
+	reader := bufio.NewReader(tsFile)
+	_, err = packet.Sync(reader)
+	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	pat, err := extractPat(tsFile)
+	pat, err := psi.ReadPAT(reader)
 	if err != nil {
 		println(err)
 		return
@@ -82,7 +78,7 @@ func main() {
 	if *showPmt {
 		pm := pat.ProgramMap()
 		for pn, pid := range pm {
-			pmt, err := extractPmt(tsFile, pid)
+			pmt, err := psi.ReadPMT(reader, pid)
 			if err != nil {
 				panic(err)
 			}
@@ -90,16 +86,17 @@ func main() {
 		}
 	}
 
-	pkt := make([]byte, packet.PacketSize, packet.PacketSize)
-	var offset int64
+	pkt := make(packet.Packet, packet.PacketSize)
 	var numPackets uint64
 	ebps := make(map[uint64]ebp.EncoderBoundaryPoint)
 	for {
-		read, err := tsFile.ReadAt(pkt, offset)
-		if err == io.EOF || read == 0 {
-			break
+		if _, err := io.ReadFull(reader, pkt); err != nil {
+			if err == io.EOF || err == io.ErrUnexpectedEOF {
+				break
+			}
+			println(err)
+			return
 		}
-		offset += packet.PacketSize
 		numPackets++
 		if *showEbp {
 			ebpBytes, err := adaptationfield.EncoderBoundaryPoint(pkt)
@@ -150,99 +147,6 @@ func printPat(pat psi.PAT) {
 	printlnf("\tNumber of Programs %v", pat.NumPrograms())
 }
 
-func extractPat(buf io.Reader) (psi.PAT, error) {
-	pkt := make([]byte, packet.PacketSize)
-	var pat psi.PAT
-	for read, err := buf.Read(pkt); pat == nil; read, err = buf.Read(pkt) {
-		if err != nil {
-			return nil, err
-		}
-		if read <= 0 {
-			return nil, fmt.Errorf("Reached EOF without PAT")
-		}
-		pid, err := packet.Pid(pkt)
-		if err != nil {
-			return nil, err
-		}
-		if pid == 0 {
-			pay, err := packet.Payload(pkt)
-			if err != nil {
-				println(err)
-				continue
-			}
-			cp := make([]byte, len(pay))
-			copy(cp, pay)
-			pat, err := psi.NewPAT(cp)
-			if err != nil {
-				println(err)
-				continue
-			}
-			return pat, nil
-		}
-	}
-	return nil, fmt.Errorf("No pat found")
-}
 func printlnf(format string, a ...interface{}) {
 	fmt.Printf(format+"\n", a...)
-}
-func extractPmt(buf io.Reader, pid uint16) (psi.PMT, error) {
-	pkt := make([]byte, packet.PacketSize)
-	pmtAcc := packet.NewAccumulator(psi.PmtAccumulatorDoneFunc)
-	var pmt psi.PMT
-	for read, err := buf.Read(pkt); pmt == nil && read > 0; read, err = buf.Read(pkt) {
-		if err != nil {
-			return nil, err
-		}
-		currPid, err := packet.Pid(pkt)
-		if err != nil {
-			return nil, err
-		}
-		if currPid == pid {
-			done, err := pmtAcc.Add(pkt)
-			if err != nil {
-				return nil, err
-			}
-			if done {
-				b, err := pmtAcc.Parse()
-				if err != nil {
-					return nil, err
-				}
-				pmt, err = psi.NewPMT(b)
-				if err != nil {
-					return nil, err
-				}
-
-			}
-
-		}
-	}
-	return pmt, nil
-}
-func sync(buf io.Reader) (int64, error) {
-	// function find the first sync byte of the array
-	data := make([]byte, 1)
-	for i := int64(0); ; i++ {
-		read, err := buf.Read(data)
-		if err != nil && err != io.EOF {
-			println(err)
-		}
-		if read == 0 {
-			break
-		}
-		if int(data[0]) == packet.SyncByte {
-			// check next 188th byte
-			nextData := make([]byte, packet.PacketSize)
-			nextRead, err := buf.Read(nextData)
-			if err != nil && err != io.EOF {
-				println(err)
-			}
-			if nextRead == 0 {
-				break
-			}
-			if nextData[187] == packet.SyncByte {
-				return i, nil
-			}
-		}
-	}
-	return 0, fmt.Errorf("Sync-byte not found.")
 }
