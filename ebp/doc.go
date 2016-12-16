@@ -39,7 +39,8 @@ type EncoderBoundaryPoint interface {
 	SegmentFlag() bool
 	FragmentFlag() bool
 	TimeFlag() bool
-	EBPTime() time.Time
+	EBPTime() time.Time            // time set in the EBP
+	EBPSuccessReadTime() time.Time // time the EBP was successfully read
 	SapFlag() bool
 	Sap() byte
 	ExtensionFlag() bool
