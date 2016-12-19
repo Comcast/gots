@@ -78,7 +78,7 @@ func ContainsAdaptationField(packet Packet) (bool, error) {
 	return hasAdaptField(packet), nil
 }
 func hasAdaptField(packet Packet) bool {
-	return (packet[3]&0x20 != 0) && (packet[4] > 0)
+	return packet[3]&0x20 != 0
 }
 
 // ContinuityCounter is a 4-bit sequence number of payload packets. Incremented
