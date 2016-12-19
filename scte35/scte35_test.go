@@ -265,3 +265,37 @@ func TestSCTEMultipleDescriptors(t *testing.T) {
 		t.Error("SCTE obj of both descs is not the same")
 	}
 }
+
+func TestParseSegmentationDescriptor_EventCancelled(t *testing.T) {
+	base64Bytes, _ := base64.StdEncoding.DecodeString("APwwKwAATJCc6v//8AUG/vafrY0AFQIJQ1VFSQAAAAD/AAhDVUVJAAAAAEBlk0M=")
+
+	s, err := NewSCTE35(base64Bytes)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if s.Command() != TimeSignal {
+		t.Errorf("Invalid command found, expecting TimeSignal(6), got: %v", s.Command())
+	}
+
+	if !s.HasPTS() {
+		t.Error("Expecting PTS, but none found")
+	}
+
+	if s.PTS() != gots.PTS(5422205559) {
+		t.Errorf("Expected PTS 5422205559, got: %v", s.PTS())
+	}
+
+	if len(s.Descriptors()) != 1 {
+		t.Errorf("Expected 1 segmentation descriptor, got %d", s.Descriptors())
+	}
+
+	segmentationDescriptor := s.Descriptors()[0]
+	if segmentationDescriptor.TypeID() != SegDescNotIndicated {
+		t.Errorf("Expected segmentationtype Not Indicated, got %s", segmentationDescriptor.TypeID())
+	}
+
+	if !segmentationDescriptor.IsEventCanceled() {
+		t.Error("Expected event to be canceled.")
+	}
+}
