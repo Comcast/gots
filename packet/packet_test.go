@@ -140,7 +140,7 @@ func TestZeroLenthAdaptationField(t *testing.T) {
 			"89ace8b8b378a515b088341942220c44578c157ee4313d123db73ec2a2726a29" +
 			"9ab1852b9314ae15fad86177607b75be718f0c07d22400845160d980")
 
-	expected := false
+	expected := true
 
 	if hasadapt, err := ContainsAdaptationField(packet); hasadapt != expected || err != nil {
 		t.Errorf("ContainsAdaptationField() = %v, want %v (%v)", hasadapt, expected, err)
