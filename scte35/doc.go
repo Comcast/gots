@@ -125,6 +125,8 @@ type SegmentationDescriptor interface {
 	EventID() uint32
 	// TypeID returns the segmentation type for descriptor
 	TypeID() SegDescType
+	// IsEventCanceled returns the event cancel indicator
+	IsEventCanceled() bool
 	// IsOut returns true if a signal is an out
 	IsOut() bool
 	// IsIn returns true if a signal is an in

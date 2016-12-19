@@ -33,15 +33,16 @@ import (
 
 type segmentationDescriptor struct {
 	// common fields we care about for sorting/identifying, but is not necessarily needed for users of this lib
-	typeID       SegDescType
-	eventID      uint32
-	hasDuration  bool
-	duration     gots.PTS
-	upidType     SegUPIDType
-	upid         []byte
-	segNum       uint8
-	segsExpected uint8
-	spliceInfo   SCTE35
+	typeID               SegDescType
+	eventID              uint32
+	hasDuration          bool
+	duration             gots.PTS
+	upidType             SegUPIDType
+	upid                 []byte
+	segNum               uint8
+	segsExpected         uint8
+	spliceInfo           SCTE35
+	eventCancelIndicator bool
 }
 
 type segCloseType uint8
@@ -107,7 +108,8 @@ func (d *segmentationDescriptor) parseDescriptor(data []byte) error {
 		return gots.ErrSCTE35InvalidDescriptorID
 	}
 	d.eventID = binary.BigEndian.Uint32(buf.Next(4))
-	if readByte()&0x80 == 0 { // Cancel indicator
+	d.eventCancelIndicator = readByte()&0x80>>7 != 0
+	if !d.eventCancelIndicator {
 		flags := readByte()
 		if flags&0x80 == 0 {
 			// skip over component info
@@ -150,6 +152,10 @@ func (d *segmentationDescriptor) EventID() uint32 {
 
 func (d *segmentationDescriptor) TypeID() SegDescType {
 	return d.typeID
+}
+
+func (d *segmentationDescriptor) IsEventCanceled() bool {
+	return d.eventCancelIndicator
 }
 
 func (d *segmentationDescriptor) IsOut() bool {
