@@ -40,6 +40,7 @@ type comcastEbp struct {
 	TimeSeconds     uint32
 	TimeFraction    uint32
 	ReservedBytes   []uint8
+	SuccessReadTime time.Time
 }
 
 func (ebp comcastEbp) EBPType() byte {
@@ -80,6 +81,11 @@ func (ebp comcastEbp) EBPTime() time.Time {
 
 func (ebp comcastEbp) Sap() byte {
 	return ebp.SapType
+}
+
+// Defines when the EBP was read successfully
+func (ebp comcastEbp) EBPSuccessReadTime() time.Time {
+	return ebp.SuccessReadTime
 }
 
 func readComcastEbp(data io.Reader) (ebp *comcastEbp, err error) {
@@ -139,6 +145,9 @@ func readComcastEbp(data io.Reader) (ebp *comcastEbp, err error) {
 		}
 
 	}
+
+	// update the successful read time
+	ebp.SuccessReadTime = time.Now()
 
 	return ebp, nil
 }
