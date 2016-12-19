@@ -36,7 +36,6 @@ import (
 const (
 	segDescTag = 0x02
 	segDescID  = 0x43554549
-	minDescLen = 15 // min desc len does not include descriptor tag or len
 )
 
 type scte35 struct {
@@ -120,7 +119,7 @@ func (s *scte35) parseTable(data []byte) error {
 			descTag := readByte()
 			descLen := readByte()
 			// Make sure a bad descriptorLen doesn't kill us
-			if descLoopLen-bytesRead-2 < uint16(descLen) || descLen < minDescLen {
+			if descLoopLen-bytesRead-2 < uint16(descLen) {
 				return gots.ErrInvalidSCTE35Length
 			}
 			if descTag != segDescTag {

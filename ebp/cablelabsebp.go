@@ -42,6 +42,7 @@ type cableLabsEbp struct {
 	TimeFraction     uint32
 	PartitionFlags   uint8
 	ReservedBytes    []byte
+	SuccessReadTime  time.Time
 }
 
 func (ebp cableLabsEbp) EBPType() byte {
@@ -86,6 +87,11 @@ func (ebp cableLabsEbp) Sap() byte {
 
 func (ebp cableLabsEbp) PartitionFlag() bool {
 	return ebp.ExtensionFlag() && ebp.ExtensionFlags&0x80 != 0
+}
+
+// Defines when the EBP was read successfully
+func (ebp cableLabsEbp) EBPSuccessReadTime() time.Time {
+	return ebp.SuccessReadTime
 }
 
 func readCableLabsEbp(data io.Reader) (ebp *cableLabsEbp, err error) {
@@ -162,6 +168,9 @@ func readCableLabsEbp(data io.Reader) (ebp *cableLabsEbp, err error) {
 		}
 
 	}
+
+	// update the successful read time
+	ebp.SuccessReadTime = time.Now()
 
 	return ebp, nil
 }
