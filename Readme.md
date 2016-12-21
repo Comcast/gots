@@ -14,6 +14,11 @@ Add requests to Github issues. To submit a PR see [CONTRIBUTING](./CONTRIBUTING)
 ```bash
 go test -race ./...
 ```
+Travis-CI will run these tests:
+
+```bash
+go test -v ./...
+```
 ## License 
 This software is licensed under the MIT license. For full text see [LICENSE](./LICENSE)
 ## Examples
