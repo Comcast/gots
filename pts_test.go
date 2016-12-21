@@ -90,7 +90,7 @@ func TestPTSDurationFrom(t *testing.T) {
 		t.Error("Expected duration of 5")
 	}
 
-	if 16 != PTS(5).DurationFrom(PTS(PTS_MAX-10)) {
+	if 16 != PTS(5).DurationFrom(PTS(MaxPts-10)) {
 		t.Error("Expected duration of 16")
 	}
 }
@@ -125,5 +125,10 @@ func TestInsertPTS(t *testing.T) {
 	if ExtractTime(b) != 0x1DEADBEEF {
 		t.Error("Insert PTS test 1 failed")
 	}
+}
 
+func TestMaxPtsConstants(t *testing.T) {
+	if MaxPts != PTS_MAX {
+		t.Error("PTS_MAX does not equal MaxPts")
+	}
 }
