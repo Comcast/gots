@@ -90,7 +90,7 @@ func TestPTSDurationFrom(t *testing.T) {
 		t.Error("Expected duration of 5")
 	}
 
-	if 16 != PTS(5).DurationFrom(PTS(PTS_MAX-10)) {
+	if 16 != PTS(5).DurationFrom(PTS(MaxPts-10)) {
 		t.Error("Expected duration of 16")
 	}
 }
