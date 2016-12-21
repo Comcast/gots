@@ -125,5 +125,10 @@ func TestInsertPTS(t *testing.T) {
 	if ExtractTime(b) != 0x1DEADBEEF {
 		t.Error("Insert PTS test 1 failed")
 	}
+}
 
+func TestMaxPtsConstants(t *testing.T) {
+	if MaxPts != PTS_MAX {
+		t.Error("PTS_MAX does not equal MaxPts")
+	}
 }

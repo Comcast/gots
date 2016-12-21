@@ -36,6 +36,9 @@ const (
 
 	// MaxPts is the highest value the PTS can hold before it rolls over, since its a 33 bit timestamp.
 	MaxPts = 8589934591 // 2^33 - 1
+	// Deprecated: Use MaxPts
+	PTS_MAX = MaxPts
+
 	// Used as a sentinel values for algorithms working against PTS
 	PtsNegativeInfinity = PTS(math.MaxUint64 - 1)
 	PtsPositiveInfinity = PTS(math.MaxUint64)
