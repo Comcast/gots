@@ -40,8 +40,8 @@ const (
 	PTS_MAX = MaxPts
 
 	// Used as a sentinel values for algorithms working against PTS
-	PtsNegativeInfinity = PTS(math.MaxUint64 - 1)
-	PtsPositiveInfinity = PTS(math.MaxUint64)
+	PtsNegativeInfinity = PTS(math.MaxUint64 - 1) //18446744073709551614
+	PtsPositiveInfinity = PTS(math.MaxUint64)     //18446744073709551615
 	PtsClockRate        = 90000
 
 	// UpperPtsRolloverThreshold is the threshold for a rollover on the upper end, maxPts = 30 min
@@ -80,6 +80,10 @@ func (p PTS) GreaterOrEqual(other PTS) bool {
 
 // RolledOver checks if this PTS just rollover compared to the other PTS
 func (p PTS) RolledOver(other PTS) bool {
+	if other == PtsNegativeInfinity || other == PtsPositiveInfinity {
+		return false
+	}
+
 	if p < LowerPtsRolloverThreshold && other > UpperPtsRolloverThreshold {
 		return true
 	}
