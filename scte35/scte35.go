@@ -39,7 +39,8 @@ const (
 )
 
 type scte35 struct {
-	command     SpliceCommandType
+	commandType SpliceCommandType
+	commandInfo SpliceCommand
 	hasPTS      bool
 	pts         gots.PTS
 	descriptors []SegmentationDescriptor
@@ -85,37 +86,36 @@ func (s *scte35) parseTable(data []byte) error {
 		// skip cw_index, tier and spliceCommandLength
 		// since it can be 0xfff(unknown) so it's pretty much useless
 		buf.Next(4)
-		s.command = SpliceCommandType(readByte())
-		switch s.command {
-		case TimeSignal:
-			flags := readByte()
-			s.hasPTS = (flags & 0x80) == 0x80
-			if s.hasPTS {
-				// unread prev byte because it contains the top bit of the pts offset
-				err := buf.UnreadByte()
-				if err != nil {
-					return err
-				}
-				if buf.Len() < 11 {
-					return gots.ErrInvalidSCTE35Length
-				}
-				s.pts = uint40(buf.Next(5)) & 0x01ffffffff
-				// add the pts adjustment to get the real
-				// value, we won't need it anymore after that
-				s.pts += ptsAdjustment
+		s.commandType = SpliceCommandType(readByte())
+		switch s.commandType {
+		case TimeSignal, SpliceInsert:
+			var cmd SpliceCommand
+			if s.commandType == TimeSignal {
+				cmd, err = parseTimeSignal(buf)
 			} else {
-				return gots.ErrSCTE35UnsupportedSpliceCommand
+				cmd, err = parseSpliceInsert(buf)
 			}
+			if err != nil {
+				return err
+			}
+			// add the pts adjustment to get the real value
+			s.pts = cmd.PTS() + ptsAdjustment
+			s.hasPTS = cmd.HasPTS()
+			s.commandInfo = cmd
 		case SpliceNull:
 		default:
 			return gots.ErrSCTE35UnsupportedSpliceCommand
 		}
+		// descriptor_loop_length 2 + CRC 4
+		if buf.Len() < 2+int(psi.CrcLen) {
+			return gots.ErrInvalidSCTE35Length
+		}
+		// parse descriptors
 		descLoopLen := binary.BigEndian.Uint16(buf.Next(2))
 		if buf.Len() < int(descLoopLen+psi.CrcLen) {
 			return gots.ErrInvalidSCTE35Length
 		}
 		for bytesRead := uint16(0); bytesRead < descLoopLen; {
-			d := &segmentationDescriptor{spliceInfo: s}
 			descTag := readByte()
 			descLen := readByte()
 			// Make sure a bad descriptorLen doesn't kill us
@@ -127,6 +127,7 @@ func (s *scte35) parseTable(data []byte) error {
 				// SegmentationDescriptors
 				buf.Next(int(descLen))
 			} else {
+				d := &segmentationDescriptor{spliceInfo: s}
 				err := d.parseDescriptor(buf.Next(int(descLen)))
 				if err != nil {
 					return err
@@ -152,7 +153,11 @@ func (s *scte35) PTS() gots.PTS {
 }
 
 func (s *scte35) Command() SpliceCommandType {
-	return s.command
+	return s.commandType
+}
+
+func (s *scte35) CommandInfo() SpliceCommand {
+	return s.commandInfo
 }
 
 func (s *scte35) Descriptors() []SegmentationDescriptor {

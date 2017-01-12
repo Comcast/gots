@@ -106,15 +106,53 @@ const (
 type SCTE35 interface {
 	// HasPTS returns true if there is a pts time
 	HasPTS() bool
-	// PTS returns the PTS time of the signal if it exists
+	// PTS returns the PTS time of the signal if it exists. Includes adjustment.
 	PTS() gots.PTS
 	// Command returns the signal's splice command
 	Command() SpliceCommandType
+	// CommandInfo returns an object describing fields of the signal's splice
+	// command structure
+	CommandInfo() SpliceCommand
 	// Descriptors returns a slice of the signals SegmentationDescriptors sorted
 	// by descriptor weight (least important signals first)
 	Descriptors() []SegmentationDescriptor
 	// Data returns the raw data bytes of the scte signal
 	Data() []byte
+}
+
+type SpliceCommand interface {
+	// CommandType returns the signal's splice command type value
+	CommandType() SpliceCommandType
+	// HasPTS returns true if there is a pts time on the command
+	HasPTS() bool
+	// PTS returns the PTS time of the command, not including adjustment.
+	PTS() gots.PTS
+}
+
+type TimeSignalCommand interface {
+	SpliceCommand
+}
+
+type SpliceInsertCommand interface {
+	SpliceCommand
+	// IsEventCanceled returns the event cancel indicator
+	IsEventCanceled() bool
+	// IsOut returns the value of the out of network indicator
+	IsOut() bool
+	// EventID returns the event id
+	EventID() uint32
+	// HasDuration returns true if there is a duration
+	HasDuration() bool
+	// Duration returns the PTS duration of the command
+	Duration() gots.PTS
+	// IsAutoReturn returns the boolean value of the auto return field
+	IsAutoReturn() bool
+	// UniqueProgramId returns the unique_program_id field
+	UniqueProgramId() uint16
+	// AvailNum returns the avail_num field, index of this avail or zero if unused
+	AvailNum() uint8
+	// AvailsExpected returns avails_expected field, number of avails for program
+	AvailsExpected() uint8
 }
 
 // SegmentationDescriptor describes the segmentation descriptor interface.
