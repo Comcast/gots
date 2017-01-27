@@ -99,7 +99,7 @@ func (s *scte35) parseTable(data []byte) error {
 				return err
 			}
 			// add the pts adjustment to get the real value
-			s.pts = cmd.PTS() + ptsAdjustment
+			s.pts = cmd.PTS().Add(ptsAdjustment)
 			s.hasPTS = cmd.HasPTS()
 			s.commandInfo = cmd
 		case SpliceNull:
