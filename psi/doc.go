@@ -27,6 +27,7 @@ package psi
 
 // Stream type constants
 const (
+	PmtStreamTypeMpeg2VideoH262 uint8 = 2  // H262
 	PmtStreamTypeMpeg4Video     uint8 = 27 // H264
 	PmtStreamTypeMpeg4VideoH264 uint8 = 27 // H264
 	PmtStreamTypeMpeg4VideoH265 uint8 = 36 // H265
