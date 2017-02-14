@@ -56,41 +56,6 @@ func TestNumPrograms(t *testing.T) {
 		}
 	}
 }
-
-// ProgramMapPid is DEPRECATED - new code should use ProgramMap
-func TestProgramMapPid(t *testing.T) {
-	for _, test := range testData {
-		pat_bytes, _ := hex.DecodeString(test.patBytes)
-
-		pat, err := NewPAT(pat_bytes)
-		if err != nil {
-			t.Errorf("Can't parse PAT table %v", err)
-		}
-
-		gotPMPID := pat.ProgramMapPid()
-		if test.wantProgramMapPID != gotPMPID {
-			t.Errorf("Wrong Program Map PID! got %v, want %v", gotPMPID, test.wantProgramMapPID)
-		}
-	}
-}
-
-// ProgramNumber is DEPRECATED - new code should use ProgramMap
-func TestProgramNumber(t *testing.T) {
-	for _, test := range testData {
-		pat_bytes, _ := hex.DecodeString(test.patBytes)
-
-		pat, err := NewPAT(pat_bytes)
-		if err != nil {
-			t.Errorf("Can't parse PAT table %v", err)
-		}
-
-		gotPN := pat.ProgramNumber()
-		if test.wantProgramNumber != gotPN {
-			t.Errorf("Wrong Program Number! got %v, want %v", gotPN, test.wantProgramNumber)
-		}
-	}
-}
-
 func TestProgramMap(t *testing.T) {
 	for _, test := range testData {
 		pat_bytes, _ := hex.DecodeString(test.patBytes)
