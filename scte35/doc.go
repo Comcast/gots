@@ -47,6 +47,15 @@ const (
 	PrivateCommand = 0xFF
 )
 
+var SpliceCommandTypeNames = map[SpliceCommandType]string{
+	SpliceNull:           "SpliceNull",
+	SpliceSchedule:       "SpliceSchedule",
+	SpliceInsert:         "SpliceInsert",
+	TimeSignal:           "TimeSignal",
+	BandwidthReservation: "BandwidthReservation",
+	PrivateCommand:       "PrivateCommand",
+}
+
 // SegDescType is the Segmentation Descriptor Type - not really needed for processing according
 // to method below, but included here for backwards compatibility/porting
 type SegDescType uint8

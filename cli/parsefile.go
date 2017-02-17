@@ -181,7 +181,7 @@ func printSCTE35(msg scte35.SCTE35) {
 }
 
 func printSpliceCommand(spliceCommand scte35.SpliceCommand) {
-	printlnf("\tCommand Type %v", spliceCommand.CommandType())
+	printlnf("\tCommand Type %v", scte35.SpliceCommandTypeNames[spliceCommand.CommandType()])
 	if spliceCommand.HasPTS() {
 
 		printlnf("\tPTS %v", spliceCommand.PTS())
