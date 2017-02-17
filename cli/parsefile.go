@@ -93,6 +93,19 @@ func main() {
 	pkt := make(packet.Packet, packet.PacketSize)
 	var numPackets uint64
 	ebps := make(map[uint64]ebp.EncoderBoundaryPoint)
+	scte35PIDs := make(map[uint16]bool)
+	if *dumpSCTE35 {
+		for _, pmt := range pmts {
+			for _, es := range pmt.ElementaryStreams() {
+				if es.StreamType() == psi.PmtStreamTypeScte35 {
+					scte35PIDs[es.ElementaryPid()] = true
+					break
+				}
+
+			}
+		}
+	}
+
 	for {
 		if _, err := io.ReadFull(reader, pkt); err != nil {
 			if err == io.EOF || err == io.ErrUnexpectedEOF {
@@ -103,20 +116,10 @@ func main() {
 		}
 		numPackets++
 		if *dumpSCTE35 {
-			scte35PIDs := make(map[uint16]bool)
 			currPID, err := packet.Pid(pkt)
 			if err != nil {
 				printlnf("Cannot get packet PID for %d", currPID)
 				continue
-			}
-			for _, pmt := range pmts {
-				for _, es := range pmt.ElementaryStreams() {
-					if es.StreamType() == psi.PmtStreamTypeScte35 {
-						scte35PIDs[es.ElementaryPid()] = true
-						break
-					}
-
-				}
 			}
 			if scte35PIDs[currPID] {
 				pay, err := packet.Payload(pkt)
