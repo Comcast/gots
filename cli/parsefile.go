@@ -103,21 +103,22 @@ func main() {
 		}
 		numPackets++
 		if *dumpSCTE35 {
-			var scte35PID uint16
+			scte35PIDs := make(map[uint16]bool)
 			currPID, err := packet.Pid(pkt)
 			if err != nil {
 				printlnf("Cannot get packet PID for %d", currPID)
 				continue
 			}
-			// assuming SPTS
-			for _, es := range pmts[0].ElementaryStreams() {
-				if es.StreamType() == psi.PmtStreamTypeScte35 {
-					scte35PID = es.ElementaryPid()
-					break
-				}
+			for _, pmt := range pmts {
+				for _, es := range pmt.ElementaryStreams() {
+					if es.StreamType() == psi.PmtStreamTypeScte35 {
+						scte35PIDs[es.ElementaryPid()] = true
+						break
+					}
 
+				}
 			}
-			if currPID == scte35PID {
+			if scte35PIDs[currPID] {
 				pay, err := packet.Payload(pkt)
 				if err != nil {
 					printlnf("Cannot get payload for packet number %d on PID %d Error=%s", numPackets, currPID, err)
@@ -128,7 +129,7 @@ func main() {
 					printlnf("Cannot parse SCTE35 Error=%v", err)
 					continue
 				}
-				printSCTE35(msg)
+				printSCTE35(currPID, msg)
 
 			}
 
@@ -164,8 +165,8 @@ func main() {
 
 }
 
-func printSCTE35(msg scte35.SCTE35) {
-	printlnf("SCTE35 Message")
+func printSCTE35(pid uint16, msg scte35.SCTE35) {
+	printlnf("SCTE35 Message on PID %d", pid)
 
 	printSpliceCommand(msg.CommandInfo())
 
