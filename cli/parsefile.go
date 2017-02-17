@@ -37,6 +37,7 @@ import (
 	"github.com/Comcast/gots/packet"
 	"github.com/Comcast/gots/packet/adaptationfield"
 	"github.com/Comcast/gots/psi"
+	"github.com/Comcast/gots/scte35"
 )
 
 // main parses a ts file that is provided with the -f flag
@@ -44,6 +45,7 @@ func main() {
 	fileName := flag.String("f", "", "Required: Path to TS file to read")
 	showPmt := flag.Bool("pmt", true, "Output PMT info")
 	showEbp := flag.Bool("ebp", false, "Output EBP info. This is a lot of info")
+	dumpSCTE35 := flag.Bool("scte35", false, "Output SCTE35 signals and info.")
 	showPacketNumberOfPID := flag.Int("pid", 0, "Dump the contents of the first packet encountered on PID to stdout")
 	flag.Parse()
 	if *fileName == "" {
@@ -75,13 +77,15 @@ func main() {
 	}
 	printPat(pat)
 
-	if *showPmt {
-		pm := pat.ProgramMap()
-		for pn, pid := range pm {
-			pmt, err := psi.ReadPMT(reader, pid)
-			if err != nil {
-				panic(err)
-			}
+	var pmts []psi.PMT
+	pm := pat.ProgramMap()
+	for pn, pid := range pm {
+		pmt, err := psi.ReadPMT(reader, pid)
+		if err != nil {
+			panic(err)
+		}
+		pmts = append(pmts, pmt)
+		if *showPmt {
 			printPmt(pn, pmt)
 		}
 	}
@@ -98,6 +102,37 @@ func main() {
 			return
 		}
 		numPackets++
+		if *dumpSCTE35 {
+			var scte35PID uint16
+			currPID, err := packet.Pid(pkt)
+			if err != nil {
+				printlnf("Cannot get packet PID for %d", currPID)
+				continue
+			}
+			// assuming SPTS
+			for _, es := range pmts[0].ElementaryStreams() {
+				if es.StreamType() == psi.PmtStreamTypeScte35 {
+					scte35PID = es.ElementaryPid()
+					break
+				}
+
+			}
+			if currPID == scte35PID {
+				pay, err := packet.Payload(pkt)
+				if err != nil {
+					printlnf("Cannot get payload for packet number %d on PID %d Error=%s", numPackets, currPID, err)
+					continue
+				}
+				msg, err := scte35.NewSCTE35(pay)
+				if err != nil {
+					printlnf("Cannot parse SCTE35 Error=%v", err)
+					continue
+				}
+				printSCTE35(msg)
+
+			}
+
+		}
 		if *showEbp {
 			ebpBytes, err := adaptationfield.EncoderBoundaryPoint(pkt)
 			if err != nil {
@@ -127,6 +162,59 @@ func main() {
 	}
 	println()
 
+}
+
+func printSCTE35(msg scte35.SCTE35) {
+	printlnf("SCTE35 Message")
+
+	printSpliceCommand(msg.CommandInfo())
+
+	insert, ok := msg.CommandInfo().(scte35.SpliceInsertCommand)
+	if ok {
+
+		printSpliceInsertCommand(insert)
+	}
+	for _, segdesc := range msg.Descriptors() {
+		printSegDesc(segdesc)
+	}
+
+}
+
+func printSpliceCommand(spliceCommand scte35.SpliceCommand) {
+	printlnf("\tCommand Type %v", spliceCommand.CommandType())
+	if spliceCommand.HasPTS() {
+
+		printlnf("\tPTS %v", spliceCommand.PTS())
+
+	}
+}
+
+func printSegDesc(segdesc scte35.SegmentationDescriptor) {
+	if segdesc.IsIn() {
+
+		printlnf("\t<--- IN Segmentation Descriptor")
+	}
+	if segdesc.IsOut() {
+
+		printlnf("\t---> OUT Segmentation Descriptor")
+	}
+
+	printlnf("\t\tEvent ID %d", segdesc.EventID())
+	printlnf("\t\tType %+v", scte35.SegDescTypeNames[segdesc.TypeID()])
+	if segdesc.HasDuration() {
+
+		printlnf("\t\t Duration %v", segdesc.Duration())
+	}
+
+}
+
+func printSpliceInsertCommand(insert scte35.SpliceInsertCommand) {
+	println("\tSplice Insert Command")
+	printlnf("\t\tEvent ID %v", insert.EventID())
+	if insert.HasDuration() {
+		printlnf("\t\tDuration %v", insert.Duration())
+
+	}
 }
 
 func printPmt(pn uint16, pmt psi.PMT) {

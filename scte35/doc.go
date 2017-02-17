@@ -79,6 +79,34 @@ const (
 	SegDescNetworkEnd                                = 0x51
 )
 
+var SegDescTypeNames = map[SegDescType]string{
+	SegDescNotIndicated:                  "SegDescNotIndicated",
+	SegDescContentIdentification:         "SegDescContentIdentification",
+	SegDescProgramStart:                  "SegDescProgramStart",
+	SegDescProgramEnd:                    "SegDescProgramEnd",
+	SegDescProgramEarlyTermination:       "SegDescProgramEarlyTermination",
+	SegDescProgramBreakaway:              "SegDescProgramBreakaway",
+	SegDescProgramResumption:             "SegDescProgramResumption",
+	SegDescProgramRunoverPlanned:         "SegDescProgramRunoverPlanned",
+	SegDescProgramRunoverUnplanned:       "SegDescProgramRunoverUnplanned",
+	SegDescProgramOverlapStart:           "SegDescProgramOverlapStart",
+	SegDescProgramBlackoutOverride:       "SegDescProgramBlackoutOverride",
+	SegDescChapterStart:                  "SegDescChapterStart",
+	SegDescChapterEnd:                    "SegDescChapterEnd",
+	SegDescProviderAdvertisementStart:    "SegDescProviderAdvertisementStar",
+	SegDescProviderAdvertisementEnd:      "SegDescProviderAdvertisementEn",
+	SegDescDistributorAdvertisementStart: "SegDescDistributorAdvertisementStar",
+	SegDescDistributorAdvertisementEnd:   "SegDescDistributorAdvertisementEn",
+	SegDescProviderPOStart:               "SegDescProviderPOStart",
+	SegDescProviderPOEnd:                 "SegDescProviderPOEnd",
+	SegDescDistributorPOStart:            "SegDescDistributorPOStart",
+	SegDescDistributorPOEnd:              "SegDescDistributorPOEnd",
+	SegDescUnscheduledEventStart:         "SegDescUnscheduledEventStart",
+	SegDescUnscheduledEventEnd:           "SegDescUnscheduledEventEnd",
+	SegDescNetworkStart:                  "SegDescNetworkStart",
+	SegDescNetworkEnd:                    "SegDescNetworkE",
+}
+
 // SegUPIDType is the Segmentation UPID Types - Only type that really needs to be checked is
 // SegUPIDURN for CSP
 type SegUPIDType uint8
