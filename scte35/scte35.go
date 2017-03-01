@@ -140,7 +140,9 @@ func (s *scte35) parseTable(data []byte) error {
 		return gots.ErrUnknownTableID
 	}
 	// Check CRC?
-	s.data = data
+	//remove the pointer field and associated data off the top so we only get the
+	//table data
+	s.data = data[psi.PointerField(data)+1:]
 	return nil
 }
 

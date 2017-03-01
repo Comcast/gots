@@ -144,6 +144,10 @@ func TestBasicSignal(t *testing.T) {
 			t.Error("non-zero len upid found, indicating error")
 		}
 	}
+	data := s.Data()
+	if data[0] != 0xfc {
+		t.Error("First byte of data is not table id")
+	}
 }
 
 // splice_null commands are used for CSP.
