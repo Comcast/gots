@@ -106,12 +106,6 @@ func (pat pat) SPTSpmtPID() (uint16, error) {
 	}
 }
 
-func (pat pat) FirstPMTpid() uint16 {
-	for _, pid := range pat.ProgramMap() {
-		return pid
-	}
-}
-
 // ReadPAT extracts a PAT from a reader of a TS stream. It will read until a
 // PAT packet is found or EOF is reached.
 // It returns a new PAT object parsed from the packet, if found, and otherwise
