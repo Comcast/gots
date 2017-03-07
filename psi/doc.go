@@ -83,6 +83,7 @@ type PmtStreamType interface {
 type PAT interface {
 	NumPrograms() int
 	ProgramMap() map[uint16]uint16
+	SPTSpmtPID() (uint16, error)
 }
 
 // PMT is a Program Map Table.
