@@ -72,6 +72,33 @@ func TestProgramMap(t *testing.T) {
 	}
 }
 
+func TestSPTSpmtPID(t *testing.T) {
+	for _, test := range testData {
+		pat_bytes, _ := hex.DecodeString(test.patBytes)
+
+		pat, err := NewPAT(pat_bytes)
+		if err != nil {
+			t.Errorf("Can't parse PAT table %v", err)
+		}
+
+		gotPMTpid, err := pat.SPTSpmtPID()
+		if test.wantStreams > 1 {
+			if err == nil {
+				t.Fatal("Expected error for MPTS")
+			}
+			continue
+		} else {
+			if err != nil {
+				t.Fatal(err)
+			}
+		}
+
+		if test.wantProgramMapPID != gotPMTpid {
+			t.Errorf("Wrong Program Map PID got %v, want %v", gotPMTpid, test.wantProgramMapPID)
+		}
+	}
+}
+
 func TestReadPATForSmoke(t *testing.T) {
 	// requires full packets so cannot use test data above
 	bs, _ := hex.DecodeString("474000100000b00d0001c100000001e256f803e71bfffffff" +

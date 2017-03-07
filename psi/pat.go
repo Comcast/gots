@@ -25,6 +25,7 @@ SOFTWARE.
 package psi
 
 import (
+	"errors"
 	"io"
 
 	"github.com/Comcast/gots"
@@ -93,6 +94,17 @@ func (pat pat) ProgramMap() map[uint16]uint16 {
 	}
 
 	return m
+}
+
+// SPTSpmtPID returns the PMT PID if and only if this pat is for a single program transport stream. If this pat is for a multiprogram transport stream, an error is returned.
+func (pat pat) SPTSpmtPID() (uint16, error) {
+	if pat.NumPrograms() > 1 {
+		return 0, errors.New("Not a single program transport stream")
+	}
+	for _, pid := range pat.ProgramMap() {
+		return pid, nil
+	}
+	return 0, errors.New("No programs in transport stream")
 }
 
 // ReadPAT extracts a PAT from a reader of a TS stream. It will read until a
