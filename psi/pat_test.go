@@ -87,18 +87,16 @@ func TestSPTSpmtPID(t *testing.T) {
 				t.Fatal("Expected error for MPTS")
 			}
 			continue
-
 		} else {
 			if err != nil {
 				t.Fatal(err)
 			}
 		}
+
 		if test.wantProgramMapPID != gotPMTpid {
 			t.Errorf("Wrong Program Map PID got %v, want %v", gotPMTpid, test.wantProgramMapPID)
 		}
-
 	}
-
 }
 
 func TestReadPATForSmoke(t *testing.T) {
