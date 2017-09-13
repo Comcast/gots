@@ -41,6 +41,8 @@ type segmentationDescriptor struct {
 	upid                 []byte
 	segNum               uint8
 	segsExpected         uint8
+	subSegNum            uint8
+	subSegsExpected      uint8
 	spliceInfo           SCTE35
 	eventCancelIndicator bool
 }
@@ -138,6 +140,12 @@ func (d *segmentationDescriptor) parseDescriptor(data []byte) error {
 		d.typeID = SegDescType(readByte())
 		d.segNum = readByte()
 		d.segsExpected = readByte()
+
+		// Backwards compatible support for the 2016 spec
+		if buf.Len() > 0 && (d.typeID == 0x34 || d.typeID == 0x36) {
+			d.subSegNum = readByte()
+			d.subSegsExpected = readByte()
+		}
 	}
 	return nil
 }
