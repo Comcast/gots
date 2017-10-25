@@ -280,3 +280,19 @@ func (d *segmentationDescriptor) Equal(c SegmentationDescriptor) bool {
 	}
 	return true
 }
+
+func (d *segmentationDescriptor) SegmentNumber() uint8 {
+	return d.segNum
+}
+
+func (d *segmentationDescriptor) SegmentsExpected() uint8 {
+	return d.segsExpected
+}
+
+func (d *segmentationDescriptor) SubSegmentNumber() uint8 {
+	return d.SubSegmentNumber
+}
+
+func (d *segmentationDescriptor) SubSegmentsExpected() uint8 {
+	return d.SubSegmentsExpected
+}

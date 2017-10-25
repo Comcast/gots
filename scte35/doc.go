@@ -219,6 +219,14 @@ type SegmentationDescriptor interface {
 	// Equal returns true/false if segmentation descriptor is functionally
 	// equal (i.e. a duplicate)
 	Equal(sd SegmentationDescriptor) bool
+	// SegmentNumber returns the segment number for this descriptor.
+	SegmentNumber() uint8
+	// SegmentsExpected returns the number of expected segments for this descriptor.
+	SegmentsExpected() uint8
+	// SubSegmentNumber returns the sub-segment number for this descriptor.
+	SubSegmentNumber() uint8
+	// SubSegmentsExpected returns the number of expected sub-segments for this descriptor.
+	SubSegmentsExpected() uint8
 }
 
 // State maintains current state for all signals and descriptors.  The intended
