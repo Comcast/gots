@@ -72,6 +72,7 @@ const (
 	SegDescProgramRunoverUnplanned                   = 0x16
 	SegDescProgramOverlapStart                       = 0x17
 	SegDescProgramBlackoutOverride                   = 0x18
+	SegDescProgramStartInProgress                    = 0x19
 	SegDescChapterStart                              = 0x20
 	SegDescChapterEnd                                = 0x21
 	SegDescProviderAdvertisementStart                = 0x30
@@ -100,6 +101,7 @@ var SegDescTypeNames = map[SegDescType]string{
 	SegDescProgramRunoverUnplanned:       "SegDescProgramRunoverUnplanned",
 	SegDescProgramOverlapStart:           "SegDescProgramOverlapStart",
 	SegDescProgramBlackoutOverride:       "SegDescProgramBlackoutOverride",
+	SegDescProgramStartInProgress:        "SegDescProgramStartInProgress",
 	SegDescChapterStart:                  "SegDescChapterStart",
 	SegDescChapterEnd:                    "SegDescChapterEnd",
 	SegDescProviderAdvertisementStart:    "SegDescProviderAdvertisementStar",
