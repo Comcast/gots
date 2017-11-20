@@ -166,32 +166,23 @@ func (descriptor *pmtDescriptor) IsIFrameProfile() bool {
 // A52-2015 Annex G Table G.1
 func (descriptor *pmtDescriptor) IsDolbyATMOS() bool {
 
-	if EC3 == descriptor.tag && 4 < len(descriptor.data) {
-
-		// data[0] descriptor_tag 8 bit
-
-		descriptor_length := uint8(descriptor.data[1]) // 8 bit
-		// E-AC-3_audio_descriptor() has a minimum length of two bytes but may be longer depending on the
-		// use of the optional flags and the additional_info_loop.
-		if descriptor_length == 2 {
-			return false
-		}
+	if descriptor.tag == EC3 && len(descriptor.data) >= 2 {
 
 		// reserved 1 bit '1'
-		bsid_flag := 1 == uint8((descriptor.data[2]&0x40)>>6)   // 1 bit
-		mainid_flag := 1 == uint8((descriptor.data[2]&0x20)>>5) // 1 bit
-		asvc_flag := 1 == uint8((descriptor.data[2]&0x10)>>4)   // 1 bit
-		// mixinfoexists := 1 == uint8((descriptor.data[2]&0x08)>>3)   // 1 bit
-		substream1_flag := 1 == uint8((descriptor.data[2]&0x04)>>2) // 1 bit
-		substream2_flag := 1 == uint8((descriptor.data[2]&0x02)>>1) // 1 bit
-		substream3_flag := 1 == uint8(descriptor.data[2]&0x01)      // 1 bit
+		bsid_flag := 1 == uint8((descriptor.data[0]&0x40)>>6)   // 1 bit
+		mainid_flag := 1 == uint8((descriptor.data[0]&0x20)>>5) // 1 bit
+		asvc_flag := 1 == uint8((descriptor.data[0]&0x10)>>4)   // 1 bit
+		// mixinfoexists := 1 == uint8((descriptor.data[0]&0x08)>>3)   // 1 bit
+		substream1_flag := 1 == uint8((descriptor.data[0]&0x04)>>2) // 1 bit
+		substream2_flag := 1 == uint8((descriptor.data[0]&0x02)>>1) // 1 bit
+		substream3_flag := 1 == uint8(descriptor.data[0]&0x01)      // 1 bit
 
-		// data[3] not needed: reserved 1, full_service_flag 1, audio_service_type 3, number_of_channels 3
+		// data[1] not needed: reserved 1, full_service_flag 1, audio_service_type 3, number_of_channels 3
 
 		language_flag := false
 		language_flag_2 := false
 
-		start := uint8(4)
+		start := uint8(2)
 		if bsid_flag {
 			language_flag = 1 == uint8((descriptor.data[start]&0x80)>>7)   // 1 bit
 			language_flag_2 = 1 == uint8((descriptor.data[start]&0x40)>>6) // 1 bit
@@ -238,7 +229,7 @@ func (descriptor *pmtDescriptor) IsDolbyATMOS() bool {
 			start += 3
 		}
 
-		for i := start; i-2 < descriptor_length; i++ {
+		for i := start; i < uint8(len(descriptor.data)); i++ {
 			if 0x01 == descriptor.data[i] {
 				return true
 			}
