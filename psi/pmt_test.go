@@ -671,25 +671,25 @@ func TestReadPMTIncomplete(t *testing.T) {
 }
 
 func TestIsDolbyATMOS(t *testing.T) {
-	d, _ := hex.DecodeString("cc0300ff")
+	d, _ := hex.DecodeString("00ff")
 	desc := &pmtDescriptor{tag: uint8(204), data: d}
 	if desc.IsDolbyATMOS() {
 		t.Errorf("Expected not Dolby ATMOS")
 	}
 
-	d, _ = hex.DecodeString("cc19ffffc000000000000000000000000000000000000000000000")
+	d, _ = hex.DecodeString("ffffc000000000000000000000000000000000000000000000")
 	desc = &pmtDescriptor{tag: uint8(204), data: d}
 	if desc.IsDolbyATMOS() {
 		t.Errorf("Expected not Dolby ATMOS")
 	}
 
-	d, _ = hex.DecodeString("cc050000ff0001")
+	d, _ = hex.DecodeString("0000ff0001")
 	desc = &pmtDescriptor{tag: uint8(204), data: d}
 	if !desc.IsDolbyATMOS() {
 		t.Errorf("Expected Dolby ATMOS")
 	}
 
-	d, _ = hex.DecodeString("cc19ffffc000000000000000000000000000000000000000000001")
+	d, _ = hex.DecodeString("ffffc000000000000000000000000000000000000000000001")
 	desc = &pmtDescriptor{tag: uint8(204), data: d}
 	if !desc.IsDolbyATMOS() {
 		t.Errorf("Expected Dolby ATMOS")
