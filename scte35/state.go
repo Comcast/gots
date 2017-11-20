@@ -114,11 +114,16 @@ func (s *state) ProcessDescriptor(desc SegmentationDescriptor) ([]SegmentationDe
 		}
 		fallthrough
 	// out signals
-	case SegDescProgramStart, SegDescChapterStart,
-		SegDescProviderAdvertisementStart, SegDescDistributorAdvertisementStart,
-		SegDescProviderPOStart, SegDescDistributorPOStart,
-		SegDescUnscheduledEventStart, SegDescNetworkStart,
-		SegDescProgramOverlapStart:
+	case SegDescProgramStart,
+		SegDescChapterStart,
+		SegDescProviderAdvertisementStart,
+		SegDescDistributorAdvertisementStart,
+		SegDescProviderPOStart,
+		SegDescDistributorPOStart,
+		SegDescUnscheduledEventStart,
+		SegDescNetworkStart,
+		SegDescProgramOverlapStart,
+		SegDescProgramStartInProgress:
 		if len(closed) != 0 {
 			err = gots.ErrSCTE35MissingOut
 		}
