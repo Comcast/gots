@@ -170,16 +170,16 @@ func (d *segmentationDescriptor) IsEventCanceled() bool {
 func (d *segmentationDescriptor) IsOut() bool {
 	switch d.TypeID() {
 	case SegDescProgramStart,
+		SegDescProgramResumption,
+		SegDescProgramOverlapStart,
+		SegDescProgramStartInProgress,
 		SegDescChapterStart,
 		SegDescProviderAdvertisementStart,
 		SegDescDistributorAdvertisementStart,
 		SegDescProviderPOStart,
 		SegDescDistributorPOStart,
 		SegDescUnscheduledEventStart,
-		SegDescNetworkStart,
-		SegDescProgramOverlapStart,
-		SegDescProgramStartInProgress,
-		SegDescProgramResumption:
+		SegDescNetworkStart:
 		return true
 	default:
 		return false
@@ -189,17 +189,18 @@ func (d *segmentationDescriptor) IsOut() bool {
 func (d *segmentationDescriptor) IsIn() bool {
 	switch d.TypeID() {
 	case SegDescProgramEnd,
+		SegDescProgramEarlyTermination,
+		SegDescProgramBreakaway,
+		SegDescProgramRunoverPlanned,
+		SegDescProgramRunoverUnplanned,
+		SegDescProgramBlackoutOverride,
 		SegDescChapterEnd,
 		SegDescProviderAdvertisementEnd,
 		SegDescDistributorAdvertisementEnd,
 		SegDescProviderPOEnd,
 		SegDescDistributorPOEnd,
 		SegDescUnscheduledEventEnd,
-		SegDescNetworkEnd,
-		SegDescProgramRunoverPlanned,
-		SegDescProgramRunoverUnplanned,
-		SegDescProgramEarlyTermination,
-		SegDescProgramBreakaway:
+		SegDescNetworkEnd:
 		return true
 	default:
 		return false
