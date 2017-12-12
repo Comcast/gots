@@ -91,7 +91,7 @@ func ContinuityCounter(packet Packet) (uint8, error) {
 }
 
 // IsNull returns true if the provided packet is a Null packet
-// (i.e., PID == 0x1ff (8192)).
+// (i.e., PID == 0x1fff (8191)).
 func IsNull(packet Packet) (bool, error) {
 	if badLen(packet) {
 		return false, gots.ErrInvalidPacketLength

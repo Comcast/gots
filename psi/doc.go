@@ -52,6 +52,7 @@ const (
 	AVC_VIDEO          uint8 = 40  // 0010 1000 (0x28)
 	SCTE_ADAPTATION    uint8 = 151 // 1001 0111 (0x97)
 	EBP                uint8 = 233 // 1110 1001 (0xE9)
+	EC3                uint8 = 204 // 1100 1100(0xCC)
 )
 
 // Unaccounted bytes before the end of the SectionLength field
@@ -114,4 +115,5 @@ type PmtDescriptor interface {
 	DecodeMaximumBitRate() uint32
 	DecodeIso639LanguageCode() string
 	DecodeIso639AudioType() byte
+	IsDolbyATMOS() bool
 }

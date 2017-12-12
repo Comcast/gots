@@ -41,6 +41,8 @@ type segmentationDescriptor struct {
 	upid                 []byte
 	segNum               uint8
 	segsExpected         uint8
+	subSegNum            uint8
+	subSegsExpected      uint8
 	spliceInfo           SCTE35
 	eventCancelIndicator bool
 }
@@ -64,11 +66,12 @@ var segCloseRules map[SegDescType]map[SegDescType]segCloseType
 // initialize the SegCloseRules map
 func init() {
 	segCloseRules = map[SegDescType]map[SegDescType]segCloseType{
-		0x10: {0x10: segCloseNoBreakaway, 0x14: segCloseNormal, 0x17: segCloseNoBreakaway, 0x20: segCloseNormal, 0x30: segCloseNormal, 0x32: segCloseNormal, 0x34: segCloseNormal, 0x36: segCloseNormal},
-		0x11: {0x10: segCloseEventID, 0x14: segCloseEventID, 0x17: segCloseEventID, 0x20: segCloseNormal, 0x30: segCloseNormal, 0x32: segCloseNormal, 0x34: segCloseNormal, 0x36: segCloseNormal},
-		0x12: {0x10: segCloseEventID, 0x14: segCloseEventID, 0x17: segCloseEventID, 0x20: segCloseNormal, 0x30: segCloseNormal, 0x32: segCloseNormal, 0x34: segCloseNormal, 0x36: segCloseNormal},
+		0x10: {0x10: segCloseNoBreakaway, 0x14: segCloseNormal, 0x17: segCloseNoBreakaway, 0x19: segCloseNoBreakaway, 0x20: segCloseNormal, 0x30: segCloseNormal, 0x32: segCloseNormal, 0x34: segCloseNormal, 0x36: segCloseNormal},
+		0x11: {0x10: segCloseEventID, 0x14: segCloseEventID, 0x17: segCloseEventID, 0x19: segCloseEventID, 0x20: segCloseNormal, 0x30: segCloseNormal, 0x32: segCloseNormal, 0x34: segCloseNormal, 0x36: segCloseNormal},
+		0x12: {0x10: segCloseEventID, 0x14: segCloseEventID, 0x17: segCloseEventID, 0x19: segCloseEventID, 0x20: segCloseNormal, 0x30: segCloseNormal, 0x32: segCloseNormal, 0x34: segCloseNormal, 0x36: segCloseNormal},
 		0x13: {0x20: segCloseNormal, 0x30: segCloseNormal, 0x32: segCloseNormal, 0x34: segCloseNormal, 0x36: segCloseNormal},
-		0x14: {0x10: segCloseBreakaway, 0x17: segCloseBreakaway, 0x20: segCloseNormal, 0x30: segCloseNormal, 0x32: segCloseNormal, 0x34: segCloseNormal, 0x36: segCloseNormal},
+		0x14: {0x10: segCloseBreakaway, 0x17: segCloseBreakaway, 0x19: segCloseBreakaway, 0x20: segCloseNormal, 0x30: segCloseNormal, 0x32: segCloseNormal, 0x34: segCloseNormal, 0x36: segCloseNormal},
+		0x19: {0x10: segCloseNoBreakaway, 0x14: segCloseNormal, 0x17: segCloseNoBreakaway, 0x19: segCloseNoBreakaway, 0x20: segCloseNormal, 0x30: segCloseNormal, 0x32: segCloseNormal, 0x34: segCloseNormal, 0x36: segCloseNormal},
 		0x20: {0x20: segCloseNormal, 0x30: segCloseNormal, 0x32: segCloseNormal, 0x34: segCloseNormal, 0x36: segCloseNormal},
 		0x21: {0x20: segCloseEventID, 0x30: segCloseNormal, 0x32: segCloseNormal, 0x34: segCloseNormal, 0x36: segCloseNormal},
 		0x30: {0x30: segCloseNormal, 0x32: segCloseNormal},
@@ -79,10 +82,10 @@ func init() {
 		0x35: {0x30: segCloseNormal, 0x32: segCloseNormal, 0x34: segCloseEventIDNotNested, 0x36: segCloseNormal},
 		0x36: {0x30: segCloseDiffPTS, 0x32: segCloseDiffPTS, 0x36: segCloseNotNested},
 		0x37: {0x30: segCloseNormal, 0x32: segCloseNormal, 0x36: segCloseEventIDNotNested},
-		0x40: {0x10: segCloseNormal, 0x14: segCloseNormal, 0x17: segCloseNormal, 0x20: segCloseNormal, 0x30: segCloseNormal, 0x32: segCloseNormal, 0x34: segCloseNormal, 0x36: segCloseNormal, 0x40: segCloseNormal},
-		0x41: {0x10: segCloseNormal, 0x14: segCloseNormal, 0x17: segCloseNormal, 0x20: segCloseNormal, 0x30: segCloseNormal, 0x32: segCloseNormal, 0x34: segCloseNormal, 0x36: segCloseNormal, 0x40: segCloseEventID},
-		0x50: {0x10: segCloseNormal, 0x14: segCloseNormal, 0x17: segCloseNormal, 0x20: segCloseNormal, 0x30: segCloseNormal, 0x32: segCloseNormal, 0x34: segCloseNormal, 0x36: segCloseNormal, 0x40: segCloseUnconditional, 0x50: segCloseNormal},
-		0x51: {0x10: segCloseNormal, 0x14: segCloseNormal, 0x17: segCloseNormal, 0x20: segCloseNormal, 0x30: segCloseNormal, 0x32: segCloseNormal, 0x34: segCloseNormal, 0x36: segCloseNormal, 0x40: segCloseUnconditional, 0x50: segCloseEventID},
+		0x40: {0x40: segCloseNormal},
+		0x41: {0x40: segCloseEventID},
+		0x50: {0x10: segCloseNormal, 0x14: segCloseNormal, 0x17: segCloseNormal, 0x19: segCloseNormal, 0x20: segCloseNormal, 0x30: segCloseNormal, 0x32: segCloseNormal, 0x34: segCloseNormal, 0x36: segCloseNormal, 0x40: segCloseUnconditional, 0x50: segCloseNormal},
+		0x51: {0x10: segCloseNormal, 0x14: segCloseNormal, 0x17: segCloseNormal, 0x19: segCloseNormal, 0x20: segCloseNormal, 0x30: segCloseNormal, 0x32: segCloseNormal, 0x34: segCloseNormal, 0x36: segCloseNormal, 0x40: segCloseUnconditional, 0x50: segCloseEventID},
 	}
 	// add program breakaway rules to the close map.  Only ProgramResumption,
 	// Unscheduled Event and Network signals can exit breakaway.
@@ -138,6 +141,12 @@ func (d *segmentationDescriptor) parseDescriptor(data []byte) error {
 		d.typeID = SegDescType(readByte())
 		d.segNum = readByte()
 		d.segsExpected = readByte()
+
+		// Backwards compatible support for the 2016 spec
+		if buf.Len() > 0 && (d.typeID == 0x34 || d.typeID == 0x36) {
+			d.subSegNum = readByte()
+			d.subSegsExpected = readByte()
+		}
 	}
 	return nil
 }
@@ -160,11 +169,17 @@ func (d *segmentationDescriptor) IsEventCanceled() bool {
 
 func (d *segmentationDescriptor) IsOut() bool {
 	switch d.TypeID() {
-	case SegDescProgramStart, SegDescChapterStart,
-		SegDescProviderAdvertisementStart, SegDescDistributorAdvertisementStart,
-		SegDescProviderPOStart, SegDescDistributorPOStart,
-		SegDescUnscheduledEventStart, SegDescNetworkStart,
-		SegDescProgramOverlapStart, SegDescProgramResumption:
+	case SegDescProgramStart,
+		SegDescProgramResumption,
+		SegDescProgramOverlapStart,
+		SegDescProgramStartInProgress,
+		SegDescChapterStart,
+		SegDescProviderAdvertisementStart,
+		SegDescDistributorAdvertisementStart,
+		SegDescProviderPOStart,
+		SegDescDistributorPOStart,
+		SegDescUnscheduledEventStart,
+		SegDescNetworkStart:
 		return true
 	default:
 		return false
@@ -173,12 +188,19 @@ func (d *segmentationDescriptor) IsOut() bool {
 
 func (d *segmentationDescriptor) IsIn() bool {
 	switch d.TypeID() {
-	case SegDescProgramEnd, SegDescChapterEnd,
-		SegDescProviderAdvertisementEnd, SegDescDistributorAdvertisementEnd,
-		SegDescProviderPOEnd, SegDescDistributorPOEnd,
-		SegDescUnscheduledEventEnd, SegDescNetworkEnd,
-		SegDescProgramRunoverPlanned, SegDescProgramRunoverUnplanned,
-		SegDescProgramEarlyTermination, SegDescProgramBreakaway:
+	case SegDescProgramEnd,
+		SegDescProgramEarlyTermination,
+		SegDescProgramBreakaway,
+		SegDescProgramRunoverPlanned,
+		SegDescProgramRunoverUnplanned,
+		SegDescProgramBlackoutOverride,
+		SegDescChapterEnd,
+		SegDescProviderAdvertisementEnd,
+		SegDescDistributorAdvertisementEnd,
+		SegDescProviderPOEnd,
+		SegDescDistributorPOEnd,
+		SegDescUnscheduledEventEnd,
+		SegDescNetworkEnd:
 		return true
 	default:
 		return false
@@ -271,4 +293,20 @@ func (d *segmentationDescriptor) Equal(c SegmentationDescriptor) bool {
 		return false
 	}
 	return true
+}
+
+func (d *segmentationDescriptor) SegmentNumber() uint8 {
+	return d.segNum
+}
+
+func (d *segmentationDescriptor) SegmentsExpected() uint8 {
+	return d.segsExpected
+}
+
+func (d *segmentationDescriptor) SubSegmentNumber() uint8 {
+	return d.subSegNum
+}
+
+func (d *segmentationDescriptor) SubSegmentsExpected() uint8 {
+	return d.subSegsExpected
 }

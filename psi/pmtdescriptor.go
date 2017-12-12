@@ -158,3 +158,82 @@ func (descriptor *pmtDescriptor) IsIFrameProfile() bool {
 	}
 	return false
 }
+
+// IsDolbyATMOS checks to see if the flag_ec3_extension_type_a flag is set
+// The additional data added to the enhanced-AC3 descriptor in the additional_info_byte field section looks like this:
+//	flag_ec3_extension_type_reserved	7 bslbf
+//	flag_ec3_extension_type_a		1 bslbf
+// A52-2015 Annex G Table G.1
+func (descriptor *pmtDescriptor) IsDolbyATMOS() bool {
+
+	if descriptor.tag == EC3 && len(descriptor.data) >= 2 {
+
+		// reserved 1 bit '1'
+		bsid_flag := 1 == uint8((descriptor.data[0]&0x40)>>6)   // 1 bit
+		mainid_flag := 1 == uint8((descriptor.data[0]&0x20)>>5) // 1 bit
+		asvc_flag := 1 == uint8((descriptor.data[0]&0x10)>>4)   // 1 bit
+		// mixinfoexists := 1 == uint8((descriptor.data[0]&0x08)>>3)   // 1 bit
+		substream1_flag := 1 == uint8((descriptor.data[0]&0x04)>>2) // 1 bit
+		substream2_flag := 1 == uint8((descriptor.data[0]&0x02)>>1) // 1 bit
+		substream3_flag := 1 == uint8(descriptor.data[0]&0x01)      // 1 bit
+
+		// data[1] not needed: reserved 1, full_service_flag 1, audio_service_type 3, number_of_channels 3
+
+		language_flag := false
+		language_flag_2 := false
+
+		start := uint8(2)
+		if bsid_flag {
+			language_flag = 1 == uint8((descriptor.data[start]&0x80)>>7)   // 1 bit
+			language_flag_2 = 1 == uint8((descriptor.data[start]&0x40)>>6) // 1 bit
+			start++
+		}
+
+		if mainid_flag {
+			start++
+		}
+
+		if asvc_flag {
+			start++
+		}
+
+		if substream1_flag {
+			start++
+		}
+
+		if substream2_flag {
+			start++
+		}
+
+		if substream3_flag {
+			start++
+		}
+
+		if language_flag {
+			start += 3
+		}
+
+		if language_flag_2 {
+			start += 3
+		}
+
+		if substream1_flag {
+			start += 3
+		}
+
+		if substream2_flag {
+			start += 3
+		}
+
+		if substream3_flag {
+			start += 3
+		}
+
+		for i := start; i < uint8(len(descriptor.data)); i++ {
+			if 0x01 == descriptor.data[i] {
+				return true
+			}
+		}
+	}
+	return false
+}
