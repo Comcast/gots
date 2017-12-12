@@ -21,6 +21,10 @@ go test -v ./...
 ```
 ## License 
 This software is licensed under the MIT license. For full text see [LICENSE](./LICENSE)
+
+## Code of Conduct
+We take our [code of conduct](CODE_OF_CONDUCT.md) very seriously. Please abide by it.
+
 ## Examples
 This is a simple example that extracts all PIDs from a ts file and prints them. [CLI example parser can be found here](cli/parsefile.go)
 ```go
