@@ -75,6 +75,8 @@ const (
 	SegDescProgramStartInProgress                    = 0x19
 	SegDescChapterStart                              = 0x20
 	SegDescChapterEnd                                = 0x21
+	SegDescBreakStart                                = 0x22
+	SegDescBreakEnd                                  = 0x23
 	SegDescProviderAdvertisementStart                = 0x30
 	SegDescProviderAdvertisementEnd                  = 0x31
 	SegDescDistributorAdvertisementStart             = 0x32
@@ -104,6 +106,8 @@ var SegDescTypeNames = map[SegDescType]string{
 	SegDescProgramStartInProgress:        "SegDescProgramStartInProgress",
 	SegDescChapterStart:                  "SegDescChapterStart",
 	SegDescChapterEnd:                    "SegDescChapterEnd",
+	SegDescBreakStart:                    "SegDescBreakStart",
+	SegDescBreakEnd:                      "SegDescBreakEnd",
 	SegDescProviderAdvertisementStart:    "SegDescProviderAdvertisementStar",
 	SegDescProviderAdvertisementEnd:      "SegDescProviderAdvertisementEn",
 	SegDescDistributorAdvertisementStart: "SegDescDistributorAdvertisementStar",
