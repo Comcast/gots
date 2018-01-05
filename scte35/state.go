@@ -74,7 +74,7 @@ func (s *state) ProcessDescriptor(desc SegmentationDescriptor) ([]SegmentationDe
 					return nil, gots.ErrSCTE35DuplicateDescriptor
 				}
 			}
-			e.descs = append(e.descs, desc)
+			e.descs = append([]SegmentationDescriptor{desc}, e.descs...)
 			descAdded = true
 		}
 	}
@@ -102,7 +102,7 @@ func (s *state) ProcessDescriptor(desc SegmentationDescriptor) ([]SegmentationDe
 		s.inBlackout = true
 		s.blackoutIdx = len(s.open)
 		// append breakaway to match against resumption even though it's an in
-		s.open = append(s.open, desc)
+		s.open = append([]SegmentationDescriptor{desc}, s.open...)
 	case SegDescProgramResumption:
 		if s.inBlackout {
 			s.inBlackout = false
@@ -127,7 +127,7 @@ func (s *state) ProcessDescriptor(desc SegmentationDescriptor) ([]SegmentationDe
 		if len(closed) != 0 {
 			err = gots.ErrSCTE35MissingOut
 		}
-		s.open = append(s.open, desc)
+		s.open = append([]SegmentationDescriptor{desc}, s.open...)
 	// in signals
 	// SegDescProgramEnd treated individually since it is expected to normally
 	// close program resumption AND program start
