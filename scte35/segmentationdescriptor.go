@@ -45,6 +45,7 @@ type segmentationDescriptor struct {
 	subSegsExpected      uint8
 	spliceInfo           SCTE35
 	eventCancelIndicator bool
+	hasSubSegments       bool
 }
 
 type segCloseType uint8
@@ -148,6 +149,7 @@ func (d *segmentationDescriptor) parseDescriptor(data []byte) error {
 		if buf.Len() > 0 && (d.typeID == 0x34 || d.typeID == 0x36) {
 			d.subSegNum = readByte()
 			d.subSegsExpected = readByte()
+			d.hasSubSegments = true
 		}
 	}
 	return nil
@@ -307,6 +309,9 @@ func (d *segmentationDescriptor) SegmentsExpected() uint8 {
 	return d.segsExpected
 }
 
+func (d *segmentationDescriptor) HasSubSegments() bool {
+	return d.hasSubSegments
+}
 func (d *segmentationDescriptor) SubSegmentNumber() uint8 {
 	return d.subSegNum
 }
