@@ -257,19 +257,20 @@ func (d *segmentationDescriptor) CanClose(out SegmentationDescriptor) bool {
 			return true
 		}
 	case segCloseEventIDNotNested:
+		// this should also consider segnum == segexpected for IN signals closing an out signal.
+		if d.IsIn() && d.EventID() == out.EventID() && d.SegmentNumber() == d.SegmentsExpected() {
+			return true
+		}
 		if d.EventID() != out.EventID() {
 			return false
 		}
 		fallthrough
-	case segCloseNotNested:
-		if d.IsIn() {
-			// if in, last desc is x/x
-			if d.segNum == d.segsExpected {
+	case segCloseNotNested: // only applies to 0x34 and 0x36 with subsegments.
+		if d.IsOut() && (d.TypeID() == SegDescProviderPOStart || d.TypeID() == SegDescDistributorPOStart) {
+			if d.HasSubSegments() && d.SubSegmentNumber() == d.SubSegmentsExpected() {
 				return true
 			}
-		} else if d.IsOut() {
-			// if out, first descriptor in set closes existing open
-			if d.segNum == 1 {
+			if d.TypeID() == out.TypeID() {
 				return true
 			}
 		}
@@ -298,6 +299,21 @@ func (d *segmentationDescriptor) Equal(c SegmentationDescriptor) bool {
 	if d.EventID() != c.EventID() {
 		return false
 	}
+	if d.SegmentNumber() != c.SegmentNumber() {
+		return false
+	}
+	if d.SegmentsExpected() != c.SegmentsExpected() {
+		return false
+	}
+	if d.HasSubSegments() != c.HasSubSegments() {
+		return false
+	}
+	if d.HasSubSegments() && c.HasSubSegments() && (d.SubSegmentNumber() != c.SubSegmentNumber()) {
+		return false
+	}
+	if d.HasSubSegments() && c.HasSubSegments() && (d.SubSegmentsExpected() != c.SubSegmentsExpected()) {
+		return false
+	}
 	return true
 }
 
@@ -312,6 +328,7 @@ func (d *segmentationDescriptor) SegmentsExpected() uint8 {
 func (d *segmentationDescriptor) HasSubSegments() bool {
 	return d.hasSubSegments
 }
+
 func (d *segmentationDescriptor) SubSegmentNumber() uint8 {
 	return d.subSegNum
 }
