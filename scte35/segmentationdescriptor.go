@@ -261,19 +261,15 @@ func (d *segmentationDescriptor) CanClose(out SegmentationDescriptor) bool {
 		if d.IsIn() && d.EventID() == out.EventID() && d.SegmentNumber() == d.SegmentsExpected() {
 			return true
 		}
-		if d.EventID() != out.EventID() {
-			return false
-		}
-		fallthrough
 	case segCloseNotNested: // only applies to 0x34 and 0x36 with subsegments.
-		if d.IsOut() && (d.TypeID() == SegDescProviderPOStart || d.TypeID() == SegDescDistributorPOStart) {
-			if d.HasSubSegments() && d.SubSegmentNumber() == d.SubSegmentsExpected() {
+		if d.HasSubSegments() {
+			if d.SubSegmentNumber() == d.SubSegmentsExpected() {
 				return true
-			}
-			if d.TypeID() == out.TypeID() {
-				return true
+			} else {
+				return false
 			}
 		}
+		return true
 	}
 	return false
 }
