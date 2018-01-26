@@ -124,10 +124,8 @@ func (s *state) ProcessDescriptor(desc SegmentationDescriptor) ([]SegmentationDe
 		SegDescNetworkStart,
 		SegDescProgramOverlapStart,
 		SegDescProgramStartInProgress:
-		if len(closed) != 0 {
-			err = gots.ErrSCTE35MissingOut
-		}
 		s.open = append(s.open, desc)
+
 	// in signals
 	// SegDescProgramEnd treated individually since it is expected to normally
 	// close program resumption AND program start

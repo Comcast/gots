@@ -45,6 +45,7 @@ type segmentationDescriptor struct {
 	subSegsExpected      uint8
 	spliceInfo           SCTE35
 	eventCancelIndicator bool
+	hasSubSegments       bool
 }
 
 type segCloseType uint8
@@ -148,6 +149,7 @@ func (d *segmentationDescriptor) parseDescriptor(data []byte) error {
 		if buf.Len() > 0 && (d.typeID == 0x34 || d.typeID == 0x36) {
 			d.subSegNum = readByte()
 			d.subSegsExpected = readByte()
+			d.hasSubSegments = true
 		}
 	}
 	return nil
@@ -255,22 +257,19 @@ func (d *segmentationDescriptor) CanClose(out SegmentationDescriptor) bool {
 			return true
 		}
 	case segCloseEventIDNotNested:
-		if d.EventID() != out.EventID() {
-			return false
+		// this should also consider segnum == segexpected for IN signals closing an out signal.
+		if d.IsIn() && d.EventID() == out.EventID() && d.SegmentNumber() == d.SegmentsExpected() {
+			return true
 		}
-		fallthrough
-	case segCloseNotNested:
-		if d.IsIn() {
-			// if in, last desc is x/x
-			if d.segNum == d.segsExpected {
+	case segCloseNotNested: // only applies to 0x34 and 0x36 with subsegments.
+		if d.HasSubSegments() {
+			if d.SubSegmentNumber() == d.SubSegmentsExpected() {
 				return true
-			}
-		} else if d.IsOut() {
-			// if out, first descriptor in set closes existing open
-			if d.segNum == 1 {
-				return true
+			} else {
+				return false
 			}
 		}
+		return true
 	}
 	return false
 }
@@ -296,6 +295,21 @@ func (d *segmentationDescriptor) Equal(c SegmentationDescriptor) bool {
 	if d.EventID() != c.EventID() {
 		return false
 	}
+	if d.SegmentNumber() != c.SegmentNumber() {
+		return false
+	}
+	if d.SegmentsExpected() != c.SegmentsExpected() {
+		return false
+	}
+	if d.HasSubSegments() != c.HasSubSegments() {
+		return false
+	}
+	if d.HasSubSegments() && c.HasSubSegments() && (d.SubSegmentNumber() != c.SubSegmentNumber()) {
+		return false
+	}
+	if d.HasSubSegments() && c.HasSubSegments() && (d.SubSegmentsExpected() != c.SubSegmentsExpected()) {
+		return false
+	}
 	return true
 }
 
@@ -305,6 +319,10 @@ func (d *segmentationDescriptor) SegmentNumber() uint8 {
 
 func (d *segmentationDescriptor) SegmentsExpected() uint8 {
 	return d.segsExpected
+}
+
+func (d *segmentationDescriptor) HasSubSegments() bool {
+	return d.hasSubSegments
 }
 
 func (d *segmentationDescriptor) SubSegmentNumber() uint8 {

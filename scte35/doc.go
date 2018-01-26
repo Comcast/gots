@@ -233,6 +233,8 @@ type SegmentationDescriptor interface {
 	SubSegmentNumber() uint8
 	// SubSegmentsExpected returns the number of expected sub-segments for this descriptor.
 	SubSegmentsExpected() uint8
+	// HasSubSegments returns true if this segmentation descriptor has subsegment fields.
+	HasSubSegments() bool
 }
 
 // State maintains current state for all signals and descriptors.  The intended
