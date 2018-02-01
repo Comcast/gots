@@ -32,7 +32,7 @@ import (
 	"github.com/Comcast/gots"
 )
 
-// This is the struct used for creating a Multiple UPID
+// This is the struct used for creating a Multiple UPID (MID)
 type uid struct {
 	upidType SegUPIDType
 	upidLen  int
