@@ -220,6 +220,8 @@ type SegmentationDescriptor interface {
 	UPIDType() SegUPIDType
 	// UPID returns the upid of the descriptor
 	UPID() []byte
+	// StreamSwitchSignalID returns the signalID of StreamsSwitch signal if present
+	StreamSwitchSignalId() string
 	// CanClose returns true if this descriptor can close the passed in descriptor
 	CanClose(out SegmentationDescriptor) bool
 	// Equal returns true/false if segmentation descriptor is functionally

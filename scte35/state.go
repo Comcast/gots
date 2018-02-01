@@ -142,9 +142,12 @@ func (s *state) ProcessDescriptor(desc SegmentationDescriptor) ([]SegmentationDe
 			}
 		}
 	case SegDescChapterEnd,
-		SegDescProviderAdvertisementEnd, SegDescProviderPOEnd,
-		SegDescDistributorAdvertisementEnd, SegDescDistributorPOEnd,
-		SegDescUnscheduledEventEnd, SegDescNetworkEnd:
+		SegDescProviderAdvertisementEnd,
+		SegDescProviderPOEnd,
+		SegDescDistributorAdvertisementEnd,
+		SegDescDistributorPOEnd,
+		SegDescUnscheduledEventEnd,
+		SegDescNetworkEnd:
 		var openDesc SegmentationDescriptor
 		// descriptor matches out, but doesn't close it.  Check event id against open
 		if len(closed) == 0 || closed[len(closed)-1].TypeID() != desc.TypeID()-1 {

@@ -27,9 +27,17 @@ package scte35
 import (
 	"bytes"
 	"encoding/binary"
+	"strings"
 
 	"github.com/Comcast/gots"
 )
+
+// This is the struct used for creating a Multiple UPID (MID)
+type uid struct {
+	upidType SegUPIDType
+	upidLen  int
+	upid     []byte
+}
 
 type segmentationDescriptor struct {
 	// common fields we care about for sorting/identifying, but is not necessarily needed for users of this lib
@@ -39,6 +47,7 @@ type segmentationDescriptor struct {
 	duration             gots.PTS
 	upidType             SegUPIDType
 	upid                 []byte
+	mid                  [2]uid //A MID contains 2 UID's in it.
 	segNum               uint8
 	segsExpected         uint8
 	subSegNum            uint8
@@ -86,7 +95,7 @@ func init() {
 		0x36: {0x30: segCloseDiffPTS, 0x32: segCloseDiffPTS, 0x36: segCloseNotNested},
 		0x37: {0x30: segCloseNormal, 0x32: segCloseNormal, 0x36: segCloseEventIDNotNested},
 		0x40: {0x40: segCloseNormal},
-		0x41: {0x40: segCloseEventID},
+		0x41: {0x41: segCloseNormal},
 		0x50: {0x10: segCloseNormal, 0x14: segCloseNormal, 0x17: segCloseNormal, 0x19: segCloseNormal, 0x20: segCloseNormal, 0x30: segCloseNormal, 0x32: segCloseNormal, 0x34: segCloseNormal, 0x36: segCloseNormal, 0x40: segCloseUnconditional, 0x50: segCloseNormal},
 		0x51: {0x10: segCloseNormal, 0x14: segCloseNormal, 0x17: segCloseNormal, 0x19: segCloseNormal, 0x20: segCloseNormal, 0x30: segCloseNormal, 0x32: segCloseNormal, 0x34: segCloseNormal, 0x36: segCloseNormal, 0x40: segCloseUnconditional, 0x50: segCloseEventID},
 	}
@@ -137,10 +146,24 @@ func (d *segmentationDescriptor) parseDescriptor(data []byte) error {
 		// upid unneeded now...
 		d.upidType = SegUPIDType(readByte())
 		upidLen := int(readByte())
-		if buf.Len() < upidLen+3 {
-			return gots.ErrInvalidSCTE35Length
+		if d.upidType == 0x0d {
+			// This is a Multiple PID, consisting of 2 PID's
+			// SCTE35 can either have a UPID or a MID so the UPID can be 0.
+			d.upid = []byte{}
+			for i := 0; i <= 1; i++ {
+				d.mid[i].upidType = SegUPIDType(readByte())
+				d.mid[i].upidLen = int(readByte())
+				d.mid[i].upid = buf.Next(d.mid[i].upidLen)
+			}
+		} else {
+			// This is a UPID, not a MID
+			// MID should be 0 as SCTE35 can either have a UPID or a MID
+			d.mid = [2]uid{}
+			if buf.Len() < upidLen+3 {
+				return gots.ErrInvalidSCTE35Length
+			}
+			d.upid = buf.Next(upidLen)
 		}
-		d.upid = buf.Next(upidLen)
 		d.typeID = SegDescType(readByte())
 		d.segNum = readByte()
 		d.segsExpected = readByte()
@@ -227,6 +250,16 @@ func (d *segmentationDescriptor) UPIDType() SegUPIDType {
 
 func (d *segmentationDescriptor) UPID() []byte {
 	return d.upid
+}
+
+func (d *segmentationDescriptor) StreamSwitchSignalId() string {
+	var signalId string
+	// SignalId is present in the MID.
+	if len(d.mid) == 2 {
+		// SignalId is the 1st UPID in the MID without the leading "BLACKOUT:"
+		signalId = strings.TrimPrefix(string(d.mid[0].upid), "BLACKOUT:")
+	}
+	return signalId
 }
 
 func (d *segmentationDescriptor) CanClose(out SegmentationDescriptor) bool {
