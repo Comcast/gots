@@ -124,7 +124,6 @@ func (d *segmentationDescriptor) parseDescriptor(data []byte) error {
 	}
 	d.eventID = binary.BigEndian.Uint32(buf.Next(4))
 	d.eventCancelIndicator = readByte()&0x80>>7 != 0
-
 	if !d.eventCancelIndicator {
 		flags := readByte()
 		if flags&0x80 == 0 {
@@ -147,7 +146,6 @@ func (d *segmentationDescriptor) parseDescriptor(data []byte) error {
 		// upid unneeded now...
 		d.upidType = SegUPIDType(readByte())
 		segUpidLen := int(readByte())
-
 		d.mid = []upidSt{}
 		// This is a Multiple PID, consisting of `n` UPID's
 		if d.upidType == 0x0d {
@@ -160,10 +158,8 @@ func (d *segmentationDescriptor) parseDescriptor(data []byte) error {
 				upidElem := upidSt{}
 				upidElem.upidType = SegUPIDType(readByte())
 				segUpidLen -= 1
-
 				upidElem.upidLen = int(readByte())
 				segUpidLen -= 1
-
 				upidElem.upid = buf.Next(upidElem.upidLen)
 				segUpidLen -= upidElem.upidLen
 				d.mid = append(d.mid, upidElem)
