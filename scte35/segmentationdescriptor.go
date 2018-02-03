@@ -268,6 +268,7 @@ func (d *segmentationDescriptor) StreamSwitchSignalId() string {
 		upidStr := string(d.mid[i].upid)
 		if strings.Contains(upidStr, "BLACKOUT") {
 			signalId = strings.TrimPrefix(upidStr, "BLACKOUT:")
+			break
 		}
 	}
 	return signalId
