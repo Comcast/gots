@@ -27,9 +27,17 @@ package scte35
 import (
 	"bytes"
 	"encoding/binary"
+	"strings"
 
 	"github.com/Comcast/gots"
 )
+
+// This is the struct used for creating a Multiple UPID (MID)
+type upidSt struct {
+	upidType SegUPIDType
+	upidLen  int
+	upid     []byte
+}
 
 type segmentationDescriptor struct {
 	// common fields we care about for sorting/identifying, but is not necessarily needed for users of this lib
@@ -39,6 +47,7 @@ type segmentationDescriptor struct {
 	duration             gots.PTS
 	upidType             SegUPIDType
 	upid                 []byte
+	mid                  []upidSt //A MID can contains `n` UPID uids in it.
 	segNum               uint8
 	segsExpected         uint8
 	subSegNum            uint8
@@ -136,11 +145,33 @@ func (d *segmentationDescriptor) parseDescriptor(data []byte) error {
 		}
 		// upid unneeded now...
 		d.upidType = SegUPIDType(readByte())
-		upidLen := int(readByte())
-		if buf.Len() < upidLen+3 {
-			return gots.ErrInvalidSCTE35Length
+		segUpidLen := int(readByte())
+		d.mid = []upidSt{}
+		// This is a Multiple PID, consisting of `n` UPID's
+		if d.upidType == 0x0d {
+			// SCTE35 signal will either have an UPID or a MID
+			// When we have a MID, UPID value in struct will be 0.
+			d.upid = []byte{}
+			// Iterate over the whole MID len(segUpidLen) to get all `n` UPIDs
+			// segUpidLen is in bytes.
+			for segUpidLen != 0 {
+				upidElem := upidSt{}
+				upidElem.upidType = SegUPIDType(readByte())
+				segUpidLen -= 1
+				upidElem.upidLen = int(readByte())
+				segUpidLen -= 1
+				upidElem.upid = buf.Next(upidElem.upidLen)
+				segUpidLen -= upidElem.upidLen
+				d.mid = append(d.mid, upidElem)
+			}
+		} else {
+			// This is a UPID, not a MID
+			// MID should be 0 as SCTE35 can either have a UPID or a MID
+			if buf.Len() < segUpidLen+3 {
+				return gots.ErrInvalidSCTE35Length
+			}
+			d.upid = buf.Next(segUpidLen)
 		}
-		d.upid = buf.Next(upidLen)
 		d.typeID = SegDescType(readByte())
 		d.segNum = readByte()
 		d.segsExpected = readByte()
@@ -227,6 +258,20 @@ func (d *segmentationDescriptor) UPIDType() SegUPIDType {
 
 func (d *segmentationDescriptor) UPID() []byte {
 	return d.upid
+}
+
+func (d *segmentationDescriptor) StreamSwitchSignalId() string {
+	var signalId string
+	// The VSS SignalId is present in the MID.
+	// SignalId is that UPID value in the MID which contains "BLACKOUT"
+	for i := 0; i < len(d.mid); i++ {
+		upidStr := string(d.mid[i].upid)
+		if strings.Contains(upidStr, "BLACKOUT") {
+			signalId = strings.TrimPrefix(upidStr, "BLACKOUT:")
+			break
+		}
+	}
+	return signalId
 }
 
 func (d *segmentationDescriptor) CanClose(out SegmentationDescriptor) bool {

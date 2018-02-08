@@ -208,26 +208,27 @@ func (c *spliceInsert) AvailsExpected() uint8 {
 }
 
 // parseSpliceTime parses a splice_time() structure and returns the values of
-// time_specified_flag and pts_time. If the time_specified_flag is 0, pts will
-// have a value of gots.PTS(0) and should not be used.
+// time_specified_flag and pts_time.
+// If the time_specified_flag is 0, pts will have a value of gots.PTS(0).
 func parseSpliceTime(buf *bytes.Buffer) (timeSpecified bool, pts gots.PTS, err error) {
 	flags, err := buf.ReadByte()
 	if err != nil {
 		err = gots.ErrInvalidSCTE35Length
-		return
+		return false, gots.PTS(0), err
 	}
 	timeSpecified = flags&0x80 == 0x80
 	if !timeSpecified {
-		return
+		// Time isn't specified, assume PTS of 0.
+		return false, gots.PTS(0), nil
 	}
 	// unread prev byte because it contains the top bit of the pts offset
 	if err = buf.UnreadByte(); err != nil {
-		return
+		return true, gots.PTS(0), err
 	}
 	if buf.Len() < 5 {
 		err = gots.ErrInvalidSCTE35Length
 		return
 	}
 	pts = uint40(buf.Next(5)) & 0x01ffffffff
-	return
+	return true, pts, nil
 }
