@@ -41,20 +41,21 @@ type upidSt struct {
 
 type segmentationDescriptor struct {
 	// common fields we care about for sorting/identifying, but is not necessarily needed for users of this lib
-	typeID               SegDescType
-	eventID              uint32
-	hasDuration          bool
-	duration             gots.PTS
-	upidType             SegUPIDType
-	upid                 []byte
-	mid                  []upidSt //A MID can contains `n` UPID uids in it.
-	segNum               uint8
-	segsExpected         uint8
-	subSegNum            uint8
-	subSegsExpected      uint8
-	spliceInfo           SCTE35
-	eventCancelIndicator bool
-	hasSubSegments       bool
+	typeID                SegDescType
+	eventID               uint32
+	hasDuration           bool
+	duration              gots.PTS
+	upidType              SegUPIDType
+	upid                  []byte
+	mid                   []upidSt //A MID can contains `n` UPID uids in it.
+	segNum                uint8
+	segsExpected          uint8
+	subSegNum             uint8
+	subSegsExpected       uint8
+	spliceInfo            SCTE35
+	eventCancelIndicator  bool
+	deliveryNotRestricted bool
+	hasSubSegments        bool
 }
 
 type segCloseType uint8
@@ -126,6 +127,9 @@ func (d *segmentationDescriptor) parseDescriptor(data []byte) error {
 	d.eventCancelIndicator = readByte()&0x80>>7 != 0
 	if !d.eventCancelIndicator {
 		flags := readByte()
+		// 3rd bit in the byte
+		// if delivery_not_restricted = 0 -> deliveryNotRestricted = false
+		d.deliveryNotRestricted = flags&0x20>>5 != 0
 		if flags&0x80 == 0 {
 			// skip over component info
 			ct := readByte()
@@ -148,7 +152,7 @@ func (d *segmentationDescriptor) parseDescriptor(data []byte) error {
 		segUpidLen := int(readByte())
 		d.mid = []upidSt{}
 		// This is a Multiple PID, consisting of `n` UPID's
-		if d.upidType == 0x0d {
+		if d.upidType == SegUPIDMID {
 			// SCTE35 signal will either have an UPID or a MID
 			// When we have a MID, UPID value in struct will be 0.
 			d.upid = []byte{}
@@ -262,14 +266,17 @@ func (d *segmentationDescriptor) UPID() []byte {
 
 func (d *segmentationDescriptor) StreamSwitchSignalId() string {
 	var signalId string
-	// The VSS SignalId is present in the MID.
-	// SignalId is that UPID value in the MID which contains "BLACKOUT"
-	for i := 0; i < len(d.mid); i++ {
-		upidStr := string(d.mid[i].upid)
-		if strings.Contains(upidStr, "BLACKOUT") {
-			signalId = strings.TrimPrefix(upidStr, "BLACKOUT:")
-			break
-		}
+	// The VSS SignalId is present in the MID of len 2.
+	// SignalId is the UPID value in the MID which has
+	// delivery_not_restricted flag = 0 and
+	// contains "BLACKOUT" at UpidType of 0x09 and
+	// comcast:linear:licenserotation at 0x0E
+	if !d.deliveryNotRestricted &&
+		(d.mid[0].upidType == SegUPIDADI) &&
+		(strings.Contains(string(d.mid[0].upid), "BLACKOUT")) &&
+		(d.mid[1].upidType == SegUPADSINFO) &&
+		(strings.Contains(string(d.mid[1].upid), "comcast:linear:licenserotation")) {
+		signalId = strings.TrimPrefix(string(d.mid[0].upid), "BLACKOUT:")
 	}
 	return signalId
 }
