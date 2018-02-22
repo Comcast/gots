@@ -264,21 +264,25 @@ func (d *segmentationDescriptor) UPID() []byte {
 	return d.upid
 }
 
-func (d *segmentationDescriptor) StreamSwitchSignalId() string {
+func (d *segmentationDescriptor) StreamSwitchSignalId() (string, error) {
 	var signalId string
+	var err error
 	// The VSS SignalId is present in the MID of len 2.
 	// SignalId is the UPID value in the MID which has
 	// delivery_not_restricted flag = 0 and
 	// contains "BLACKOUT" at UpidType of 0x09 and
 	// comcast:linear:licenserotation at 0x0E
-	if !d.deliveryNotRestricted &&
+	if len(d.mid) == 2 &&
+		!d.deliveryNotRestricted &&
 		(d.mid[0].upidType == SegUPIDADI) &&
 		(strings.Contains(string(d.mid[0].upid), "BLACKOUT")) &&
 		(d.mid[1].upidType == SegUPADSINFO) &&
 		(strings.Contains(string(d.mid[1].upid), "comcast:linear:licenserotation")) {
 		signalId = strings.TrimPrefix(string(d.mid[0].upid), "BLACKOUT:")
+	} else {
+		err = gots.ErrVSSSignalIdNotFound
 	}
-	return signalId
+	return signalId, err
 }
 
 func (d *segmentationDescriptor) CanClose(out SegmentationDescriptor) bool {

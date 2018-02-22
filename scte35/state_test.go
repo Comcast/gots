@@ -555,6 +555,47 @@ func TestOutInInOutIn(t *testing.T) {
 	}
 }
 
+// Test the logic for when we recieve a VSS signal
+func TestVSS(t *testing.T) {
+	state := NewState()
+
+	outSignalBytes, _ := base64.StdEncoding.DecodeString("/DB7AAFe1ms7AP/wBQb+AAAAAABlAlJDVUVJAABeT3+XDUMJIUJMQUNLT1VUOlEza2dMYmx4UzlhTmh4S24wY1N0MlE9PQ4eY29tY2FzdDpsaW5lYXI6bGljZW5zZXJvdGF0aW9uQAAAAg9DVUVJAABeT3+XAABBAAC9uy+v")
+	outSignal, err := NewSCTE35(append([]byte{0x0}, outSignalBytes...))
+	if err != nil {
+		t.Errorf("Error creating SCTE-35 signal: %s", err.Error())
+	}
+
+	// 0x40
+	closed, err := state.ProcessDescriptor(outSignal.Descriptors()[0])
+	if err != nil {
+		t.Errorf("ProcessDescriptor returned an error: %s", err.Error())
+	}
+	if len(closed) != 0 {
+		t.Errorf("No events should have been closed (%d were)", len(closed))
+	}
+	if len(state.Open()) != 1 {
+		t.Errorf("There should be one open signal (%d)", len(state.Open()))
+	}
+	if state.Open()[0].TypeID() != SegDescUnscheduledEventStart {
+		t.Errorf("Expected segmentation_type_id 0x40 but got %x", state.Open()[0].TypeID())
+	}
+	if state.Open()[0].EventID() != 24143 {
+		t.Errorf("Expected event_id 24143 but got %d", state.Open()[0].EventID())
+	}
+
+	// 0x41
+	closed, err = state.ProcessDescriptor(outSignal.Descriptors()[1])
+	if err != nil {
+		t.Errorf("ProcessDescriptor returned an error: %s", err.Error())
+	}
+	if len(closed) != 1 {
+		t.Errorf("1 event should have been closed (%d were)", len(closed))
+	}
+	if len(state.Open()) != 0 {
+		t.Errorf("There should not be any open signals (%d)", len(state.Open()))
+	}
+}
+
 func printState(s State, header string) {
 	fmt.Printf("\n%s\n", header)
 	for _, open := range s.Open() {
