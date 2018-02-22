@@ -349,8 +349,7 @@ func TestParseSegmentationDescriptor_EventCancelled(t *testing.T) {
 func TestSCTEVSS(t *testing.T) {
 	s, err := NewSCTE35(testVss)
 	if err != nil {
-		t.Error(err)
-		t.FailNow()
+		t.Fatal(err)
 	}
 	if !s.HasPTS() {
 		t.Error("Expecting PTS, but none found")

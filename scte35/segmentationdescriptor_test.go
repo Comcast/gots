@@ -251,15 +251,21 @@ func TestCloseVSS(t *testing.T) {
 }
 
 func TestVSSSignalId(t *testing.T) {
+	expectedSignalId := "Sq+kY9muQderGNiNtOoN6w=="
 	vssScte35, err := NewSCTE35(vss)
+
 	if err != nil {
 		t.Error("NewSCTE35(vss) returned err:", err.Error())
 		t.FailNow()
 	}
 
-	signalID := vssScte35.Descriptors()[0].StreamSwitchSignalId()
-	// Cpmpare against the Signal ID we should see in the vssScte35 signal.
-	if strings.Compare(signalID, "Sq+kY9muQderGNiNtOoN6w==") != 0 {
+	signalID, err := vssScte35.Descriptors()[0].StreamSwitchSignalId()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Compare against the Signal ID we should see in the vssScte35 signal.
+	if strings.Compare(signalID, expectedSignalId) != 0 {
 		t.Error("SignalID parsed, not as expected")
 		t.FailNow()
 	}
