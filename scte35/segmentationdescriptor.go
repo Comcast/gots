@@ -271,7 +271,8 @@ func (d *segmentationDescriptor) StreamSwitchSignalId() string {
 	// delivery_not_restricted flag = 0 and
 	// contains "BLACKOUT" at UpidType of 0x09 and
 	// comcast:linear:licenserotation at 0x0E
-	if !d.deliveryNotRestricted &&
+	if len(d.mid) == 2 &&
+		!d.deliveryNotRestricted &&
 		(d.mid[0].upidType == SegUPIDADI) &&
 		(strings.Contains(string(d.mid[0].upid), "BLACKOUT")) &&
 		(d.mid[1].upidType == SegUPADSINFO) &&
