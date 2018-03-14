@@ -105,10 +105,10 @@ func init() {
 	// Program resumption should not close ProgramBreakaway as this logic will be
 	// handled in state.  We want processing to stop so that it won't close
 	// events after the breakaway
-	segCloseRules[SegDescUnscheduledEventStart][0x13] = segCloseNormal
-	segCloseRules[SegDescUnscheduledEventEnd][0x13] = segCloseNormal
-	segCloseRules[SegDescNetworkStart][0x13] = segCloseNormal
-	segCloseRules[SegDescNetworkEnd][0x13] = segCloseNormal
+	segCloseRules[SegDescTypes["SegDescUnscheduledEventStart"]][0x13] = segCloseNormal
+	segCloseRules[SegDescTypes["SegDescUnscheduledEventEnd"]][0x13] = segCloseNormal
+	segCloseRules[SegDescTypes["SegDescNetworkStart"]][0x13] = segCloseNormal
+	segCloseRules[SegDescTypes["SegDescNetworkEnd"]][0x13] = segCloseNormal
 }
 
 func (d *segmentationDescriptor) parseDescriptor(data []byte) error {
@@ -208,18 +208,18 @@ func (d *segmentationDescriptor) IsEventCanceled() bool {
 
 func (d *segmentationDescriptor) IsOut() bool {
 	switch d.TypeID() {
-	case SegDescProgramStart,
-		SegDescProgramResumption,
-		SegDescProgramOverlapStart,
-		SegDescProgramStartInProgress,
-		SegDescChapterStart,
-		SegDescBreakStart,
-		SegDescProviderAdvertisementStart,
-		SegDescDistributorAdvertisementStart,
-		SegDescProviderPOStart,
-		SegDescDistributorPOStart,
-		SegDescUnscheduledEventStart,
-		SegDescNetworkStart:
+	case SegDescTypes["SegDescProgramStart"],
+		SegDescTypes["SegDescProgramResumption"],
+		SegDescTypes["SegDescProgramOverlapStart"],
+		SegDescTypes["SegDescProgramStartInProgress"],
+		SegDescTypes["SegDescChapterStart"],
+		SegDescTypes["SegDescBreakStart"],
+		SegDescTypes["SegDescProviderAdvertisementStart"],
+		SegDescTypes["SegDescDistributorAdvertisementStart"],
+		SegDescTypes["SegDescProviderPOStart"],
+		SegDescTypes["SegDescDistributorPOStart"],
+		SegDescTypes["SegDescUnscheduledEventStart"],
+		SegDescTypes["SegDescNetworkStart"]:
 		return true
 	default:
 		return false
@@ -228,20 +228,20 @@ func (d *segmentationDescriptor) IsOut() bool {
 
 func (d *segmentationDescriptor) IsIn() bool {
 	switch d.TypeID() {
-	case SegDescProgramEnd,
-		SegDescProgramEarlyTermination,
-		SegDescProgramBreakaway,
-		SegDescProgramRunoverPlanned,
-		SegDescProgramRunoverUnplanned,
-		SegDescProgramBlackoutOverride,
-		SegDescChapterEnd,
-		SegDescBreakEnd,
-		SegDescProviderAdvertisementEnd,
-		SegDescDistributorAdvertisementEnd,
-		SegDescProviderPOEnd,
-		SegDescDistributorPOEnd,
-		SegDescUnscheduledEventEnd,
-		SegDescNetworkEnd:
+	case SegDescTypes["SegDescProgramEnd"],
+		SegDescTypes["SegDescProgramEarlyTermination"],
+		SegDescTypes["SegDescProgramBreakaway"],
+		SegDescTypes["SegDescProgramRunoverPlanned"],
+		SegDescTypes["SegDescProgramRunoverUnplanned"],
+		SegDescTypes["SegDescProgramBlackoutOverride"],
+		SegDescTypes["SegDescChapterEnd"],
+		SegDescTypes["SegDescBreakEnd"],
+		SegDescTypes["SegDescProviderAdvertisementEnd"],
+		SegDescTypes["SegDescDistributorAdvertisementEnd"],
+		SegDescTypes["SegDescProviderPOEnd"],
+		SegDescTypes["SegDescDistributorPOEnd"],
+		SegDescTypes["SegDescUnscheduledEventEnd"],
+		SegDescTypes["SegDescNetworkEnd"]:
 		return true
 	default:
 		return false
