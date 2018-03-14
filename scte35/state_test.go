@@ -547,7 +547,7 @@ func TestOutInInOutIn(t *testing.T) {
 	if len(state.Open()) != 1 {
 		t.Errorf("There should be one open signal (%d)", len(state.Open()))
 	}
-	if state.Open()[0].TypeID() != SegDescDistributorPOStart {
+	if state.Open()[0].TypeID() != SegDescTypes["SegDescDistributorPOStart"] {
 		t.Errorf("Expected segmentation_type_id 0x36 but got %x", state.Open()[0].TypeID())
 	}
 	if state.Open()[0].EventID() != 1342177266 {
@@ -576,7 +576,7 @@ func TestVSS(t *testing.T) {
 	if len(state.Open()) != 1 {
 		t.Errorf("There should be one open signal (%d)", len(state.Open()))
 	}
-	if state.Open()[0].TypeID() != SegDescUnscheduledEventStart {
+	if state.Open()[0].TypeID() != SegDescTypes["SegDescUnscheduledEventStart"] {
 		t.Errorf("Expected segmentation_type_id 0x40 but got %x", state.Open()[0].TypeID())
 	}
 	if state.Open()[0].EventID() != 24143 {

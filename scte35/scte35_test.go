@@ -141,7 +141,7 @@ func TestBasicSignal(t *testing.T) {
 		t.Errorf("Only expected one segmentation descriptor, but found %v instead", len(descs))
 	} else {
 		d := descs[0]
-		if d.TypeID() != SegDescProgramStart {
+		if d.TypeID() != SegDescTypes["SegDescProgramStart"] {
 			t.Errorf("Expecting seg descriptor type ProgramStart(0x10), got %x instead", d.TypeID())
 		} else if !d.IsOut() {
 			t.Error("SegDescProgramStart is out, but IsOut() returned false")
@@ -181,7 +181,7 @@ func TestParseSpliceNull(t *testing.T) {
 		t.Errorf("Only expected one segmentation descriptor, but found %v instead", len(descs))
 	} else {
 		d := descs[0]
-		if d.TypeID() != SegDescContentIdentification {
+		if d.TypeID() != SegDescTypes["SegDescContentIdentification"] {
 			t.Errorf("Expecting seg descriptor type SegDescContentIdentification(0x1), got %x instead", d.TypeID())
 		}
 		upid := d.UPID()
@@ -229,7 +229,7 @@ func TestSCTEExpanded(t *testing.T) {
 		t.Errorf("Only expected one segmentation descriptor, but found %v instead", len(descs2))
 	} else {
 		d2 := descs2[0]
-		if d2.TypeID() != SegDescDistributorPOStart {
+		if d2.TypeID() != SegDescTypes["SegDescDistributorPOStart"] {
 			t.Errorf("Expecting seg descriptor type SegDescDistributorPoStart(0x36), got %x instead", d2.TypeID())
 		} else if !d2.IsOut() {
 			t.Error("SegDescDistributorPoStart is out, but IsOut() returned false")
@@ -289,7 +289,7 @@ func TestSCTEMultipleDescriptors(t *testing.T) {
 		t.Error("expecting two descriptors in signal, but found", len(descs))
 		t.FailNow()
 	}
-	if descs[0].TypeID() != SegDescProviderPOEnd {
+	if descs[0].TypeID() != SegDescTypes["SegDescProviderPOEnd"] {
 		t.Error("Invalid seg type found, expected SegDescPlacementOpportunityEnd(0x35), found ", descs[0].TypeID())
 	}
 	if descs[0].IsOut() {
@@ -298,7 +298,7 @@ func TestSCTEMultipleDescriptors(t *testing.T) {
 	if !descs[0].IsIn() {
 		t.Error("descriptor type is an in, but IsIn() returned false")
 	}
-	if descs[1].TypeID() != SegDescProviderPOStart {
+	if descs[1].TypeID() != SegDescTypes["SegDescProviderPOStart"] {
 		t.Error("Invalid seg type found, expected SegDescPlacementOpportunityStart(0x34), but found", descs[1].TypeID())
 	}
 	if !descs[0].CanClose(descs[1]) {
@@ -337,8 +337,8 @@ func TestParseSegmentationDescriptor_EventCancelled(t *testing.T) {
 	}
 
 	segmentationDescriptor := s.Descriptors()[0]
-	if segmentationDescriptor.TypeID() != SegDescNotIndicated {
-		t.Errorf("Expected segmentationtype Not Indicated, got %s", segmentationDescriptor.TypeID())
+	if segmentationDescriptor.TypeID() != SegDescTypes["SegDescNotIndicated"] {
+		t.Errorf("Expected segmentationtype Not Indicated, got %d", segmentationDescriptor.TypeID())
 	}
 
 	if !segmentationDescriptor.IsEventCanceled() {
@@ -361,7 +361,7 @@ func TestSCTEVSS(t *testing.T) {
 		t.Error("expecting two descriptors in signal, but found", len(descs))
 		t.FailNow()
 	}
-	if descs[0].TypeID() != SegDescUnscheduledEventStart {
+	if descs[0].TypeID() != SegDescTypes["SegDescUnscheduledEventStart"] {
 		t.Error("Invalid seg type found, expected SegDescUnscheduledEventStart(0x40), found ", descs[0].TypeID())
 	}
 	if descs[0].IsIn() {
@@ -370,7 +370,7 @@ func TestSCTEVSS(t *testing.T) {
 	if !descs[0].IsOut() {
 		t.Error("descriptor type(0x40) is an out but IsOut() returned false")
 	}
-	if descs[1].TypeID() != SegDescUnscheduledEventEnd {
+	if descs[1].TypeID() != SegDescTypes["SegDescUnscheduledEventEnd"] {
 		t.Error("Invalid seg type found, expected SegDescUnscheduledEventEnd(0x41), but found", descs[1].TypeID())
 	}
 	if descs[1].IsOut() {

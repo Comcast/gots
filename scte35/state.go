@@ -98,12 +98,12 @@ func (s *state) ProcessDescriptor(desc SegmentationDescriptor) ([]SegmentationDe
 	// validation logic
 	switch desc.TypeID() {
 	// breakaway handling
-	case SegDescProgramBreakaway:
+	case SegDescTypes["SegDescProgramBreakaway"]:
 		s.inBlackout = true
 		s.blackoutIdx = len(s.open)
 		// append breakaway to match against resumption even though it's an in
 		s.open = append(s.open, desc)
-	case SegDescProgramResumption:
+	case SegDescTypes["SegDescProgramResumption"]:
 		if s.inBlackout {
 			s.inBlackout = false
 			s.open = s.open[0:s.blackoutIdx]
@@ -114,40 +114,40 @@ func (s *state) ProcessDescriptor(desc SegmentationDescriptor) ([]SegmentationDe
 		}
 		fallthrough
 	// out signals
-	case SegDescProgramStart,
-		SegDescChapterStart,
-		SegDescProviderAdvertisementStart,
-		SegDescDistributorAdvertisementStart,
-		SegDescProviderPOStart,
-		SegDescDistributorPOStart,
-		SegDescUnscheduledEventStart,
-		SegDescNetworkStart,
-		SegDescProgramOverlapStart,
-		SegDescProgramStartInProgress:
+	case SegDescTypes["SegDescProgramStart"],
+		SegDescTypes["SegDescChapterStart"],
+		SegDescTypes["SegDescProviderAdvertisementStart"],
+		SegDescTypes["SegDescDistributorAdvertisementStart"],
+		SegDescTypes["SegDescProviderPOStart"],
+		SegDescTypes["SegDescDistributorPOStart"],
+		SegDescTypes["SegDescUnscheduledEventStart"],
+		SegDescTypes["SegDescNetworkStart"],
+		SegDescTypes["SegDescProgramOverlapStart"],
+		SegDescTypes["SegDescProgramStartInProgress"]:
 		s.open = append(s.open, desc)
 
 	// in signals
 	// SegDescProgramEnd treated individually since it is expected to normally
 	// close program resumption AND program start
-	case SegDescProgramEnd:
+	case SegDescTypes["SegDescProgramEnd"]:
 		if len(closed) == 0 {
 			err = gots.ErrSCTE35MissingOut
 			break
 		}
 		for _, d := range closed {
-			if d.TypeID() != SegDescProgramStart &&
-				d.TypeID() != SegDescProgramResumption {
+			if d.TypeID() != SegDescTypes["SegDescProgramStart"] &&
+				d.TypeID() != SegDescTypes["SegDescProgramResumption"] {
 				err = gots.ErrSCTE35MissingOut
 				break
 			}
 		}
-	case SegDescChapterEnd,
-		SegDescProviderAdvertisementEnd,
-		SegDescProviderPOEnd,
-		SegDescDistributorAdvertisementEnd,
-		SegDescDistributorPOEnd,
-		SegDescUnscheduledEventEnd,
-		SegDescNetworkEnd:
+	case SegDescTypes["SegDescChapterEnd"],
+		SegDescTypes["SegDescProviderAdvertisementEnd"],
+		SegDescTypes["SegDescProviderPOEnd"],
+		SegDescTypes["SegDescDistributorAdvertisementEnd"],
+		SegDescTypes["SegDescDistributorPOEnd"],
+		SegDescTypes["SegDescUnscheduledEventEnd"],
+		SegDescTypes["SegDescNetworkEnd"]:
 		var openDesc SegmentationDescriptor
 		// descriptor matches out, but doesn't close it.  Check event id against open
 		if len(closed) == 0 || closed[len(closed)-1].TypeID() != desc.TypeID()-1 {

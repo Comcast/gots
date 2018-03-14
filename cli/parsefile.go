@@ -204,7 +204,11 @@ func printSegDesc(segdesc scte35.SegmentationDescriptor) {
 	}
 
 	printlnf("\t\tEvent ID %d", segdesc.EventID())
-	printlnf("\t\tType %+v", scte35.SegDescTypeNames[segdesc.TypeID()])
+	for segDescName, segDescValue := range scte35.SegDescTypes {
+		if segDescValue == segdesc.TypeID() {
+			printlnf("\t\tType %+v", segDescName)
+		}
+	}
 	if segdesc.HasDuration() {
 
 		printlnf("\t\t Duration %v", segdesc.Duration())
