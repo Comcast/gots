@@ -338,7 +338,7 @@ func TestParseSegmentationDescriptor_EventCancelled(t *testing.T) {
 
 	segmentationDescriptor := s.Descriptors()[0]
 	if segmentationDescriptor.TypeID() != SegDescNotIndicated {
-		t.Errorf("Expected segmentationtype Not Indicated, got %s", segmentationDescriptor.TypeID())
+		t.Errorf("Expected segmentationtype Not Indicated, got %d", segmentationDescriptor.TypeID())
 	}
 
 	if !segmentationDescriptor.IsEventCanceled() {
