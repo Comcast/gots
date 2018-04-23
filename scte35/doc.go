@@ -223,6 +223,8 @@ type SegmentationDescriptor interface {
 	// StreamSwitchSignalID returns the signalID of streamswitch signal if
 	// present in the descriptor
 	StreamSwitchSignalId() (string, error)
+	// SegmentNum returns the segment_num descriptor field
+	SegmentNum() uint8
 	// CanClose returns true if this descriptor can close the passed in descriptor
 	CanClose(out SegmentationDescriptor) bool
 	// Equal returns true/false if segmentation descriptor is functionally
