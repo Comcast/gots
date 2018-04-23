@@ -386,3 +386,25 @@ func TestSCTEVSS(t *testing.T) {
 		t.Error("SCTE obj of both descs is not the same")
 	}
 }
+
+func TestParseSegmentationDescriptor_Segments(t *testing.T) {
+	base64Bytes, _ := base64.StdEncoding.DecodeString("APwwPgAAEH2lcP//8AUG/iuc2acAKAIcQ1VFSUgAAEd/zwAA+Hm0CAgAAAAAJrAlpjQCAAAIQ1VFSQAAAAAOP8i1")
+
+	s, err := NewSCTE35(base64Bytes)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if s.Command() != TimeSignal {
+		t.Errorf("Invalid command found, expecting TimeSignal(6), got: %v", s.Command())
+	}
+	if len(s.Descriptors()) != 1 {
+		t.Errorf("Expected 1 segmentation descriptor, got %d", s.Descriptors())
+	}
+	want := uint8(2) // this particular signal should have segment_num=2
+	got := s.Descriptors()[0].SegmentNum()
+	if got == 0 {
+		t.Error("segment_num not found in descriptor")
+	} else if want != got {
+		t.Errorf("want segment_num %d, got %d", want, got)
+	}
+}
