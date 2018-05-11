@@ -57,58 +57,71 @@ func PmtAccumulatorDoneFunc(b []byte) (bool, error) {
 // pmtBytes should be concatenated packet payload contents.
 func NewPMT(pmtBytes []byte) (PMT, error) {
 	pmt := &pmt{}
-	err := pmt.parseTable(pmtBytes)
+	err := pmt.parseTables(pmtBytes)
 	if err != nil {
 		return nil, err
 	}
 	return pmt, nil
 }
 
-func (p *pmt) parseTable(pmtBytes []byte) error {
+func (p *pmt) parseTables(pmtBytes []byte) error {
+	sectionBytes := pmtBytes[1+PointerField(pmtBytes):]
+
+	for len(sectionBytes) > 0 && sectionBytes[0] != 0xFF {
+		tableLength := sectionLength(sectionBytes)
+
+		if tableID(sectionBytes) == 0x2 {
+			err := p.parsePMTSection(sectionBytes[0 : 3+tableLength])
+			if err != nil {
+				return err
+			}
+		}
+		sectionBytes = sectionBytes[3+tableLength:]
+	}
+
+	return nil
+}
+
+func (p *pmt) parsePMTSection(pmtBytes []byte) error {
 	var pids []uint16
 	var elementaryStreams []PmtElementaryStream
+	sectionLength := sectionLength(pmtBytes)
+	programInfoLength := uint16(pmtBytes[programInfoLengthOffset]&0x0f)<<8 |
+		uint16(pmtBytes[programInfoLengthOffset+1])
 
-	psiStart := uint16(PointerField(pmtBytes)) + 1 // Skip pointer field
-	if TableID(pmtBytes) == 0x02 {
-		programInfoLength := uint16(pmtBytes[psiStart+programInfoLengthOffset]&0x0f)<<8 |
-			uint16(pmtBytes[psiStart+programInfoLengthOffset+1])
-		sectionLength := SectionLength(pmtBytes)
+	// start at the stream descriptors, parse until the CRC
+	for offset := programInfoLengthOffset + 2 + programInfoLength; offset < PSIHeaderLen+sectionLength-pmtEsDescriptorStaticLen-CrcLen; {
+		elementaryStreamType := uint8(pmtBytes[offset])
+		elementaryPid := uint16(pmtBytes[offset+1]&0x1f)<<8 | uint16(pmtBytes[offset+2])
+		pids = append(pids, elementaryPid)
+		infoLength := uint16(pmtBytes[offset+3]&0x0f)<<8 | uint16(pmtBytes[offset+4])
 
-		// start at the stream descriptors, parse until the CRC
-		for offset := psiStart + programInfoLengthOffset + 2 + programInfoLength; offset < psiStart+PSIHeaderLen+sectionLength-pmtEsDescriptorStaticLen-CrcLen; {
-			elementaryStreamType := uint8(pmtBytes[offset])
-			elementaryPid := uint16(pmtBytes[offset+1]&0x1f)<<8 | uint16(pmtBytes[offset+2])
-			pids = append(pids, elementaryPid)
-			infoLength := uint16(pmtBytes[offset+3]&0x0f)<<8 | uint16(pmtBytes[offset+4])
-
-			// Move past the es descriptor static data
-			offset += pmtEsDescriptorStaticLen
-			var descriptors []PmtDescriptor
-			if infoLength != 0 && int(infoLength+offset) < len(pmtBytes) {
-				var descriptorOffset uint16
-				for descriptorOffset < infoLength {
-					tag := uint8(pmtBytes[offset+descriptorOffset])
-					descriptorOffset++
-					descriptorLength := uint16(pmtBytes[offset+descriptorOffset])
-					descriptorOffset++
-					startPos := offset + descriptorOffset
-					endPos := int(offset + descriptorOffset + descriptorLength)
-					if endPos < len(pmtBytes) {
-						data := pmtBytes[startPos:endPos]
-						descriptors = append(descriptors, NewPmtDescriptor(tag, data))
-					} else {
-						return gots.ErrParsePMTDescriptor
-					}
-					descriptorOffset += descriptorLength
+		// Move past the es descriptor static data
+		offset += pmtEsDescriptorStaticLen
+		var descriptors []PmtDescriptor
+		if infoLength != 0 && int(infoLength+offset) < len(pmtBytes) {
+			var descriptorOffset uint16
+			for descriptorOffset < infoLength {
+				tag := uint8(pmtBytes[offset+descriptorOffset])
+				descriptorOffset++
+				descriptorLength := uint16(pmtBytes[offset+descriptorOffset])
+				descriptorOffset++
+				startPos := offset + descriptorOffset
+				endPos := int(offset + descriptorOffset + descriptorLength)
+				if endPos < len(pmtBytes) {
+					data := pmtBytes[startPos:endPos]
+					descriptors = append(descriptors, NewPmtDescriptor(tag, data))
+				} else {
+					return gots.ErrParsePMTDescriptor
 				}
-				offset += infoLength
+				descriptorOffset += descriptorLength
 			}
-			es := NewPmtElementaryStream(elementaryStreamType, elementaryPid, descriptors)
-			elementaryStreams = append(elementaryStreams, es)
+			offset += infoLength
 		}
-	} else {
-		return gots.ErrUnknownTableID
+		es := NewPmtElementaryStream(elementaryStreamType, elementaryPid, descriptors)
+		elementaryStreams = append(elementaryStreams, es)
 	}
+
 	p.pids = pids
 	p.elementaryStreams = elementaryStreams
 	return nil
@@ -204,7 +217,7 @@ func FilterPMTPacketsToPids(packets []packet.Packet, pids []uint16) []packet.Pac
 		filteredPMT.Write(pmtPayload[programInfoLengthOffset+2 : programInfoLengthOffset+2+programInfoLength])
 	}
 
-	for offset := programInfoLengthOffset + 2 + programInfoLength; offset < PSIHeaderLen+sectionLength-pmtEsDescriptorStaticLen-CrcLen; {
+	for offset := programInfoLengthOffset + 2 + programInfoLength; offset < sectionLength-pmtEsDescriptorStaticLen-CrcLen; {
 		elementaryPid := uint16(pmtPayload[offset+1]&0x1f)<<8 | uint16(pmtPayload[offset+2])
 		infoLength := uint16(pmtPayload[offset+3]&0x0f)<<8 | uint16(pmtPayload[offset+4])
 
