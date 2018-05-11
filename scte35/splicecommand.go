@@ -61,6 +61,21 @@ func (c *timeSignal) PTS() gots.PTS {
 	return c.pts
 }
 
+type spliceNull struct {
+}
+
+func (c *spliceNull) CommandType() SpliceCommandType {
+	return SpliceNull
+}
+
+func (c *spliceNull) HasPTS() bool {
+	return false
+}
+
+func (c *spliceNull) PTS() gots.PTS {
+	return 0
+}
+
 type spliceInsert struct {
 	eventID               uint32
 	eventCancelIndicator  bool
