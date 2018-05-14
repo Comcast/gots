@@ -26,8 +26,6 @@ package gots
 
 import "math"
 
-const ()
-
 // PTS constants
 const (
 	PTS_DTS_INDICATOR_BOTH     = 3 // 11
