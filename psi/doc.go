@@ -74,6 +74,7 @@ type PSI interface {
 // PmtStreamType is used to represent elementary steam type inside a PMT
 type PmtStreamType interface {
 	StreamType() uint8
+	StreamTypeDescription() string
 	IsStreamWherePresentationLagsEbp() bool
 	IsAudioContent() bool
 	IsVideoContent() bool
