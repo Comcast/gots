@@ -61,6 +61,8 @@ func (descriptor *pmtDescriptor) decode() string {
 			descriptor.DecodeIso639LanguageCode(), descriptor.DecodeIso639AudioType())
 	case MAXIMUM_BITRATE:
 		return fmt.Sprintf("Maximum Bit-Rate (%d)", descriptor.DecodeMaximumBitRate())
+	case VIDEO_STREAM:
+		return fmt.Sprintf("Video Stream (%d)", descriptor.tag)
 	case AUDIO_STREAM:
 		return fmt.Sprintf("Audio Stream (%d)", descriptor.tag)
 	case REGISTRATION:
@@ -79,6 +81,8 @@ func (descriptor *pmtDescriptor) decode() string {
 		return fmt.Sprintf("SCTE Adaptation (%d)", descriptor.tag)
 	case EBP:
 		return fmt.Sprintf("EBP (%d)", descriptor.tag)
+	case STREAM_IDENTIFIER:
+		return fmt.Sprintf("Stream Identifier (%d): %v", descriptor.tag, descriptor.data[0])
 	}
 	return "unknown tag (" + strconv.Itoa(int(descriptor.tag)) + ")"
 }
