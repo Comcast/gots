@@ -143,8 +143,7 @@ func NewPESHeader(pesBytes []byte) (PESHeader, error) {
 
 			pes.ptsDtsIndicator = ptsDtsIndicator
 
-			if (ptsDtsIndicator == gots.PTS_DTS_INDICATOR_BOTH ||
-				ptsDtsIndicator == gots.PTS_DTS_INDICATOR_ONLY_PTS) &&
+			if ptsDtsIndicator != gots.PTS_DTS_INDICATOR_NONE &&
 				CheckLength(pesBytes, "PTS", 14) {
 
 				pes.pts = gots.ExtractTime(pesBytes[9:14])
@@ -193,12 +192,20 @@ func (pes *pESHeader) PTS() uint64 {
 	return pes.pts
 }
 
+func (pes *pESHeader) DTS() uint64 {
+	return pes.dts
+}
+
 func (pes *pESHeader) Data() []byte {
 	return pes.data
 }
 
 func (pes *pESHeader) HasPTS() bool {
 	return (pes.ptsDtsIndicator & gots.PTS_DTS_INDICATOR_ONLY_PTS) != 0
+}
+
+func (pes *pESHeader) HasDTS() bool {
+	return pes.ptsDtsIndicator == gots.PTS_DTS_INDICATOR_BOTH
 }
 
 func (pes *pESHeader) Format() string {
