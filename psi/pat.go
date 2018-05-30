@@ -53,8 +53,10 @@ func NewPAT(patBytes []byte) (PAT, error) {
 	}
 
 	if len(patBytes) == 188 {
+		var pkt packet.Packet
+		copy(pkt[:], patBytes)
 		var err error
-		patBytes, err = packet.Payload(patBytes)
+		patBytes, err = packet.Payload(&pkt)
 		if err != nil {
 			return nil, err
 		}
@@ -112,21 +114,21 @@ func (pat pat) SPTSpmtPID() (uint16, error) {
 // It returns a new PAT object parsed from the packet, if found, and otherwise
 // returns an error.
 func ReadPAT(r io.Reader) (PAT, error) {
-	pkt := make(packet.Packet, packet.PacketSize)
+	var pkt packet.Packet
 	var pat PAT
 	for pat == nil {
-		if _, err := io.ReadFull(r, pkt); err != nil {
+		if _, err := io.ReadFull(r, pkt[:]); err != nil {
 			if err == io.EOF || err == io.ErrUnexpectedEOF {
 				break
 			}
 			return nil, err
 		}
-		isPat, err := packet.IsPat(pkt)
+		isPat, err := packet.IsPat(&pkt)
 		if err != nil {
 			return nil, err
 		}
 		if isPat {
-			pay, err := packet.Payload(pkt)
+			pay, err := packet.Payload(&pkt)
 			if err != nil {
 				return nil, err
 			}

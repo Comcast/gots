@@ -35,18 +35,18 @@ const (
 )
 
 // Packet is the basic unit in a transport stream.
-type Packet []byte
+type Packet [PacketSize]byte
 
 // Accumulator is used to gather multiple packets
 // and return their concatenated payloads.
 // Accumulator is not thread safe.
 type Accumulator interface {
 	// Add adds a packet to the accumulator and returns true if done.
-	Add(Packet) (bool, error)
+	Add([]byte) (bool, error)
 	// Parse returns the concatenated payloads of all the packets that have been added to the accumulator
 	Parse() ([]byte, error)
 	// Packets returns the accumulated packets
-	Packets() []Packet
+	Packets() []*Packet
 	// Reset clears all packets in the accumulator
 	Reset()
 }

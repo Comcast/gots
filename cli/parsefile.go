@@ -90,7 +90,7 @@ func main() {
 		}
 	}
 
-	pkt := make(packet.Packet, packet.PacketSize)
+	var pkt packet.Packet
 	var numPackets uint64
 	ebps := make(map[uint64]ebp.EncoderBoundaryPoint)
 	scte35PIDs := make(map[uint16]bool)
@@ -107,7 +107,7 @@ func main() {
 	}
 
 	for {
-		if _, err := io.ReadFull(reader, pkt); err != nil {
+		if _, err := io.ReadFull(reader, pkt[:]); err != nil {
 			if err == io.EOF || err == io.ErrUnexpectedEOF {
 				break
 			}
@@ -116,13 +116,13 @@ func main() {
 		}
 		numPackets++
 		if *dumpSCTE35 {
-			currPID, err := packet.Pid(pkt)
+			currPID, err := packet.Pid(&pkt)
 			if err != nil {
 				fmt.Printf("Cannot get packet PID for %d\n", currPID)
 				continue
 			}
 			if scte35PIDs[currPID] {
-				pay, err := packet.Payload(pkt)
+				pay, err := packet.Payload(&pkt)
 				if err != nil {
 					fmt.Printf("Cannot get payload for packet number %d on PID %d Error=%s\n", numPackets, currPID, err)
 					continue
@@ -138,7 +138,7 @@ func main() {
 
 		}
 		if *showEbp {
-			ebpBytes, err := adaptationfield.EncoderBoundaryPoint(pkt)
+			ebpBytes, err := adaptationfield.EncoderBoundaryPoint(&pkt)
 			if err != nil {
 				// Not an EBP
 				continue
@@ -154,7 +154,7 @@ func main() {
 		}
 		if *showPacketNumberOfPID != 0 {
 			pid := uint16(*showPacketNumberOfPID)
-			pktPid, err := packet.Pid(pkt)
+			pktPid, err := packet.Pid(&pkt)
 			if err != nil {
 				continue
 			}
