@@ -57,6 +57,10 @@ type PESHeader interface {
 	HasPTS() bool
 	//PTS return the PTS time in the header
 	PTS() uint64
+	// HasDTS returns true if the header has a DTS time
+	HasDTS() bool
+	//DTS return the DTS time in the header
+	DTS() uint64
 	// Data returns the PES data
 	Data() []byte
 	// StreamId returns the stream id
