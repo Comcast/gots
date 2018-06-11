@@ -47,6 +47,10 @@ func (es *testPmtElementaryStream) StreamType() uint8 {
 	return es.streamType
 }
 
+func (es *testPmtElementaryStream) StreamTypeDescription() string {
+	return "Test Stream Description"
+}
+
 func (es *testPmtElementaryStream) IsAudioContent() bool {
 	return es.presentationLagsEbp
 }
