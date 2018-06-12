@@ -86,7 +86,36 @@ func TestParseTable(t *testing.T) {
 		"ffffffffffffffffffffffffffffffffffffffff")
 
 	pmt := pmt{}
-	err := pmt.parseTable(byteArray)
+	err := pmt.parseTables(byteArray)
+	if err != nil {
+		t.Errorf("Can't parse PMT table %v", err)
+	}
+
+	want := []uint16{101, 102, 110}
+	got := pmt.Pids()
+	if len(want) != len(got) {
+		t.Errorf("ES count does not match want:%v got:%v", len(want), len(got))
+	}
+
+	for i, pid := range got {
+		if want[i] != pid {
+			t.Errorf("PID does not match Want:%v Got:%v", want[i], pid)
+		}
+	}
+}
+
+func TestParseMultipleTables(t *testing.T) {
+	byteArray, _ := hex.DecodeString("00c00015000297000b0000000000000100000000006ed1581a" +
+		"02b02d0001cb0000e065f0060504435545491b" +
+		"e065f0050e030004b00fe066f0060a04656e670086e06ef0" +
+		"007fc9ad32ffffffffffffffffffffffffffffffffffffff" +
+		"ffffffffffffffffffffffffffffffffffffffffffffffff" +
+		"ffffffffffffffffffffffffffffffffffffffffffffffff" +
+		"ffffffffffffffffffffffffffffffffffffffffffffffff" +
+		"ffffffffffffffffffffffffffffffffffffffff")
+
+	pmt := pmt{}
+	err := pmt.parseTables(byteArray)
 	if err != nil {
 		t.Errorf("Can't parse PMT table %v", err)
 	}

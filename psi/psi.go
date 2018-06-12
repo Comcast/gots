@@ -29,12 +29,12 @@ func PointerField(psi []byte) uint8 {
 
 // TableID returns the psi table header table id
 func TableID(psi []byte) uint8 {
-	return uint8(psi[1+PointerField(psi)])
+	return tableID(psi[1+PointerField(psi):])
 }
 
 // SectionSyntaxIndicator returns true if the psi contains section syntax
 func SectionSyntaxIndicator(psi []byte) bool {
-	return psi[2+PointerField(psi)]&0x80 != 0
+	return sectionSyntaxIndicator(psi[1+PointerField(psi):])
 }
 
 // PrivateIndicator returns true if the psi contains private data
@@ -44,6 +44,19 @@ func PrivateIndicator(psi []byte) bool {
 
 // SectionLength returns the psi section length
 func SectionLength(psi []byte) uint16 {
-	offset := PointerField(psi)
-	return uint16(psi[2+offset]&3)<<8 | uint16(psi[3+offset])
+	return sectionLength(psi[1+PointerField(psi):])
+}
+
+// tableID returns the table id from the header of a section
+func tableID(psi []byte) uint8 {
+	return uint8(psi[0])
+}
+
+func sectionSyntaxIndicator(psi []byte) bool {
+	return psi[1]&0x80 != 0
+}
+
+// sectionLength returns the length of a single psi section
+func sectionLength(psi []byte) uint16 {
+	return uint16(psi[1]&3)<<8 | uint16(psi[2])
 }
