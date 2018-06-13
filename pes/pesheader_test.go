@@ -108,3 +108,36 @@ func TestNewPESHeaderMissingBytes(t *testing.T) {
 		t.Errorf("Expected that this packet is not a PES since PUSI is 0")
 	}
 }
+
+func TestPESHeaderTS(t *testing.T) {
+
+	pkt, _ := hex.DecodeString(
+		"4752a31c000001e0000080c00a210005bf21210005a7ab000001000697fffb80" +
+			"000001b5844ffb9400000001b24741393403d4fffc8080fd8fdffa0000fa0000" +
+			"fa0000fa0000fa0000fa0000fa0000fa0000fa0000fa0000fa0000fa0000fa00" +
+			"00fa0000fa0000fa0000fa0000fa0000ff000001014a24afffa4e8b836d7eeee" +
+			"4dafded260dab9688b2a0d89bed7fd3ad106c1b6bfe5a24a20d89b572ca92544" +
+			"389b572ca7b441b176bffebd06c5daffe8bd06c9b5fbb8364da6ffad")
+
+	pesBytes, err := packet.PESHeader(pkt)
+	if err != nil {
+		t.Errorf("Expected that this packet is a PES")
+	}
+	pes, err := NewPESHeader(pesBytes)
+	if err != nil {
+		t.Error(err)
+	}
+
+	expectedPTS := uint64(90000)
+	if pes.PTS() != expectedPTS {
+		t.Errorf("Invalid pts. Expected: %d, Actual: %d", expectedPTS, pes.PTS())
+	}
+
+	expectedDTS := uint64(86997)
+	if !pes.HasDTS() {
+		t.Errorf("Invalid dts indicator.")
+	}
+	if pes.DTS() != expectedDTS {
+		t.Errorf("Invalid dts. Expected: %d, Actual: %d", expectedDTS, pes.DTS())
+	}
+}

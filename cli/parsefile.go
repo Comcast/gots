@@ -226,7 +226,7 @@ func printPmt(pn uint16, pmt psi.PMT) {
 	printlnf("\tPIDs %v", pmt.Pids())
 	println("\tElementary Streams")
 	for _, es := range pmt.ElementaryStreams() {
-		printlnf("\t\tPid %v : StreamType %v", es.ElementaryPid(), es.StreamType())
+		printlnf("\t\tPid %v: StreamType %v: %v", es.ElementaryPid(), es.StreamType(), es.StreamTypeDescription())
 		for _, d := range es.Descriptors() {
 			printlnf("\t\t\t%+v", d)
 		}

@@ -21,42 +21,35 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
-package psi
 
-func PointerField(psi []byte) uint8 {
-	return psi[0]
+package gots
+
+// ExtractPCR extracts a PCR time
+// PCR is the Program Clock Reference.
+// First 33 bits are PCR base.
+// Next 6 bits are reserved.
+// Final 9 bits are PCR extension.
+func ExtractPCR(bytes []byte) uint64 {
+	var a, b, c, d, e, f uint64
+	a = uint64(bytes[0])
+	b = uint64(bytes[1])
+	c = uint64(bytes[2])
+	d = uint64(bytes[3])
+	e = uint64(bytes[4])
+	f = uint64(bytes[5])
+	pcrBase := (a << 25) | (b << 17) | (c << 9) | (d << 1) | (e >> 7)
+	pcrExt := ((e & 0x1) << 8) | f
+	return pcrBase*300 + pcrExt
 }
 
-// TableID returns the psi table header table id
-func TableID(psi []byte) uint8 {
-	return tableID(psi[1+PointerField(psi):])
-}
-
-// SectionSyntaxIndicator returns true if the psi contains section syntax
-func SectionSyntaxIndicator(psi []byte) bool {
-	return sectionSyntaxIndicator(psi[1+PointerField(psi):])
-}
-
-// PrivateIndicator returns true if the psi contains private data
-func PrivateIndicator(psi []byte) bool {
-	return psi[2+PointerField(psi)]&0x40 != 0
-}
-
-// SectionLength returns the psi section length
-func SectionLength(psi []byte) uint16 {
-	return sectionLength(psi[1+PointerField(psi):])
-}
-
-// tableID returns the table id from the header of a section
-func tableID(psi []byte) uint8 {
-	return uint8(psi[0])
-}
-
-func sectionSyntaxIndicator(psi []byte) bool {
-	return psi[1]&0x80 != 0
-}
-
-// sectionLength returns the length of a single psi section
-func sectionLength(psi []byte) uint16 {
-	return uint16(psi[1]&3)<<8 | uint16(psi[2])
+// InsertPCR insterts a given pcr time into a byte slice.
+func InsertPCR(b []byte, pcr uint64) {
+	pcrBase := pcr / 300
+	pcrExt := (pcr - pcrBase*300) & 0x1ff
+	b[0] = byte(pcrBase >> 25)
+	b[1] = byte(pcrBase >> 17)
+	b[2] = byte(pcrBase >> 9)
+	b[3] = byte(pcrBase >> 1)
+	b[4] = byte((pcrBase << 7) | (pcrExt >> 8) | 0x7e)
+	b[5] = byte(pcrExt & 0xff)
 }

@@ -21,42 +21,32 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
-package psi
+package gots
 
-func PointerField(psi []byte) uint8 {
-	return psi[0]
+import (
+	"testing"
+)
+
+func TestExtractPCR(t *testing.T) {
+	b := []byte{168, 149, 227, 4, 0, 126}
+	pcr := ExtractPCR(b)
+	if pcr != 1697037160926 {
+		t.Errorf("ExtractPCR returned %v", pcr)
+	}
 }
 
-// TableID returns the psi table header table id
-func TableID(psi []byte) uint8 {
-	return tableID(psi[1+PointerField(psi):])
-}
+func TestInsertPCR(t *testing.T) {
+	b := make([]byte, 6)
 
-// SectionSyntaxIndicator returns true if the psi contains section syntax
-func SectionSyntaxIndicator(psi []byte) bool {
-	return sectionSyntaxIndicator(psi[1+PointerField(psi):])
-}
+	var pcr uint64 = 1697037160926
+	InsertPCR(b, pcr)
+	if ExtractPCR(b) != pcr {
+		t.Errorf("Insert PCR test 1 failed: %v", b)
+	}
 
-// PrivateIndicator returns true if the psi contains private data
-func PrivateIndicator(psi []byte) bool {
-	return psi[2+PointerField(psi)]&0x40 != 0
-}
-
-// SectionLength returns the psi section length
-func SectionLength(psi []byte) uint16 {
-	return sectionLength(psi[1+PointerField(psi):])
-}
-
-// tableID returns the table id from the header of a section
-func tableID(psi []byte) uint8 {
-	return uint8(psi[0])
-}
-
-func sectionSyntaxIndicator(psi []byte) bool {
-	return psi[1]&0x80 != 0
-}
-
-// sectionLength returns the length of a single psi section
-func sectionLength(psi []byte) uint16 {
-	return uint16(psi[1]&3)<<8 | uint16(psi[2])
+	var pcr2 uint64 = 2576980377599
+	InsertPCR(b, pcr2)
+	if ExtractPCR(b) != pcr2 {
+		t.Errorf("Insert PCR test 2 failed: %v (%v)", b, ExtractPCR(b))
+	}
 }
