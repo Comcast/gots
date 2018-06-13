@@ -103,6 +103,7 @@ func (s *scte35) parseTable(data []byte) error {
 			s.hasPTS = cmd.HasPTS()
 			s.commandInfo = cmd
 		case SpliceNull:
+			s.commandInfo = &spliceNull{}
 		default:
 			return gots.ErrSCTE35UnsupportedSpliceCommand
 		}
