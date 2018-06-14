@@ -35,10 +35,9 @@ type accumulator struct {
 	packets []*Packet
 }
 
-// NewAccumulator creates a new packet accumulator
-// that is done when the provided doneFunc returns true.
-// PacketAccumulator is not thread safe
-func NewAccumulator(f func([]byte) (bool, error)) Accumulator {
+// NewAccumulator creates a new packet accumulator that is done when
+// the provided function returns done as true.
+func NewAccumulator(f func(data []byte) (done bool, err error)) Accumulator {
 	return &accumulator{f: f}
 }
 
