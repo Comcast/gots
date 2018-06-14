@@ -54,7 +54,7 @@ func main() {
 	}
 	tsFile, err := os.Open(*fileName)
 	if err != nil {
-		fmt.Printf("Cannot access test asset %s.\n", fileName)
+		fmt.Printf("Cannot access test asset %s.\n", *fileName)
 		return
 	}
 	defer func(file *os.File) {
