@@ -27,13 +27,9 @@ package packet
 import (
 	"bytes"
 	"encoding/hex"
-	"fmt"
 	"testing"
 )
 
-func printlnf(format string, a ...interface{}) {
-	fmt.Printf(format+"\n", a...)
-}
 func TestPayloadUnitStartIndicatorTrue(t *testing.T) {
 	packet, _ := hex.DecodeString(
 		"474000130000b00d0001c700000001e0642273423bffffffffffffffffffffff" +
