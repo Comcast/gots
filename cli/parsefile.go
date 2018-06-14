@@ -54,7 +54,7 @@ func main() {
 	}
 	tsFile, err := os.Open(*fileName)
 	if err != nil {
-		printlnf("Cannot access test asset %s.", fileName)
+		fmt.Printf("Cannot access test asset %s.\n", fileName)
 		return
 	}
 	defer func(file *os.File) {
@@ -72,7 +72,7 @@ func main() {
 	}
 	pat, err := psi.ReadPAT(reader)
 	if err != nil {
-		println(err)
+		fmt.Println(err)
 		return
 	}
 	printPat(pat)
@@ -111,25 +111,25 @@ func main() {
 			if err == io.EOF || err == io.ErrUnexpectedEOF {
 				break
 			}
-			println(err)
+			fmt.Println(err)
 			return
 		}
 		numPackets++
 		if *dumpSCTE35 {
 			currPID, err := packet.Pid(pkt)
 			if err != nil {
-				printlnf("Cannot get packet PID for %d", currPID)
+				fmt.Printf("Cannot get packet PID for %d\n", currPID)
 				continue
 			}
 			if scte35PIDs[currPID] {
 				pay, err := packet.Payload(pkt)
 				if err != nil {
-					printlnf("Cannot get payload for packet number %d on PID %d Error=%s", numPackets, currPID, err)
+					fmt.Printf("Cannot get payload for packet number %d on PID %d Error=%s\n", numPackets, currPID, err)
 					continue
 				}
 				msg, err := scte35.NewSCTE35(pay)
 				if err != nil {
-					printlnf("Cannot parse SCTE35 Error=%v", err)
+					fmt.Printf("Cannot parse SCTE35 Error=%v\n", err)
 					continue
 				}
 				printSCTE35(currPID, msg)
@@ -150,7 +150,7 @@ func main() {
 				continue
 			}
 			ebps[numPackets] = boundaryPoint
-			printlnf("Packet %d contains EBP %+v", numPackets, boundaryPoint)
+			fmt.Printf("Packet %d contains EBP %+v\n\n", numPackets, boundaryPoint)
 		}
 		if *showPacketNumberOfPID != 0 {
 			pid := uint16(*showPacketNumberOfPID)
@@ -159,23 +159,19 @@ func main() {
 				continue
 			}
 			if pktPid == pid {
-				printlnf("First Packet of PID %d contents: %x", pid, pkt)
+				fmt.Printf("First Packet of PID %d contents: %x\n", pid, pkt)
 				break
 			}
 		}
 	}
-	println()
-
+	fmt.Println()
 }
 
 func printSCTE35(pid uint16, msg scte35.SCTE35) {
-	printlnf("SCTE35 Message on PID %d", pid)
-
+	fmt.Printf("SCTE35 Message on PID %d\n", pid)
 	printSpliceCommand(msg.CommandInfo())
 
-	insert, ok := msg.CommandInfo().(scte35.SpliceInsertCommand)
-	if ok {
-
+	if insert, ok := msg.CommandInfo().(scte35.SpliceInsertCommand); ok {
 		printSpliceInsertCommand(insert)
 	}
 	for _, segdesc := range msg.Descriptors() {
@@ -185,60 +181,54 @@ func printSCTE35(pid uint16, msg scte35.SCTE35) {
 }
 
 func printSpliceCommand(spliceCommand scte35.SpliceCommand) {
-	printlnf("\tCommand Type %v", scte35.SpliceCommandTypeNames[spliceCommand.CommandType()])
+	fmt.Printf("\tCommand Type %v\n", scte35.SpliceCommandTypeNames[spliceCommand.CommandType()])
+
 	if spliceCommand.HasPTS() {
-
-		printlnf("\tPTS %v", spliceCommand.PTS())
-
+		fmt.Printf("\tPTS %v\n", spliceCommand.PTS())
 	}
 }
 
 func printSegDesc(segdesc scte35.SegmentationDescriptor) {
 	if segdesc.IsIn() {
-
-		printlnf("\t<--- IN Segmentation Descriptor")
+		fmt.Printf("\t<--- IN Segmentation Descriptor\n")
 	}
 	if segdesc.IsOut() {
-
-		printlnf("\t---> OUT Segmentation Descriptor")
+		fmt.Printf("\t---> OUT Segmentation Descriptor\n")
 	}
 
-	printlnf("\t\tEvent ID %d", segdesc.EventID())
-	printlnf("\t\tType %+v", scte35.SegDescTypeNames[segdesc.TypeID()])
+	fmt.Printf("\t\tEvent ID %d\n", segdesc.EventID())
+	fmt.Printf("\t\tType %+v\n", scte35.SegDescTypeNames[segdesc.TypeID()])
 	if segdesc.HasDuration() {
-
-		printlnf("\t\t Duration %v", segdesc.Duration())
+		fmt.Printf("\t\t Duration %v\n", segdesc.Duration())
 	}
 
 }
 
 func printSpliceInsertCommand(insert scte35.SpliceInsertCommand) {
-	println("\tSplice Insert Command")
-	printlnf("\t\tEvent ID %v", insert.EventID())
-	if insert.HasDuration() {
-		printlnf("\t\tDuration %v", insert.Duration())
+	fmt.Println("\tSplice Insert Command")
+	fmt.Printf("\t\tEvent ID %v\n", insert.EventID())
 
+	if insert.HasDuration() {
+		fmt.Printf("\t\tDuration %v\n", insert.Duration())
 	}
 }
 
 func printPmt(pn uint16, pmt psi.PMT) {
-	printlnf("Program #%v PMT", pn)
-	printlnf("\tPIDs %v", pmt.Pids())
-	println("\tElementary Streams")
+	fmt.Printf("Program #%v PMT\n", pn)
+	fmt.Printf("\tPIDs %v\n", pmt.Pids())
+	fmt.Println("\tElementary Streams")
+
 	for _, es := range pmt.ElementaryStreams() {
-		printlnf("\t\tPid %v: StreamType %v: %v", es.ElementaryPid(), es.StreamType(), es.StreamTypeDescription())
+		fmt.Printf("\t\tPid %v: StreamType %v: %v\n", es.ElementaryPid(), es.StreamType(), es.StreamTypeDescription())
+
 		for _, d := range es.Descriptors() {
-			printlnf("\t\t\t%+v", d)
+			fmt.Printf("\t\t\t%+v\n", d)
 		}
 	}
 }
 
 func printPat(pat psi.PAT) {
-	println("Pat")
-	printlnf("\tPMT PIDs %v", pat.ProgramMap())
-	printlnf("\tNumber of Programs %v", pat.NumPrograms())
-}
-
-func printlnf(format string, a ...interface{}) {
-	fmt.Printf(format+"\n", a...)
+	fmt.Println("Pat")
+	fmt.Printf("\tPMT PIDs %v\n", pat.ProgramMap())
+	fmt.Printf("\tNumber of Programs %v\n", pat.NumPrograms())
 }
