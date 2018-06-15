@@ -36,7 +36,6 @@ deploy:
   prerelease: true
   on:
     repo: Comcast/gots
-    tags: true
     condition: $LATEST = true
     branch: master
 
