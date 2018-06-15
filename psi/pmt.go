@@ -355,6 +355,10 @@ func ReadPMT(r io.Reader, pid uint16) (PMT, error) {
 			if err != nil {
 				return nil, err
 			}
+			if len(pmt.Pids()) == 0 {
+				done = false
+				pmtAcc = packet.NewAccumulator(PmtAccumulatorDoneFunc)
+			}
 		}
 	}
 	return pmt, nil

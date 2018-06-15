@@ -680,6 +680,7 @@ func TestReadPMTForSmoke(t *testing.T) {
 	pmt, err := ReadPMT(r, pid)
 	if err != nil {
 		t.Errorf("Unexpected error reading PMT: %v", err)
+		return
 	}
 	// sanity check (tests integration a bit)
 	if len(pmt.ElementaryStreams()) != 2 {
@@ -700,6 +701,34 @@ func TestReadPMTIncomplete(t *testing.T) {
 	_, err := ReadPMT(r, pid)
 	if err == nil {
 		t.Errorf("Expected to get error reading PMT, but did not")
+	}
+}
+
+func TestReadPMTSCTE(t *testing.T) {
+	bs, _ := hex.DecodeString("47403b1b00c0001500000100810000000000000100000000002f832c69ff" +
+		"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
+		"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
+		"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
+		"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
+		"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
+		"ffffffffffffffff47403b1c0002b0b20001cb0000f13df01809044749e1" +
+		"0b050441432d330504454143330504435545491bf13df0102a027e1f9700" +
+		"e9080c001f418507d04181f13ef00f810706380fff1f003f0a04656e6700" +
+		"81f13ff00f8107061003ff1f003f0a047370610086f140f00f8a01009700" +
+		"e9080c001f418507d041c0f141f012050445545631a100e9080c001f4185" +
+		"07d041c0f142f013050445545631a20100e9080c001f418507d041c0f164" +
+		"f008bf06496e766964690bcfa64bffff") // two PMT packets, first with SCTE 0xc0 table only
+	r := bytes.NewReader(bs)
+
+	pid := uint16(59)
+	pmt, err := ReadPMT(r, pid)
+	if err != nil {
+		t.Errorf("Unexpected error reading PMT: %v", err)
+		return
+	}
+	// sanity check (tests integration a bit)
+	if len(pmt.ElementaryStreams()) != 7 {
+		t.Errorf("PMT read is invalid, did not have expected number of streams")
 	}
 }
 
