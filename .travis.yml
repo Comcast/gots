@@ -21,7 +21,7 @@ install:
 script:
   - go test -v -race ./...
       # Only build binaries from the latest Go release.
-  - if [ "${LATEST}" = "true" ]; then cd cli && gox -os="linux darwin windows" -arch="amd64" -verbose ./cli fi
+  - if [ "${LATEST}" = "true" ]; then cd cli && gox -os="linux darwin windows" -arch="amd64" -verbose ./cli; fi
 
 deploy:
   provider: releases
