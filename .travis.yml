@@ -8,6 +8,7 @@ matrix:
     - go: "1.6"
     - go: "1.7"
     - go: "1.8"
+    - go: "1.9"
     - go: tip
   allow_failures:
     - go: tip
@@ -21,16 +22,16 @@ install:
 script:
   - go test -v -race ./...
       # Only build binaries from the latest Go release.
-  - if [ "${LATEST}" = "true" ]; then cd cli && gox -os="linux darwin windows" -arch="amd64" -verbose ./cli; fi
+  - if [ "${LATEST}" = "true" ]; gox -os="linux darwin windows" -arch="amd64" -verbose ./cli; fi
 
 deploy:
   provider: releases
   api_key:
     secure: Qe0BeyJOS3sAFbGnfIT1wdN1wbpHWiDlXNNNeKXp0ObTWAL2feErW3qckcmIEWZ/OJ3HUPE7dS3OyMd3umbukvIa4q+7b/Xs3WFGX+Xjh2JOVwjXRky3qBM6nGbR4VHXhLyI+uWomycY2BoyeTW3VmNrDoENvT8Cr+ovT79lHsaQ4D5Ros5PARigxW383YmO0FDi5tH5s7BJ8iMr3BCqgXEIFNCxsCRZkoT1zoJP5vmBGeDr1RhHrmJnyqEi98ngOlH3Nl0P4kFuANRtr2cws/nueI2BZXh6161rhTtituB2w9V0BIf2EKOP7W5YbUPlw1o+9Fdv4vxrCzinA5KHPDxPB8O8viSVZm4rAnXhhJXZdwhYgGfdY6VUPrqCOe2SEWxTbBkDrT4k8Zxk/7DQF048oqw6Eee/pJ+B3yEP3I7zD8OvEF80W7mlBZaTqLjeMDXVt6FmLhx4fxMEMLFCK7OCMMJtcKVeNaP9LgPDXXxAW1T6/5xdeR6eUq14AZNwOVmES3jnnikkTOoj4j7vp2OFts5OqIRyZ0BeOFWpy4tbprQ7oUDEBZ6eTn7VwUPwLytP+SRLqPPySbOlPVsX+TTNLRD2c56C7N4Hrdv3drDNp7wXojjdrLtl5T1fAx5jB4wG5gCtFEnbeTxODntERLhrqQ4DxX9rSu8rl7L9CDo=
   file:
-  - cli_windows_amd64.exe
-  - cli_darwin_amd64
-  - cli_linux_amd64
+  - cli/cli_windows_amd64.exe
+  - cli/cli_darwin_amd64
+  - cli/cli_linux_amd64
   skip_cleanup: true
   prerelease: true
   on:
