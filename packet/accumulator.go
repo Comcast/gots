@@ -69,7 +69,9 @@ func (a *accumulator) Add(pkt Packet) (bool, error) {
 		// First packet must have payload unit start indicator
 		return false, gots.ErrNoPayloadUnitStartIndicator
 	}
-	a.packets = append(a.packets, pkt)
+	pktCopy := make(Packet, PacketSize)
+	copy(pktCopy, pkt)
+	a.packets = append(a.packets, pktCopy)
 	b, err := a.Parse()
 	if err != nil {
 		return false, err
