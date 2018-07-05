@@ -103,7 +103,7 @@ func IsNull(packet Packet) (bool, error) {
 	return false, nil
 }
 
-// IsPat returns true if the proved packet is a PAT
+// IsPat returns true if the proveided packet is a PAT
 func IsPat(packet Packet) (bool, error) {
 	if badLen(packet) {
 		return false, gots.ErrInvalidPacketLength
@@ -116,7 +116,7 @@ func IsPat(packet Packet) (bool, error) {
 }
 
 // badLen returns true is the packet is of
-// valid length
+// invalid length
 func badLen(packet Packet) bool {
 	if len(packet) != PacketSize {
 		return true
