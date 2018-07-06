@@ -31,7 +31,23 @@ const (
 	// SyncByte is the expected value of the sync byte
 	SyncByte = 71 // 0x47
 	// NullPacketPid is the pid reserved for null packets
-	NullPacketPid = uint16(8191)
+	NullPacketPid = 8191
+)
+
+type TransportScramblingControlOptions byte
+
+const (
+	NoScrambleFlag      TransportScramblingControlOptions = 0 // 00
+	ScrambleEvenKeyFlag TransportScramblingControlOptions = 2 // 10
+	ScrambleOddKeyFlag  TransportScramblingControlOptions = 3 // 11
+)
+
+type AdaptationFieldControlOptions byte
+
+const (
+	PayloadFlag                   AdaptationFieldControlOptions = 1 // 10
+	AdaptationFieldFlag           AdaptationFieldControlOptions = 2 // 01
+	PayloadAndAdaptationFieldFlag AdaptationFieldControlOptions = 3 // 11
 )
 
 // Packet is the basic unit in a transport stream.
