@@ -39,7 +39,7 @@ func assertPacket(t *testing.T, target Packet, generated Packet) {
 	}
 
 	if !target.Equals(generated) {
-		t.Errorf("crafted packet:\n%X \ndoes not match expected packet:\n%X.", generated, target)
+		t.Errorf("crafted packet:\n%s \ndoes not match expected packet:\n%s.", generated, target)
 	}
 }
 
@@ -186,29 +186,29 @@ func TestTransportScramblingControl(t *testing.T) {
 func TestSetAdaptationFieldControl(t *testing.T) {
 	generated := NewPacket()
 
-	target := createPacketEmptyBody(t, "471FFF10")
+	target := createPacketEmptyBody(t, "471FFF1000")
 	generated.SetAdaptationFieldControl(PayloadFlag)
 	assertPacket(t, target, generated)
 
-	target = createPacketEmptyBody(t, "471FFF30")
+	target = createPacketEmptyBody(t, "471FFF3001")
 	generated.SetAdaptationFieldControl(PayloadAndAdaptationFieldFlag)
 	assertPacket(t, target, generated)
 
-	target = createPacketEmptyBody(t, "471FFF20")
+	target = createPacketEmptyBody(t, "471FFF2001")
 	generated.SetAdaptationFieldControl(AdaptationFieldFlag)
 	assertPacket(t, target, generated)
 }
 
 func TestAdaptationFieldControl(t *testing.T) {
-	pkt := createPacketEmptyBody(t, "471FFF90")
+	pkt := createPacketEmptyBody(t, "471FFF9000")
 	if pkt.AdaptationFieldControl() != PayloadFlag {
 		t.Error("Failed to set AdaptationFieldControl to PayloadFlag.")
 	}
-	pkt = createPacketEmptyBody(t, "471FFFB0")
+	pkt = createPacketEmptyBody(t, "471FFFB001")
 	if pkt.AdaptationFieldControl() != PayloadAndAdaptationFieldFlag {
 		t.Error("Failed to set AdaptationFieldControl to PayloadAndAdaptationFieldFlag.")
 	}
-	pkt = createPacketEmptyBody(t, "471FFFA0")
+	pkt = createPacketEmptyBody(t, "471FFFA001")
 	if pkt.AdaptationFieldControl() != AdaptationFieldFlag {
 		t.Error("Failed to set AdaptationFieldControl to AdaptationFieldFlag.")
 	}
@@ -256,15 +256,15 @@ func TestIsNull(t *testing.T) {
 }
 
 func TestHasAdaptationField(t *testing.T) {
-	pkt := createPacketEmptyBody(t, "471FFF10")
+	pkt := createPacketEmptyBody(t, "471FFF100100")
 	if pkt.HasAdaptationField() {
 		t.Errorf("Packet should not have Adaptation Field (AdaptationFieldControl = 01).")
 	}
-	pkt = createPacketEmptyBody(t, "471FFF20")
+	pkt = createPacketEmptyBody(t, "471FFF200100")
 	if !pkt.HasAdaptationField() {
 		t.Errorf("Packet should have Adaptation Field (AdaptationFieldControl = 10).")
 	}
-	pkt = createPacketEmptyBody(t, "471FFF30")
+	pkt = createPacketEmptyBody(t, "471FFF300100")
 	if !pkt.HasAdaptationField() {
 		t.Errorf("Packet should have Adaptation Field (AdaptationFieldControl = 11).")
 	}
@@ -320,6 +320,94 @@ func TestHeaderComboBasic(t *testing.T) {
 	}
 	if generated.TransportScramblingControl() != ScrambleEvenKeyFlag {
 		t.Errorf("Reads different TransportScramblingControl than expected.")
+	}
+}
+
+func TestNilSlicePacket(t *testing.T) {
+	target := createPacketEmptyBody(t, "47EFA098")
+	generated := Packet(nil)
+
+	generated.SetContinuityCounter(7)
+	generated.IncContinuityCounter()
+	generated.SetPID(4000)
+	generated.SetTransportErrorIndicator(true)
+	generated.SetPayloadUnitStartIndicator(true)
+	generated.SetTransportPriority(true)
+	generated.SetAdaptationFieldControl(PayloadFlag)
+	generated.SetTransportScramblingControl(ScrambleEvenKeyFlag)
+
+	if generated.Equals(target) {
+		t.Errorf("Packets cannot be equal.")
+	}
+	if generated.ContinuityCounter() != 0 {
+		t.Errorf("Reads different ContinuityCounter than expected.")
+	}
+	if generated.PID() != 0x1FFF {
+		t.Errorf("Reads different PID than expected.")
+	}
+	if generated.TransportErrorIndicator() != false {
+		t.Errorf("Reads different TransportErrorIndicator than expected.")
+	}
+	if generated.PayloadUnitStartIndicator() != false {
+		t.Errorf("Reads different PayloadUnitStartIndicator than expected.")
+	}
+	if generated.TransportPriority() != false {
+		t.Errorf("Reads different TP than expected.")
+	}
+	if generated.AdaptationFieldControl() != PayloadFlag {
+		t.Errorf("Reads different AdaptationFieldControl than expected.")
+	}
+	if generated.TransportScramblingControl() != NoScrambleFlag {
+		t.Errorf("Reads different TransportScramblingControl than expected.")
+	}
+}
+
+func BenchmarkNewStyleAllFields(b *testing.B) {
+	for n := 0; n < b.N; n++ {
+		// create everything
+		p := NewPacket()
+		p.SetContinuityCounter(7)
+		p.IncContinuityCounter()
+		p.SetPID(4000)
+		p.SetTransportErrorIndicator(false)
+		p.SetPayloadUnitStartIndicator(true)
+		p.SetTransportPriority(false)
+		p.SetAdaptationFieldControl(AdaptationFieldFlag)
+		p.SetTransportScramblingControl(ScrambleEvenKeyFlag)
+
+		a := p.AdaptationField()
+		a.SetHasPCR(true)
+		a.SetHasOPCR(true)
+		a.SetHasSplicingPoint(true)
+		a.SetHasTransportPrivateData(true)
+		a.SetHasAdaptationFieldExtension(true)
+		a.SetESPriority(true)
+		a.SetRandomAccess(true)
+		a.SetHasAdaptationFieldExtension(true)
+
+		// read everything
+		p.ContinuityCounter()
+		p.HasAdaptationField()
+		p.HasPayload()
+		p.IsNull()
+		p.IsPAT()
+		p.IsPAT()
+		p.PID()
+		p.PayloadUnitStartIndicator()
+		p.TransportErrorIndicator()
+		p.TransportPriority()
+		p.TransportScramblingControl()
+
+		a = p.AdaptationField()
+		a.Length()
+		a.Discontinuity()
+		a.ESPriority()
+		a.HasAdaptationFieldExtension()
+		a.HasOPCR()
+		a.HasPCR()
+		a.HasSplicingPoint()
+		a.HasTransportPrivateData()
+		a.RandomAccess()
 	}
 }
 

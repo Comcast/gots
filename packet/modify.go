@@ -2,6 +2,7 @@ package packet
 
 import (
 	"bytes"
+	"fmt"
 	"github.com/Comcast/gots"
 )
 
@@ -38,7 +39,7 @@ func (p Packet) SetTransportErrorIndicator(value bool) {
 
 // TransportErrorIndicator returns the Transport Error Indicator
 func (p Packet) TransportErrorIndicator() bool {
-	if p.badLen() {
+	if p.invalid() {
 		return false // defalt value for nil packet
 	}
 	return p.getBit(1, 0x80)
@@ -57,7 +58,7 @@ func (p Packet) SetPayloadUnitStartIndicator(value bool) {
 // (Program-Specific Information) such as AT, CAT, PMT or NIT.  The PUSI
 // flag is contained in the second bit of the second byte of the Packet.
 func (p Packet) PayloadUnitStartIndicator() bool {
-	if p.badLen() {
+	if p.invalid() {
 		return false // defalt value for nil packet
 	}
 	return p.getBit(1, 0x40)
@@ -70,7 +71,7 @@ func (p Packet) SetTransportPriority(value bool) {
 
 // TP returns the Transport Priority flag
 func (p Packet) TransportPriority() bool {
-	if p.badLen() {
+	if p.invalid() {
 		return false // defalt value for nil packet
 	}
 	return p.getBit(1, 0x20)
@@ -78,7 +79,7 @@ func (p Packet) TransportPriority() bool {
 
 // SetPID sets the program ID
 func (p Packet) SetPID(pid int) {
-	if p.badLen() {
+	if p.invalid() {
 		return
 	}
 	p[1] = p[1]&^byte(0x1f) | byte(pid>>8)&byte(0x1f)
@@ -87,7 +88,7 @@ func (p Packet) SetPID(pid int) {
 
 // PID Returns the program ID
 func (p Packet) PID() int {
-	if p.badLen() {
+	if p.invalid() {
 		return NullPacketPid // defalt value for nil packet
 	}
 	return int(p[1]&0x1f)<<8 | int(p[2])
@@ -95,7 +96,7 @@ func (p Packet) PID() int {
 
 // SetTransportScramblingControl sets the Transport Scrambling Control flag.
 func (p Packet) SetTransportScramblingControl(value TransportScramblingControlOptions) {
-	if p.badLen() {
+	if p.invalid() {
 		return
 	}
 	p[3] = p[3]&^byte(0xC0) | byte(value)<<6
@@ -103,7 +104,7 @@ func (p Packet) SetTransportScramblingControl(value TransportScramblingControlOp
 
 // TransportScramblingControl returns the Transport Scrambling Control flag.
 func (p Packet) TransportScramblingControl() TransportScramblingControlOptions {
-	if p.badLen() {
+	if p.invalid() {
 		return NoScrambleFlag // defalt value for nil packet
 	}
 	return TransportScramblingControlOptions((p[3] & 0xC0) >> 6)
@@ -111,13 +112,18 @@ func (p Packet) TransportScramblingControl() TransportScramblingControlOptions {
 
 // SetAdaptationFieldControl sets the Adaptation Field Control flag.
 func (p Packet) SetAdaptationFieldControl(value AdaptationFieldControlOptions) {
+	if p.invalid() {
+		return
+	}
 	p[3] = p[3]&^byte(0x30) | byte(value)<<4
-	// TODO: adaptation field class
+	if p.HasAdaptationField() {
+		initAdaptationField(p)
+	}
 }
 
 // AdaptationFieldControl returns the Adaptation Field Control.
 func (p Packet) AdaptationFieldControl() AdaptationFieldControlOptions {
-	if p.badLen() {
+	if p.invalid() {
 		return PayloadFlag // defalt value for nil packet
 	}
 	return AdaptationFieldControlOptions((p[3] & 0x30) >> 4)
@@ -125,7 +131,7 @@ func (p Packet) AdaptationFieldControl() AdaptationFieldControlOptions {
 
 // HasPayload returns true if the adaptation field control specifies that there is a payload.
 func (p Packet) HasPayload() bool {
-	if p.badLen() {
+	if p.invalid() {
 		return true // defalt value for nil packet
 	}
 	return p.getBit(3, 0x10)
@@ -133,7 +139,7 @@ func (p Packet) HasPayload() bool {
 
 // HasPayload returns true if the adaptation field control specifies that there is an adaptation field.
 func (p Packet) HasAdaptationField() bool {
-	if p.badLen() {
+	if p.invalid() {
 		return false // defalt value for nil packet
 	}
 	return p.getBit(3, 0x20)
@@ -144,7 +150,7 @@ func (p Packet) HasAdaptationField() bool {
 // If the number is out of this range then it will discard the extra bits.
 // The effect is the same as modulus by 16.
 func (p Packet) SetContinuityCounter(value int) {
-	if p.badLen() {
+	if p.invalid() {
 		return
 	}
 	// if value is greater than 15 it will overflow and start at 0 again.
@@ -154,7 +160,7 @@ func (p Packet) SetContinuityCounter(value int) {
 // ContinuityCounter returns the continuity counter.
 // The continuity counter is an integer between 0 and 15.
 func (p Packet) ContinuityCounter() int {
-	if p.badLen() {
+	if p.invalid() {
 		return 0 // defalt value for nil packet
 	}
 	return int(p[3] & 0x0F)
@@ -184,6 +190,28 @@ func (p Packet) IsPAT() bool {
 	return p.PID() == 0
 }
 
+// AdaptationField returns the AdaptationField of the packet.
+// If the packet does not have an adaptation field then a nil
+// AdaptationField is returned.
+func (p Packet) AdaptationField() AdaptationField {
+	if p.invalid() {
+		return nil // defalt value for nil packet
+	}
+	return parseAdaptationField(p)
+}
+
+// Payload returns a slice to a copy of the payload bytes in the packet.
+// TODO: write tests
+func (p Packet) Payload(packet Packet) []byte {
+	offset := 4 // packet header bytes
+	if a := p.AdaptationField(); a != nil {
+		offset += 1 + a.Length()
+	}
+	payload := make([]byte, PacketSize-offset)
+	copy(payload, p[offset:])
+	return payload
+}
+
 // Equal returns true if the bytes of the two packets are equal
 func (p Packet) Equals(r Packet) bool {
 	return bytes.Equal(p, r)
@@ -211,16 +239,16 @@ func (p Packet) syncByte() byte {
 	return p[0]
 }
 
-// badLen returns true if the length of the packet slice is
+// invalid returns true if the length of the packet slice is
 // anything but PacketSize (188)
-func (p Packet) badLen() bool {
+func (p Packet) invalid() bool {
 	return len(p) != PacketSize
 }
 
 // setBit sets a bit in a packet. If packet is nil, or slice has a bad
 // length, it does nothing.
 func (p Packet) setBit(index int, mask byte, value bool) {
-	if p.badLen() {
+	if p.invalid() {
 		return
 	}
 	if value {
@@ -233,4 +261,11 @@ func (p Packet) setBit(index int, mask byte, value bool) {
 // getBit returns true if a bit in a packet is set to 1.
 func (p Packet) getBit(index int, mask byte) bool {
 	return p[index]&mask != 0
+}
+
+func (p Packet) String() string {
+	if p.invalid() {
+		return "Null"
+	}
+	return fmt.Sprintf("%X", []byte(p))
 }
