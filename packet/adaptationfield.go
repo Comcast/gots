@@ -2,9 +2,8 @@ package packet
 
 import (
 	"fmt"
+	"github.com/Comcast/gots"
 )
-
-type AdaptationField []byte
 
 // invalid returns true if the size of the slice (AdaptationField) is invalid,
 // or the adaptation field doesnt exist
@@ -21,8 +20,11 @@ func (af AdaptationField) invalid() bool {
 // initAdaptationField initializes the adaptation field to have all false flags
 func initAdaptationField(p Packet) {
 	af := AdaptationField(p)
-	af[4] = 1    // size of empty adaptation field is at least 1, zero size is used only for stuffing
+	af[4] = 183  // adaptation field will take up the rest of the packet by Default
 	af[5] = 0x00 // no flags are set by default
+	for i := 6; i < len(af); i++ {
+		af[i] = 0xFF
+	}
 }
 
 // parseAdaptationField parses the adaptation field that is present in a packet.
@@ -34,7 +36,7 @@ func parseAdaptationField(p Packet) AdaptationField {
 	return nil
 }
 
-// returns the length of the PCR, if there is no PCR then its length is zero
+// pcrLength returns the length of the PCR, if there is no PCR then its length is zero
 func (af AdaptationField) pcrLength() int {
 	if af.HasPCR() {
 		return 6
@@ -42,7 +44,9 @@ func (af AdaptationField) pcrLength() int {
 	return 0
 }
 
-// returns the length of the OPCR, if there is no PCR then its length is zero
+const pcrStart = 6
+
+// opcrLength returns the length of the OPCR, if there is no OPCR then its length is zero
 func (af AdaptationField) opcrLength() int {
 	if af.HasOPCR() {
 		return 6
@@ -50,7 +54,12 @@ func (af AdaptationField) opcrLength() int {
 	return 0
 }
 
-// returns the length of the splice countdown, if there is no splice countdown then its length is zero
+// opcrStart returns the start index of where the OPCR field should be
+func (af AdaptationField) opcrStart() int {
+	return pcrStart + af.pcrLength()
+}
+
+// spliceCountdownLength returns the length of the splice countdown, if there is no splice countdown then its length is zero
 func (af AdaptationField) spliceCountdownLength() int {
 	if af.HasSplicingPoint() {
 		return 1
@@ -58,36 +67,47 @@ func (af AdaptationField) spliceCountdownLength() int {
 	return 0
 }
 
-// returns the length of the transport private data, if there is no transport private data then its length is zero
+// spliceCountdownStart returns the start index of where the splice countdown field should be
+func (af AdaptationField) spliceCountdownStart() int {
+	return pcrStart + af.pcrLength() + af.opcrLength()
+}
+
+// transportPrivateDataLength returns the length of the transport private data,
+// if there is no transport private data then its length is zero
 func (af AdaptationField) transportPrivateDataLength() int {
 	if af.HasTransportPrivateData() {
 		// cannot extend beyond adaptation field, number of bytes
 		// for field stored in transportPrivateDataLength
-		indexLength := 6 +
-			af.pcrLength() +
-			af.opcrLength() +
-			af.spliceCountdownLength()
-		return 1 + int(af[indexLength])
+		return 1 + int(af[af.transportPrivateDataStart()])
 	}
 	return 0
 }
 
-// returns the length of the adaptation field extension, if there is no adaptation field extension then its length is zero
+// transportPrivateDataStart returns the start index of where the transport private data should be
+func (af AdaptationField) transportPrivateDataStart() int {
+	return pcrStart + af.pcrLength() + af.opcrLength() + af.spliceCountdownLength()
+}
+
+// adaptationExtensionLength returns the length of the adaptation field extension,
+//  if there is no adaptation field extension then its length is zero
 func (af AdaptationField) adaptationExtensionLength() int {
 	if af.HasAdaptationFieldExtension() {
-		// TODO: make new type and call its methods to find the length
-		return 1
+		return 1 + int(af[af.adaptationExtensionStart()])
 	}
 	return 0
+}
+
+// adaptationExtensionStartreturns the length of the adaptation field extension,
+// if there is no adaptation field extension then its length is zero
+func (af AdaptationField) adaptationExtensionStart() int {
+	return pcrStart + af.pcrLength() + af.opcrLength() +
+		af.spliceCountdownLength() + af.transportPrivateDataLength()
 }
 
 // calculates the length of the Adaptation Field
 // (with respect to the start of the packet) excluding stuffing
 func (af AdaptationField) calculateMinLength() int {
-	if af.invalid() {
-		return 0
-	}
-	return 6 +
+	return pcrStart +
 		af.pcrLength() + af.opcrLength() + af.spliceCountdownLength() +
 		af.transportPrivateDataLength() + af.adaptationExtensionLength()
 }
@@ -97,9 +117,9 @@ func (af AdaptationField) setBit(index int, mask byte, value bool) {
 		return
 	}
 	if value {
-		af[index] = af[index] | mask
+		af[index] |= mask
 	} else {
-		af[index] = af[index] & ^mask
+		af[index] &= ^mask
 	}
 }
 
@@ -110,12 +130,8 @@ func (af AdaptationField) getBit(index int, mask byte) bool {
 	return af[index]&mask != 0
 }
 
-func (af AdaptationField) setBitReturnDelta(index int, mask byte, value bool) int {
-	if af.invalid() {
-		return 0
-	}
+func (af AdaptationField) bitDelta(index int, mask byte, value bool) int {
 	oldValue := af.getBit(index, mask)
-	af.setBit(index, mask, value)
 	if value != oldValue {
 		if value {
 			return 1 // growing
@@ -132,51 +148,34 @@ func (af AdaptationField) setLength(length int) {
 	af[4] = byte(length)
 }
 
-// resizeAF grows an adaptation field and erases the payload.
-// Alternatley, with a negative delta, it can shrink a packet
-// and keep the payload and stuff the empty space with stuffing bytes.
-// this function is called automatically, no need for the library user
-// to call it.
 func (af AdaptationField) resizeAF(start int, delta int) {
 	if delta > 0 { // shifting for growing
-		// move existing bytes to new location
-		payloadStart := af.calculateMinLength()
-		endNew := payloadStart - 1
-		end := endNew - delta
-		for start <= end {
-			af[endNew] = af[end]
-			endNew--
-			end--
-		}
-		packetEnd := len(af) - 1
-		// check if payload was corrupted/overwritten by growing
-		if af.Length() < payloadStart-5 {
+		end := af.calculateMinLength()
+		startRight := start + delta
+		endRight := af.calculateMinLength() + delta
+		src := af[start:end]
+		dst := af[startRight:endRight]
+		copy(dst, src)
+		if af.Length() < endRight-5 {
 			// erase payload, it is corrupt anyways
-			for payloadStart <= packetEnd {
-				af[payloadStart] = 0xFF
-				payloadStart++
+			for i := endRight; i < len(af); i++ {
+				af[i] = 0xFF // packet is stuffed until the very end.
 			}
-			// packet is stuffed until the very end.
-			// this is an invalid packet since payload
-			// must be at least one byte in size.
+			// payload must be at least one byte in size.
 			// this will remind the user of the library
 			// that the payload was destroyed
 			af.setLength(183)
 		}
 	}
-	if delta < 0 { // shifting for shrinking
-		end := af.calculateMinLength() - 1 - delta
-		startNew := start
-		start := startNew - delta
-		for start <= end {
-			af[startNew] = af[start]
-			startNew++
-			start++
-		}
-		//stuff remaining bytes to preserve payload size
-		for startNew <= end {
-			af[startNew] = 0xFF
-			startNew++
+	if delta < 0 {
+		startRight := start - delta
+		endRight := af.calculateMinLength()
+		end := endRight + delta
+		src := []byte(af[startRight:endRight])
+		dst := []byte(af[start:end])
+		copy(dst, src)
+		for i := end; i < endRight; i++ {
+			af[i] = 0xFF // fill in the gap with stuffing
 		}
 	}
 }
@@ -216,67 +215,123 @@ func (af AdaptationField) ESPriority() bool {
 }
 
 func (af AdaptationField) SetHasPCR(value bool) {
-	delta := 6 * af.setBitReturnDelta(5, 0x10, value)
-	af.resizeAF(6, delta)
+	delta := 6 * af.bitDelta(5, 0x10, value)
+	af.resizeAF(pcrStart, delta)
+	af.setBit(5, 0x10, value)
 }
 
 func (af AdaptationField) HasPCR() bool {
 	return af.getBit(5, 0x10)
 }
 
+func (af AdaptationField) SetPCR(PCR uint64) {
+	if !af.HasPCR() {
+		return
+	}
+	gots.InsertPCR(af[pcrStart:af.opcrStart()], PCR)
+}
+
+func (af AdaptationField) PCR() uint64 {
+	if !af.HasPCR() {
+		return 0
+	}
+	return gots.ExtractPCR(af[pcrStart:af.opcrStart()])
+}
+
 func (af AdaptationField) SetHasOPCR(value bool) {
-	delta := 6 * af.setBitReturnDelta(5, 0x08, value)
-	af.resizeAF(6+
-		af.pcrLength(),
-		delta,
-	)
+	delta := 6 * af.bitDelta(5, 0x08, value)
+	af.resizeAF(af.opcrStart(), delta)
+	af.setBit(5, 0x08, value)
 }
 
 func (af AdaptationField) HasOPCR() bool {
 	return af.getBit(5, 0x08)
 }
 
+func (af AdaptationField) SetOPCR(PCR uint64) {
+	if !af.HasOPCR() {
+		return
+	}
+	gots.InsertPCR(af[af.opcrStart():af.spliceCountdownStart()], PCR)
+}
+
+func (af AdaptationField) OPCR() uint64 {
+	if !af.HasOPCR() {
+		return 0
+	}
+	return gots.ExtractPCR(af[af.opcrStart():af.spliceCountdownStart()])
+}
+
 func (af AdaptationField) SetHasSplicingPoint(value bool) {
-	delta := 1 * af.setBitReturnDelta(5, 0x04, value)
-	af.resizeAF(6+
-		af.pcrLength()+
-		af.opcrLength(),
-		delta,
-	)
+	delta := 1 * af.bitDelta(5, 0x04, value)
+	af.resizeAF(af.spliceCountdownStart(), delta)
+	af.setBit(5, 0x04, value)
 }
 
 func (af AdaptationField) HasSplicingPoint() bool {
 	return af.getBit(5, 0x04)
 }
 
+func (af AdaptationField) SetSpliceCountdown(value int) {
+	if !af.HasSplicingPoint() {
+		return
+	}
+	af[af.spliceCountdownStart()] = byte(value)
+}
+
+func (af AdaptationField) SpliceCountdown() int {
+	if !af.HasSplicingPoint() {
+		return 0
+	}
+	return int(int8(af[af.spliceCountdownStart()])) // int8 cast is for 2s complement numbers
+}
+
 func (af AdaptationField) SetHasTransportPrivateData(value bool) {
-	delta := 1 * af.setBitReturnDelta(5, 0x02, value)
-	// TODO: craft a TP
-	af.resizeAF(6+
-		af.pcrLength()+
-		af.opcrLength()+
-		af.spliceCountdownLength(),
-		delta, // default len of Transport Private Data
-	)
+	delta := 1 * af.bitDelta(5, 0x02, value)
+	af.resizeAF(af.transportPrivateDataStart(), delta)
+	af[af.transportPrivateDataStart()] = 0 // zero length by default
+	af.setBit(5, 0x02, value)
 }
 
 func (af AdaptationField) HasTransportPrivateData() bool {
 	return af.getBit(5, 0x02)
 }
 
+func (af AdaptationField) SetTransportPrivateData(data []byte) {
+	delta := len(data) - (af.transportPrivateDataLength() - 1)
+	start := af.transportPrivateDataStart() + 1
+	end := start + len(data)
+	af.resizeAF(start, delta)
+	copy(af[start:end], data)
+	af[start-1] = byte(len(data))
+}
+
+func (af AdaptationField) TransportPrivateData() []byte {
+	return af[af.transportPrivateDataStart():af.adaptationExtensionStart()]
+}
+
 func (af AdaptationField) SetHasAdaptationFieldExtension(value bool) {
-	delta := af.setBitReturnDelta(5, 0x01, value) * 1
-	af.resizeAF(6+
-		af.pcrLength()+
-		af.opcrLength()+
-		af.spliceCountdownLength()+
-		af.transportPrivateDataLength(),
-		delta,
-	)
+	delta := 1 * af.bitDelta(5, 0x01, value)
+	af.resizeAF(af.adaptationExtensionStart(), delta)
+	af[af.adaptationExtensionStart()] = 0
+	af.setBit(5, 0x01, value)
 }
 
 func (af AdaptationField) HasAdaptationFieldExtension() bool {
 	return af.getBit(5, 0x01)
+}
+
+func (af AdaptationField) SetAdaptationFieldExtension(data []byte) {
+	delta := len(data) - (af.adaptationExtensionLength() - 1)
+	start := af.adaptationExtensionStart() + 1
+	end := start + len(data)
+	af.resizeAF(start, delta)
+	copy(af[start:end], data)
+	af[start-1] = byte(len(data))
+}
+
+func (af AdaptationField) AdaptationFieldExtension() []byte {
+	return af[af.adaptationExtensionStart():af.calculateMinLength()]
 }
 
 func (af AdaptationField) String() string {

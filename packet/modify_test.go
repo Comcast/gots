@@ -29,6 +29,24 @@ func createPacketEmptyBody(t *testing.T, header string) (p Packet) {
 	return
 }
 
+func createPacketEmptyAdaptationField(t *testing.T, header string) (p Packet) {
+	headerBytes, _ := hex.DecodeString(header)
+	AFBytes := make([]byte, 188)
+	AFBytes[4] = 183
+	AFBytes[5] = 0
+	for i := 6; i < len(AFBytes); i++ {
+		AFBytes[i] = 0xFF
+	}
+	AFBytes = AFBytes[len(headerBytes):188]
+	packetByets := Packet(append(headerBytes, AFBytes...))
+
+	p, err := FromBytes(packetByets)
+	if err != nil {
+		t.Error("packet Error checking failed.")
+	}
+	return
+}
+
 func assertPacket(t *testing.T, target Packet, generated Packet) {
 	if err := target.CheckErrors(); err != nil {
 		t.Error("error in target packet")
@@ -186,15 +204,15 @@ func TestTransportScramblingControl(t *testing.T) {
 func TestSetAdaptationFieldControl(t *testing.T) {
 	generated := NewPacket()
 
-	target := createPacketEmptyBody(t, "471FFF1000")
+	target := createPacketEmptyBody(t, "471FFF10")
 	generated.SetAdaptationFieldControl(PayloadFlag)
 	assertPacket(t, target, generated)
 
-	target = createPacketEmptyBody(t, "471FFF3001")
+	target = createPacketEmptyAdaptationField(t, "471FFF30")
 	generated.SetAdaptationFieldControl(PayloadAndAdaptationFieldFlag)
 	assertPacket(t, target, generated)
 
-	target = createPacketEmptyBody(t, "471FFF2001")
+	target = createPacketEmptyAdaptationField(t, "471FFF20")
 	generated.SetAdaptationFieldControl(AdaptationFieldFlag)
 	assertPacket(t, target, generated)
 }
@@ -204,11 +222,11 @@ func TestAdaptationFieldControl(t *testing.T) {
 	if pkt.AdaptationFieldControl() != PayloadFlag {
 		t.Error("Failed to set AdaptationFieldControl to PayloadFlag.")
 	}
-	pkt = createPacketEmptyBody(t, "471FFFB001")
+	pkt = createPacketEmptyAdaptationField(t, "471FFFB001")
 	if pkt.AdaptationFieldControl() != PayloadAndAdaptationFieldFlag {
 		t.Error("Failed to set AdaptationFieldControl to PayloadAndAdaptationFieldFlag.")
 	}
-	pkt = createPacketEmptyBody(t, "471FFFA001")
+	pkt = createPacketEmptyAdaptationField(t, "471FFFA001")
 	if pkt.AdaptationFieldControl() != AdaptationFieldFlag {
 		t.Error("Failed to set AdaptationFieldControl to AdaptationFieldFlag.")
 	}
