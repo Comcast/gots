@@ -6,39 +6,48 @@ import (
 
 func generatePacketAF(t *testing.T, AFString string) (Packet, AdaptationField) {
 	p := createPacketEmptyAdaptationField(t, "47000030"+AFString)
-	a := p.AdaptationField()
+	a, err := p.AdaptationField()
+	if err != nil {
+		t.Errorf("failed to get adaptation field. error: %s", err.Error())
+	}
 	if a == nil {
-		t.Errorf("failed to get adaptation field")
+		t.Errorf("adaptation field does not exist")
 	}
 	return p, a
 }
 
 func TestDiscontinuity(t *testing.T) {
 	_, a := generatePacketAF(t, "0180")
-	if !a.Discontinuity() {
+	if discontinuity, err := a.Discontinuity(); !discontinuity || err != nil {
 		t.Errorf("failed to read discontinuity correctly.")
 	}
 	_, a = generatePacketAF(t, "0190")
-	if !a.Discontinuity() {
+	if discontinuity, err := a.Discontinuity(); !discontinuity || err != nil {
 		t.Errorf("failed to read discontinuity correctly.")
 	}
 	_, a = generatePacketAF(t, "0170")
-	if a.Discontinuity() {
+	if discontinuity, err := a.Discontinuity(); discontinuity || err != nil {
 		t.Errorf("failed to read discontinuity correctly.")
 	}
 }
 
 func TestAdaptationField(t *testing.T) {
 	p := createPacketEmptyBody(t, "470000300102")
-	a := p.AdaptationField()
+	a, err := p.AdaptationField()
+	if err != nil {
+		t.Errorf("error getting adaptation field")
+	}
 	if a == nil {
-		t.Errorf("Error getting adaptation field.")
+		t.Errorf("no adaptation field was returned")
 	}
 
 	p = createPacketEmptyBody(t, "470000100002")
-	a = p.AdaptationField()
+	a, err = p.AdaptationField()
+	if err != nil {
+		t.Errorf("error getting adaptation field")
+	}
 	if a != nil {
-		t.Errorf("Adaptation field does not exist but something was returned.")
+		t.Errorf("adaptation field does not exist but something was returned.")
 	}
 }
 

@@ -347,35 +347,65 @@ func TestIsNull(t *testing.T) {
 	}
 }
 
-// func TestHasAdaptationField(t *testing.T) {
-// 	pkt := createPacketEmptyBody(t, "471FFF100100")
-// 	if pkt.HasAdaptationField() {
-// 		t.Errorf("Packet should not have Adaptation Field (AdaptationFieldControl = 01).")
-// 	}
-// 	pkt = createPacketEmptyBody(t, "471FFF200100")
-// 	if !pkt.HasAdaptationField() {
-// 		t.Errorf("Packet should have Adaptation Field (AdaptationFieldControl = 10).")
-// 	}
-// 	pkt = createPacketEmptyBody(t, "471FFF300100")
-// 	if !pkt.HasAdaptationField() {
-// 		t.Errorf("Packet should have Adaptation Field (AdaptationFieldControl = 11).")
-// 	}
-// }
-//
-// func TestHasPayload(t *testing.T) {
-// 	pkt := createPacketEmptyBody(t, "471FFF10")
-// 	if !pkt.HasPayload() {
-// 		t.Errorf("Packet should have Payload (AdaptationFieldControl = 01).")
-// 	}
-// 	pkt = createPacketEmptyBody(t, "471FFF20")
-// 	if pkt.HasPayload() {
-// 		t.Errorf("Packet should not have Payload (AdaptationFieldControl = 10).")
-// 	}
-// 	pkt = createPacketEmptyBody(t, "471FFF30")
-// 	if !pkt.HasPayload() {
-// 		t.Errorf("Packet should have Payload (AdaptationFieldControl = 11).")
-// 	}
-// }
+func TestHasAdaptationField(t *testing.T) {
+	pkt := createPacketEmptyBody(t, "471FFF100100")
+	hasAF, err := pkt.HasAdaptationField()
+	if err != nil {
+		t.Errorf("could not run has adaptation field. error: %s", err.Error())
+		return
+	}
+	if hasAF {
+		t.Errorf("Packet should not have Adaptation Field (AdaptationFieldControl = 01).")
+	}
+	pkt = createPacketEmptyBody(t, "471FFF200100")
+	hasAF, err = pkt.HasAdaptationField()
+	if err != nil {
+		t.Errorf("could not run has adaptation field. error: %s", err.Error())
+		return
+	}
+	if !hasAF {
+		t.Errorf("Packet should have Adaptation Field (AdaptationFieldControl = 10).")
+	}
+	pkt = createPacketEmptyBody(t, "471FFF300100")
+	hasAF, err = pkt.HasAdaptationField()
+	if err != nil {
+		t.Errorf("could not run has adaptation field. error: %s", err.Error())
+		return
+	}
+	if !hasAF {
+		t.Errorf("Packet should have Adaptation Field (AdaptationFieldControl = 11).")
+	}
+}
+
+func TestHasPayload(t *testing.T) {
+	pkt := createPacketEmptyBody(t, "471FFF10")
+	hasPayload, err := pkt.HasPayload()
+	if err != nil {
+		t.Errorf("could not run has payload. error: %s", err.Error())
+		return
+	}
+	if !hasPayload {
+		t.Errorf("Packet should have Payload (AdaptationFieldControl = 01).")
+	}
+	pkt = createPacketEmptyBody(t, "471FFF20")
+	hasPayload, err = pkt.HasPayload()
+	if err != nil {
+		t.Errorf("could not run has payload. error: %s", err.Error())
+		return
+	}
+	if hasPayload {
+		t.Errorf("Packet should not have Payload (AdaptationFieldControl = 10).")
+	}
+	pkt = createPacketEmptyBody(t, "471FFF30")
+	hasPayload, err = pkt.HasPayload()
+	if err != nil {
+		t.Errorf("could not run has payload. error: %s", err.Error())
+		return
+	}
+	if !hasPayload {
+		t.Errorf("Packet should have Payload (AdaptationFieldControl = 11).")
+	}
+}
 
 func TestHeaderComboBasic(t *testing.T) {
 	target := createPacketEmptyBody(t, "47EFA098")
@@ -513,54 +543,54 @@ func TestNilSlicePacket(t *testing.T) {
 	}
 }
 
-// func BenchmarkNewStyleAllFields(b *testing.B) {
-// 	for n := 0; n < b.N; n++ {
-// 		// create everything
-// 		p := NewPacket()
-// 		p.SetContinuityCounter(7)
-// 		p.IncContinuityCounter()
-// 		p.SetPID(4000)
-// 		p.SetTransportErrorIndicator(false)
-// 		p.SetPayloadUnitStartIndicator(true)
-// 		p.SetTransportPriority(false)
-// 		p.SetAdaptationFieldControl(AdaptationFieldFlag)
-// 		p.SetTransportScramblingControl(ScrambleEvenKeyFlag)
-//
-// 		a := p.AdaptationField()
-// 		a.SetHasPCR(true)
-// 		a.SetHasOPCR(true)
-// 		a.SetHasSplicingPoint(true)
-// 		a.SetHasTransportPrivateData(true)
-// 		a.SetHasAdaptationFieldExtension(true)
-// 		a.SetESPriority(true)
-// 		a.SetRandomAccess(true)
-// 		a.SetHasAdaptationFieldExtension(true)
-//
-// 		// read everything
-// 		p.ContinuityCounter()
-// 		p.HasAdaptationField()
-// 		p.HasPayload()
-// 		p.IsNull()
-// 		p.IsPAT()
-// 		p.IsPAT()
-// 		p.PID()
-// 		p.PayloadUnitStartIndicator()
-// 		p.TransportErrorIndicator()
-// 		p.TransportPriority()
-// 		p.TransportScramblingControl()
-//
-// 		a = p.AdaptationField()
-// 		a.Length()
-// 		a.Discontinuity()
-// 		a.ESPriority()
-// 		a.HasAdaptationFieldExtension()
-// 		a.HasOPCR()
-// 		a.HasPCR()
-// 		a.HasSplicingPoint()
-// 		a.HasTransportPrivateData()
-// 		a.RandomAccess()
-// 	}
-// }
+func BenchmarkNewStyleAllFields(b *testing.B) {
+	for n := 0; n < b.N; n++ {
+		// create everything
+		p := NewPacket()
+		p.SetContinuityCounter(7)
+		p.IncContinuityCounter()
+		p.SetPID(4000)
+		p.SetTransportErrorIndicator(false)
+		p.SetPayloadUnitStartIndicator(true)
+		p.SetTransportPriority(false)
+		p.SetAdaptationFieldControl(AdaptationFieldFlag)
+		p.SetTransportScramblingControl(ScrambleEvenKeyFlag)
+
+		a, _ := p.AdaptationField()
+		a.SetHasPCR(true)
+		a.SetHasOPCR(true)
+		a.SetHasSplicingPoint(true)
+		a.SetHasTransportPrivateData(true)
+		a.SetHasAdaptationFieldExtension(true)
+		a.SetESPriority(true)
+		a.SetRandomAccess(true)
+		a.SetHasAdaptationFieldExtension(true)
+
+		// read everything
+		p.ContinuityCounter()
+		p.HasAdaptationField()
+		p.HasPayload()
+		p.IsNull()
+		p.IsPAT()
+		p.IsPAT()
+		p.PID()
+		p.PayloadUnitStartIndicator()
+		p.TransportErrorIndicator()
+		p.TransportPriority()
+		p.TransportScramblingControl()
+
+		a, _ = p.AdaptationField()
+		a.Length()
+		a.Discontinuity()
+		a.ESPriority()
+		a.HasAdaptationFieldExtension()
+		a.HasOPCR()
+		a.HasPCR()
+		a.HasSplicingPoint()
+		a.HasTransportPrivateData()
+		a.RandomAccess()
+	}
+}
 
 func BenchmarkNewStyleCreate(b *testing.B) {
 	for n := 0; n < b.N; n++ {

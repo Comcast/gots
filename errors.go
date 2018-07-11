@@ -51,6 +51,9 @@ var (
 	ErrNoPCR = errors.New("adaptation field has no Program Clock Reference")
 	// ErrNoOPCR is returned when an attempt is made to access an adaptation field OPCR that does not exist
 	ErrNoOPCR = errors.New("adaptation field has no Original Program Clock Reference")
+	// ErrNoAdaptationFieldExtension is returned when an attempt is made to access adaptation field's
+	// Adaptation Field Extension when it does not exist
+	ErrNoAdaptationFieldExtension = errors.New("adaptation field has no Adaptation Field Extension")
 	// ErrPATNotFound is returned when expected PAT packet is not found when
 	// reading TS packets.
 	ErrPATNotFound = errors.New("No PAT was found while reading TS")
