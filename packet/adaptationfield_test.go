@@ -32,7 +32,7 @@ func TestDiscontinuity(t *testing.T) {
 }
 
 func TestAdaptationField(t *testing.T) {
-	p := createPacketEmptyBody(t, "470000300102")
+	p := createPacketEmptyPayload(t, "470000300102")
 	a, err := p.AdaptationField()
 	if err != nil {
 		t.Errorf("error getting adaptation field")
@@ -41,7 +41,7 @@ func TestAdaptationField(t *testing.T) {
 		t.Errorf("no adaptation field was returned")
 	}
 
-	p = createPacketEmptyBody(t, "470000100002")
+	p = createPacketEmptyPayload(t, "470000100002")
 	a, err = p.AdaptationField()
 	if err != nil {
 		t.Errorf("error getting adaptation field")
@@ -56,29 +56,40 @@ func TestAll(t *testing.T) {
 	target, _ := generatePacketAF(t, "B710000000007E01")
 	a.SetHasPCR(true)
 	a.SetPCR(1)
-	assertPacket(t, target, generated)
+	if !Equal(generated, target) {
+		t.Errorf("crafted packet:\n%X \ndoes not match expected packet:\n%X\nSetting the PCR to 1 has failed.", generated, target)
+	}
 
 	target, _ = generatePacketAF(t, "B718000000007E01000000007E02")
 	a.SetHasOPCR(true)
 	a.SetOPCR(2)
-	assertPacket(t, target, generated)
+	if !Equal(generated, target) {
+		t.Errorf("crafted packet:\n%X \ndoes not match expected packet:\n%X\nSetting the OPCR to 2 has failed.", generated, target)
+	}
 
 	target, _ = generatePacketAF(t, "B71A000000007E01000000007E020188")
 	a.SetHasTransportPrivateData(true)
 	a.SetTransportPrivateData([]byte{0x88})
-	assertPacket(t, target, generated)
+	if !Equal(generated, target) {
+		t.Errorf("crafted packet:\n%X \ndoes not match expected packet:\n%X\nSetting the Transport Private Data to 0x88 has failed.", generated, target)
+	}
 
-	target, _ = generatePacketAF(t, "B71B000000007E01000000007E0201880177")
+	target, _ = generatePacketAF(t, "B71B000000007E01000000007E0201880100")
 	a.SetHasAdaptationFieldExtension(true)
-	a.SetAdaptationFieldExtension([]byte{0x77})
-	assertPacket(t, target, generated)
+	a.SetAdaptationFieldExtension([]byte{0x00})
+	if !Equal(generated, target) {
+		t.Errorf("crafted packet:\n%X \ndoes not match expected packet:\n%X\nSetting the Adaptation Field Extension to 0x00 has failed.", generated, target)
+	}
 
-	target, _ = generatePacketAF(t, "B71B000000007E01000000007E020266660177")
+	target, _ = generatePacketAF(t, "B71B000000007E01000000007E020266660100")
 	a.SetTransportPrivateData([]byte{0x66, 0x66})
-	assertPacket(t, target, generated)
+	if !Equal(generated, target) {
+		t.Errorf("crafted packet:\n%X \ndoes not match expected packet:\n%X\nSetting the Transport Private Data to 0x6666 has failed.", generated, target)
+	}
 
-	target, _ = generatePacketAF(t, "B713000000007E010266660177")
+	target, _ = generatePacketAF(t, "B713000000007E010266660100")
 	a.SetHasOPCR(false)
-	assertPacket(t, target, generated)
-
+	if !Equal(generated, target) {
+		t.Errorf("crafted packet:\n%X \ndoes not match expected packet:\n%X\nremoving has failed.", generated, target)
+	}
 }
