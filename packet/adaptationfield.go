@@ -14,7 +14,7 @@ func (af AdaptationField) invalid() bool {
 	// exist in order to be modified.
 
 	// order matters, short circuit
-	return len(af) != PacketSize || !Packet(af).HasAdaptationField()
+	return len(af) != PacketSize // || !Packet(af).HasAdaptationField()
 }
 
 // initAdaptationField initializes the adaptation field to have all false flags
@@ -30,10 +30,7 @@ func initAdaptationField(p Packet) {
 // parseAdaptationField parses the adaptation field that is present in a packet.
 // no need to report errors since this is handled during packet creation.
 func parseAdaptationField(p Packet) AdaptationField {
-	if p.HasAdaptationField() { // nil packet does not have an adaptation field
-		return AdaptationField(p)
-	}
-	return nil
+	return AdaptationField(p)
 }
 
 // pcrLength returns the length of the PCR, if there is no PCR then its length is zero

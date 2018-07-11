@@ -1,7 +1,6 @@
 package packet
 
 import (
-	"bytes"
 	"fmt"
 	"github.com/Comcast/gots"
 )
@@ -13,6 +12,7 @@ const (
 )
 
 // NewPacket creates a new packet with a Null ID, sync byte, and with the adaptation field control set to payload only.
+// This function is error free.
 func NewPacket() (pkt Packet) {
 	pkt = make(Packet, PacketSize)
 	//Default packet is the Null packet
@@ -33,15 +33,12 @@ func FromBytes(bytes []byte) (pkt Packet, err error) {
 }
 
 // SetTransportErrorIndicator sets the Transport Error Indicator flag.
-func (p Packet) SetTransportErrorIndicator(value bool) {
-	p.setBit(1, 0x80, value)
+func (p Packet) SetTransportErrorIndicator(value bool) error {
+	return p.setBit(1, 0x80, value)
 }
 
 // TransportErrorIndicator returns the Transport Error Indicator
-func (p Packet) TransportErrorIndicator() bool {
-	if p.invalid() {
-		return false // defalt value for nil packet
-	}
+func (p Packet) TransportErrorIndicator() (bool, error) {
 	return p.getBit(1, 0x80)
 }
 
@@ -49,99 +46,90 @@ func (p Packet) TransportErrorIndicator() bool {
 // PUSI is a flag that indicates the start of PES data or PSI
 // (Program-Specific Information) such as AT, CAT, PMT or NIT.  The PUSI
 // flag is contained in the second bit of the second byte of the Packet.
-func (p Packet) SetPayloadUnitStartIndicator(value bool) {
-	p.setBit(1, 0x40, value)
+func (p Packet) SetPayloadUnitStartIndicator(value bool) error {
+	return p.setBit(1, 0x40, value)
 }
 
 // PayloadUnitStartIndicator returns the Payload unit start indicator (PUSI) flag
 // PUSI is a flag that indicates the start of PES data or PSI
 // (Program-Specific Information) such as AT, CAT, PMT or NIT.  The PUSI
 // flag is contained in the second bit of the second byte of the Packet.
-func (p Packet) PayloadUnitStartIndicator() bool {
-	if p.invalid() {
-		return false // defalt value for nil packet
-	}
+func (p Packet) PayloadUnitStartIndicator() (bool, error) {
 	return p.getBit(1, 0x40)
 }
 
 // SetTransportPriority sets the Transport Priority flag
-func (p Packet) SetTransportPriority(value bool) {
-	p.setBit(1, 0x20, value)
+func (p Packet) SetTransportPriority(value bool) error {
+	return p.setBit(1, 0x20, value)
 }
 
 // TP returns the Transport Priority flag
-func (p Packet) TransportPriority() bool {
-	if p.invalid() {
-		return false // defalt value for nil packet
-	}
+func (p Packet) TransportPriority() (bool, error) {
 	return p.getBit(1, 0x20)
 }
 
 // SetPID sets the program ID
-func (p Packet) SetPID(pid int) {
-	if p.invalid() {
-		return
+func (p Packet) SetPID(pid int) error {
+	if err := p.valid(); err != nil {
+		return err
 	}
 	p[1] = p[1]&^byte(0x1f) | byte(pid>>8)&byte(0x1f)
 	p[2] = byte(pid)
+	return nil
 }
 
 // PID Returns the program ID
-func (p Packet) PID() int {
-	if p.invalid() {
-		return NullPacketPid // defalt value for nil packet
+func (p Packet) PID() (int, error) {
+	if err := p.valid(); err != nil {
+		return 0, err
 	}
-	return int(p[1]&0x1f)<<8 | int(p[2])
+	return int(p[1]&0x1f)<<8 | int(p[2]), nil
 }
 
 // SetTransportScramblingControl sets the Transport Scrambling Control flag.
-func (p Packet) SetTransportScramblingControl(value TransportScramblingControlOptions) {
-	if p.invalid() {
-		return
+func (p Packet) SetTransportScramblingControl(value TransportScramblingControlOptions) error {
+	if err := p.valid(); err != nil {
+		return err
 	}
 	p[3] = p[3]&^byte(0xC0) | byte(value)<<6
+	return nil
 }
 
 // TransportScramblingControl returns the Transport Scrambling Control flag.
-func (p Packet) TransportScramblingControl() TransportScramblingControlOptions {
-	if p.invalid() {
-		return NoScrambleFlag // defalt value for nil packet
+func (p Packet) TransportScramblingControl() (TransportScramblingControlOptions, error) {
+	if err := p.valid(); err != nil {
+		return NoScrambleFlag, err
 	}
-	return TransportScramblingControlOptions((p[3] & 0xC0) >> 6)
+	return TransportScramblingControlOptions((p[3] & 0xC0) >> 6), nil
 }
 
 // SetAdaptationFieldControl sets the Adaptation Field Control flag.
-func (p Packet) SetAdaptationFieldControl(value AdaptationFieldControlOptions) {
-	if p.invalid() {
-		return
+func (p Packet) SetAdaptationFieldControl(value AdaptationFieldControlOptions) error {
+	if err := p.valid(); err != nil {
+		return err
 	}
 	p[3] = p[3]&^byte(0x30) | byte(value)<<4
-	if p.HasAdaptationField() {
+	if b, _ := p.HasAdaptationField(); b {
 		initAdaptationField(p)
 	}
+	return nil
 }
 
 // AdaptationFieldControl returns the Adaptation Field Control.
-func (p Packet) AdaptationFieldControl() AdaptationFieldControlOptions {
-	if p.invalid() {
-		return PayloadFlag // defalt value for nil packet
+func (p Packet) AdaptationFieldControl() (AdaptationFieldControlOptions, error) {
+	if err := p.valid(); err != nil {
+		return PayloadFlag, err
 	}
-	return AdaptationFieldControlOptions((p[3] & 0x30) >> 4)
+	return AdaptationFieldControlOptions((p[3] & 0x30) >> 4), nil
 }
 
 // HasPayload returns true if the adaptation field control specifies that there is a payload.
-func (p Packet) HasPayload() bool {
-	if p.invalid() {
-		return true // defalt value for nil packet
-	}
+func (p Packet) HasPayload() (bool, error) {
 	return p.getBit(3, 0x10)
 }
 
 // HasPayload returns true if the adaptation field control specifies that there is an adaptation field.
-func (p Packet) HasAdaptationField() bool {
-	if p.invalid() {
-		return false // defalt value for nil packet
-	}
+func (p Packet) HasAdaptationField() (bool, error) {
 	return p.getBit(3, 0x20)
 }
 
@@ -149,26 +137,27 @@ func (p Packet) HasAdaptationField() bool {
 // The continuity counter should be an integer between 0 and 15.
 // If the number is out of this range then it will discard the extra bits.
 // The effect is the same as modulus by 16.
-func (p Packet) SetContinuityCounter(value int) {
-	if p.invalid() {
-		return
+func (p Packet) SetContinuityCounter(value int) error {
+	if err := p.valid(); err != nil {
+		return err
 	}
 	// if value is greater than 15 it will overflow and start at 0 again.
 	p[3] = p[3]&^byte(0x0F) | byte(value&0x0F)
+	return nil
 }
 
 // ContinuityCounter returns the continuity counter.
 // The continuity counter is an integer between 0 and 15.
-func (p Packet) ContinuityCounter() int {
-	if p.invalid() {
-		return 0 // defalt value for nil packet
+func (p Packet) ContinuityCounter() (int, error) {
+	if err := p.valid(); err != nil {
+		return 0, err
 	}
-	return int(p[3] & 0x0F)
+	return int(p[3] & 0x0F), nil
 }
 
 // SetContinuityCounter sets the continuity counter to 0.
-func (p Packet) ZeroContinuityCounter() {
-	p.SetContinuityCounter(0)
+func (p Packet) ZeroContinuityCounter() error {
+	return p.SetContinuityCounter(0)
 }
 
 // IncContinuityCounter increments the continuity counter.
@@ -176,45 +165,67 @@ func (p Packet) ZeroContinuityCounter() {
 // If the number is out of this range (overflow)
 // after incrementing then it will discard the extra bits.
 // The effect is the same as modulus by 16.
-func (p Packet) IncContinuityCounter() {
-	p.SetContinuityCounter(p.ContinuityCounter() + 1)
+func (p Packet) IncContinuityCounter() error {
+	cc, err := p.ContinuityCounter()
+	cc += 1
+	if err != nil {
+		return err
+	}
+	return p.SetContinuityCounter(cc)
 }
 
 // IsNull returns true if the packet PID is equal to 8191, the null packet pid.
-func (p Packet) IsNull() bool {
-	return p.PID() == NullPacketPid
+func (p Packet) IsNull() (bool, error) {
+	pid, err := p.PID()
+	return pid == NullPacketPid, err
 }
 
 // IsNull returns true if the packet PID is equal to 0, the PAT packet pid.
-func (p Packet) IsPAT() bool {
-	return p.PID() == 0
+func (p Packet) IsPAT() (bool, error) {
+	pid, err := p.PID()
+	return pid == 0, err
 }
 
 // AdaptationField returns the AdaptationField of the packet.
 // If the packet does not have an adaptation field then a nil
 // AdaptationField is returned.
-func (p Packet) AdaptationField() AdaptationField {
-	if p.invalid() {
-		return nil // defalt value for nil packet
+func (p Packet) AdaptationField() (AdaptationField, error) {
+	hasAF, err := p.HasAdaptationField()
+	if err != nil {
+		return nil, err
 	}
-	return parseAdaptationField(p)
+	if hasAF {
+		return parseAdaptationField(p), nil
+	}
+	return nil, nil
 }
 
 // Payload returns a slice to a copy of the payload bytes in the packet.
 // TODO: write tests
-func (p Packet) Payload(packet Packet) []byte {
+func (p Packet) Payload(packet Packet) ([]byte, error) {
 	offset := 4 // packet header bytes
-	if a := p.AdaptationField(); a != nil {
-		offset += 1 + a.Length()
+	if hasAF, err := p.HasAdaptationField(); err == nil && hasAF {
+		offset += 1 + int(p[4])
 	}
 	payload := make([]byte, PacketSize-offset)
 	copy(payload, p[offset:])
-	return payload
+	return payload, nil
 }
 
 // Equal returns true if the bytes of the two packets are equal
-func (p Packet) Equals(r Packet) bool {
-	return bytes.Equal(p, r)
+// func (p Packet) Equals(r Packet) bool {
+// 	return bytes.Equal(p, r)
+// }
+
+// CheckErrors checks the packet for errors
+func (p Packet) sizeErrors() error {
+	if len(p) != PacketSize {
+		return gots.ErrInvalidPacketLength
+	}
+	if p.syncByte() != SyncByte {
+		return gots.ErrBadSyncByte
+	}
+	return nil
 }
 
 // CheckErrors checks the packet for errors
@@ -225,10 +236,10 @@ func (p Packet) CheckErrors() error {
 	if p.syncByte() != SyncByte {
 		return gots.ErrBadSyncByte
 	}
-	if p.TransportScramblingControl() == invalidTransportScramblingControlFlag {
+	if flag, _ := p.TransportScramblingControl(); flag == invalidTransportScramblingControlFlag {
 		return gots.ErrInvalidTSCFlag
 	}
-	if p.AdaptationFieldControl() == invalidAdaptationFieldControlFlag {
+	if flag, _ := p.AdaptationFieldControl(); flag == invalidAdaptationFieldControlFlag {
 		return gots.ErrInvalidAFCFlag
 	}
 	return nil
@@ -241,30 +252,37 @@ func (p Packet) syncByte() byte {
 
 // invalid returns true if the length of the packet slice is
 // anything but PacketSize (188)
-func (p Packet) invalid() bool {
-	return len(p) != PacketSize
+func (p Packet) valid() error {
+	if len(p) != PacketSize {
+		return gots.ErrInvalidPacketLength
+	}
+	return nil
 }
 
 // setBit sets a bit in a packet. If packet is nil, or slice has a bad
 // length, it does nothing.
-func (p Packet) setBit(index int, mask byte, value bool) {
-	if p.invalid() {
-		return
+func (p Packet) setBit(index int, mask byte, value bool) error {
+	if err := p.valid(); err != nil {
+		return err
 	}
 	if value {
 		p[index] |= mask
 	} else {
 		p[index] &= ^mask
 	}
+	return nil
 }
 
 // getBit returns true if a bit in a packet is set to 1.
-func (p Packet) getBit(index int, mask byte) bool {
-	return p[index]&mask != 0
+func (p Packet) getBit(index int, mask byte) (bool, error) {
+	if err := p.valid(); err != nil {
+		return false, err
+	}
+	return p[index]&mask != 0, nil
 }
 
 func (p Packet) String() string {
-	if p.invalid() {
+	if p.valid() != nil {
 		return "Null"
 	}
 	return fmt.Sprintf("%X", []byte(p))
