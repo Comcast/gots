@@ -79,15 +79,21 @@ func (psi PSI) Data() []byte {
 	len := 1 + psi.PointerField + 3
 	start := 1 + psi.PointerField
 	data := make([]byte, len)
+	data[0] = psi.PointerField
 
-	data[0] = psi.TableID
+	// stuff the gap between pointer and start
+	for i := 1; i < int(start); i++ {
+		data[i] = 0xFF
+	}
+
+	data[start] = psi.TableID
 	if psi.SectionSyntaxIndicator {
 		data[start+1] |= 0x80
 	}
 	if psi.PrivateIndicator {
 		data[start+1] |= 0x40
 	}
-	data[start+1] |= 0x0C                              // 0000 1100
+	data[start+1] |= 0x30                              // 0011 0000
 	data[start+1] |= byte(psi.SectionLength>>8) & 0x03 // 0000 0011
 	data[start+2] = byte(psi.SectionLength)
 
@@ -100,6 +106,6 @@ func NewPSI() PSI {
 		TableID:                0,
 		SectionSyntaxIndicator: false,
 		PrivateIndicator:       false,
-		SectionLength:          1,
+		SectionLength:          0,
 	}
 }
