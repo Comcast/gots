@@ -80,14 +80,18 @@ type spliceInsert struct {
 	eventID               uint32
 	eventCancelIndicator  bool
 	outOfNetworkIndicator bool
-	hasPTS                bool
-	pts                   gots.PTS
-	hasDuration           bool
-	duration              gots.PTS
-	autoReturn            bool
-	uniqueProgramId       uint16
-	availNum              uint8
-	availsExpected        uint8
+
+	isProgramSplice bool
+	spliceImmediate bool
+
+	hasPTS          bool
+	pts             gots.PTS
+	hasDuration     bool
+	duration        gots.PTS
+	autoReturn      bool
+	uniqueProgramId uint16
+	availNum        uint8
+	availsExpected  uint8
 }
 
 func (c *spliceInsert) CommandType() SpliceCommandType {
@@ -126,11 +130,11 @@ func (c *spliceInsert) parse(buf *bytes.Buffer) error {
 		return gots.ErrInvalidSCTE35Length
 	}
 	c.outOfNetworkIndicator = flags&0x80 == 0x80
-	isProgramSplice := flags&0x40 == 0x40
+	c.isProgramSplice = flags&0x40 == 0x40
 	c.hasDuration = flags&0x20 == 0x20
-	spliceImmediate := flags&0x10 == 0x10
+	c.spliceImmediate = flags&0x10 == 0x10
 
-	if isProgramSplice && !spliceImmediate {
+	if c.isProgramSplice && !c.spliceImmediate {
 		hasPTS, pts, err := parseSpliceTime(buf)
 		if err != nil {
 			return err
@@ -141,7 +145,7 @@ func (c *spliceInsert) parse(buf *bytes.Buffer) error {
 		c.hasPTS = hasPTS
 		c.pts = pts
 	}
-	if !isProgramSplice {
+	if !c.isProgramSplice {
 		cc, err := buf.ReadByte()
 		if err != nil {
 			return gots.ErrInvalidSCTE35Length
@@ -152,7 +156,7 @@ func (c *spliceInsert) parse(buf *bytes.Buffer) error {
 			if _, err := buf.ReadByte(); err != nil {
 				return gots.ErrInvalidSCTE35Length
 			}
-			if !spliceImmediate {
+			if !c.spliceImmediate {
 				if _, _, err := parseSpliceTime(buf); err != nil {
 					return err
 				}
@@ -246,4 +250,93 @@ func parseSpliceTime(buf *bytes.Buffer) (timeSpecified bool, pts gots.PTS, err e
 	}
 	pts = uint40(buf.Next(5)) & 0x01ffffffff
 	return true, pts, nil
+}
+
+func (c *spliceNull) Bytes() []byte {
+	return []byte{}
+}
+
+func spliceTimeBytes(hasPTS bool, pts gots.PTS) []byte {
+	if hasPTS {
+		bytes := make([]byte, 5)
+		bytes[0] = 0xFE                  // 1111 1110
+		bytes[0] |= byte(pts>>32) & 0x01 // 0000 0001
+		bytes[1] = byte(pts >> 24)       // 1111 1111
+		bytes[2] = byte(pts >> 16)       // 1111 1111
+		bytes[3] = byte(pts >> 8)        // 1111 1111
+		bytes[4] = byte(pts)             // 1111 1111
+		return bytes
+	}
+	// return 0111 1110
+	return []byte{0x7E} // only reserved bits are set
+}
+
+func (c *timeSignal) Bytes() []byte {
+	return spliceTimeBytes(c.HasPTS(), c.pts)
+}
+
+func (c *spliceInsert) Bytes() []byte {
+	bytes := make([]byte, 6)
+	bytes[0] = byte(c.eventID >> 24)
+	bytes[1] = byte(c.eventID >> 16)
+	bytes[2] = byte(c.eventID >> 8)
+	bytes[3] = byte(c.eventID)
+
+	bytes[4] = 0x7F // reserved
+
+	if c.eventCancelIndicator {
+		bytes[4] |= 0x80
+	}
+
+	bytes[5] = 0x0F // reserved
+
+	if c.outOfNetworkIndicator {
+		bytes[5] |= 0x80
+	}
+	if c.isProgramSplice {
+		bytes[5] |= 0x40
+	}
+	if c.isProgramSplice {
+		bytes[5] |= 0x40
+	}
+	if c.hasDuration {
+		bytes[5] |= 0x20
+	}
+	if c.spliceImmediate {
+		bytes[5] |= 0x10
+	}
+
+	if c.isProgramSplice && !c.spliceImmediate {
+		bytes = append(bytes, spliceTimeBytes(c.hasPTS, c.pts)...)
+	}
+
+	if !c.isProgramSplice {
+		// no support for components.
+		// zero components
+		bytes = append(bytes, []byte{0x00}...)
+	}
+
+	if c.hasDuration {
+		durationBytes := make([]byte, 5)
+		// break_duration() structure:
+
+		durationBytes[0] |= 0x7E // reserved
+		if c.autoReturn {
+			durationBytes[0] |= 0x80
+		}
+		durationBytes[0] |= byte(c.duration>>32) & 0x01 // 0000 0001
+		durationBytes[1] = byte(c.duration >> 24)       // 1111 1111
+		durationBytes[2] = byte(c.duration >> 16)       // 1111 1111
+		durationBytes[3] = byte(c.duration >> 8)        // 1111 1111
+		bytes = append(bytes, durationBytes...)
+	}
+
+	endingBytes := make([]byte, 4)
+	endingBytes[0] = byte(c.uniqueProgramId >> 8)
+	endingBytes[1] = byte(c.uniqueProgramId)
+	endingBytes[2] = byte(c.availNum)
+	endingBytes[3] = byte(c.availsExpected)
+
+	bytes = append(bytes, endingBytes...)
+	return bytes
 }
