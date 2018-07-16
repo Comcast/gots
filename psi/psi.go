@@ -61,6 +61,7 @@ func sectionLength(psi []byte) uint16 {
 	return uint16(psi[1]&3)<<8 | uint16(psi[2])
 }
 
+// PSIFromBytes returns the PSI struct from a byte slice
 func PSIFromBytes(data []byte) PSI {
 	psi := PSI{}
 
@@ -75,7 +76,8 @@ func PSIFromBytes(data []byte) PSI {
 	return psi
 }
 
-func (psi PSI) Data() []byte {
+// Data returns the byte representation of the PSI struct.
+func (psi PSI) Bytes() []byte {
 	len := 1 + psi.PointerField + 3
 	start := 1 + psi.PointerField
 	data := make([]byte, len)
@@ -93,19 +95,17 @@ func (psi PSI) Data() []byte {
 	if psi.PrivateIndicator {
 		data[start+1] |= 0x40
 	}
-	data[start+1] |= 0x30                              // 0011 0000
+
+	// set reserved bits to 11
+	// data[start+1] |= 0x30                              // 0011 0000
+
 	data[start+1] |= byte(psi.SectionLength>>8) & 0x03 // 0000 0011
 	data[start+2] = byte(psi.SectionLength)
 
 	return data
 }
 
+// NewPSI will create a PSI with default values of zero and false for everything
 func NewPSI() PSI {
-	return PSI{
-		PointerField:           0, // no stuffing by default
-		TableID:                0,
-		SectionSyntaxIndicator: false,
-		PrivateIndicator:       false,
-		SectionLength:          0,
-	}
+	return PSI{}
 }
