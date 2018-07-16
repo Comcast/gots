@@ -161,6 +161,7 @@ type SCTE35 interface {
 	Descriptors() []SegmentationDescriptor
 	// Data returns the raw data bytes of the scte signal
 	Data() []byte
+	Bytes() []byte
 }
 
 type SpliceCommand interface {
@@ -170,6 +171,8 @@ type SpliceCommand interface {
 	HasPTS() bool
 	// PTS returns the PTS time of the command, not including adjustment.
 	PTS() gots.PTS
+	// returns the bytes of this splice command
+	Bytes() []byte
 }
 
 type TimeSignalCommand interface {

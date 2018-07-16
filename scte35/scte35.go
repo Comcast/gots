@@ -39,11 +39,24 @@ const (
 )
 
 type scte35 struct {
-	commandType SpliceCommandType
-	commandInfo SpliceCommand
-	hasPTS      bool
-	pts         gots.PTS
-	descriptors []SegmentationDescriptor
+	psi psi.PSI
+
+	protocolVersion     uint8
+	encryptedPacket     bool  // not supported
+	encryptionAlgorithm uint8 // 6 bits
+	hasPTS              bool
+	pts                 gots.PTS // pts is stored adjusted in struct
+	cwIndex             uint8
+	tier                uint16 // 12 bits
+
+	spliceCommandLength uint16 // 12 bits
+	commandType         SpliceCommandType
+	commandInfo         SpliceCommand
+
+	descriptorLoopLength uint16
+	descriptors          []SegmentationDescriptor
+
+	crc32 uint32
 
 	data []byte
 }
@@ -70,22 +83,34 @@ func (s *scte35) parseTable(data []byte) error {
 	if buf.Len() < int(uint16(psi.PointerField(data))+psi.PSIHeaderLen+15) {
 		return gots.ErrInvalidSCTE35Length
 	}
-	if psi.TableID(data) == 0xfc {
+	s.psi = psi.PSIFromBytes(data)
+	if s.psi.TableID == 0xfc {
 		// read over the table header - +1 to skip protocol version
-		headerLen := psi.PSIHeaderLen + uint16(psi.PointerField(data)) + 1
+		headerLen := psi.PSIHeaderLen + uint16(psi.PointerField(data))
 		buf.Next(int(headerLen))
+		s.protocolVersion = readByte()
 		if readByte()&0x80 != 0 {
 			return gots.ErrSCTE35EncryptionUnsupported
 		}
+
+		// unread this byte, because it contains the encryptionAlgorithm field
+		if err := buf.UnreadByte(); err != nil {
+			return err
+		}
+		s.encryptionAlgorithm = (readByte() << 1) & 0x7E // 0111 1110
+
 		// unread this byte, because it contains the top bit of our pts offset
 		err := buf.UnreadByte()
 		if err != nil {
 			return err
 		}
 		ptsAdjustment := uint40(buf.Next(5)) & 0x01ffffffff
-		// skip cw_index, tier and spliceCommandLength
-		// since it can be 0xfff(unknown) so it's pretty much useless
-		buf.Next(4)
+		// read cw_index, tier and spliceCommandLength
+		// spliceCommandLength can be 0xfff(unknown) so it's pretty much useless
+		s.cwIndex = readByte()
+		bytes := buf.Next(3)
+		s.tier = uint16(bytes[0])<<4 | uint16(bytes[1]&0xF0)>>4
+		s.spliceCommandLength = uint16(bytes[1]&0x0F)<<8 | uint16(bytes[2])
 		s.commandType = SpliceCommandType(readByte())
 		switch s.commandType {
 		case TimeSignal, SpliceInsert:
@@ -112,15 +137,15 @@ func (s *scte35) parseTable(data []byte) error {
 			return gots.ErrInvalidSCTE35Length
 		}
 		// parse descriptors
-		descLoopLen := binary.BigEndian.Uint16(buf.Next(2))
-		if buf.Len() < int(descLoopLen+psi.CrcLen) {
+		descriptorLoopLength := binary.BigEndian.Uint16(buf.Next(2))
+		if buf.Len() < int(descriptorLoopLength+psi.CrcLen) {
 			return gots.ErrInvalidSCTE35Length
 		}
-		for bytesRead := uint16(0); bytesRead < descLoopLen; {
+		for bytesRead := uint16(0); bytesRead < descriptorLoopLength; {
 			descTag := readByte()
 			descLen := readByte()
 			// Make sure a bad descriptorLen doesn't kill us
-			if descLoopLen-bytesRead-2 < uint16(descLen) {
+			if descriptorLoopLength-bytesRead-2 < uint16(descLen) {
 				return gots.ErrInvalidSCTE35Length
 			}
 			if descTag != segDescTag {
@@ -155,8 +180,18 @@ func (s *scte35) PTS() gots.PTS {
 	return s.pts
 }
 
+func (s *scte35) SetPTS(pts gots.PTS) {
+	s.pts = pts
+	// TODO: insert to data
+}
+
 func (s *scte35) Command() SpliceCommandType {
 	return s.commandType
+}
+
+func (s *scte35) SetCommand(cmdType SpliceCommandType) {
+	s.commandType = cmdType
+	// TODO: insert into data
 }
 
 func (s *scte35) CommandInfo() SpliceCommand {
