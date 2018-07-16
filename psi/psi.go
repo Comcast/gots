@@ -97,7 +97,7 @@ func (psi PSI) Bytes() []byte {
 	}
 
 	// set reserved bits to 11
-	// data[start+1] |= 0x30                              // 0011 0000
+	data[start+1] |= 0x30 // 0011 0000
 
 	data[start+1] |= byte(psi.SectionLength>>8) & 0x03 // 0000 0011
 	data[start+2] = byte(psi.SectionLength)
