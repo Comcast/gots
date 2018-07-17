@@ -25,6 +25,8 @@ SOFTWARE.
 package scte35
 
 import (
+	"fmt"
+	"github.com/Comcast/gots"
 	"github.com/Comcast/gots/psi"
 )
 
@@ -60,30 +62,42 @@ func CreateSCTE35() SCTE35 {
 	return scte35
 }
 
-func (s *scte35) generateData() []byte {
-	s.data = make([]byte, 0, 5000) // TODO: real value instead of 5000
-	return []byte{}
-}
-
 func (s *scte35) Bytes() []byte {
+	// splice command generate bytes
+	psiBytes := s.psi.Bytes()
 	spliceCommandBytes := s.commandInfo.Bytes()
 	s.spliceCommandLength = uint16(len(spliceCommandBytes)) // can be set as 0xFFF (undefined), but calculate it anyways
+
+	// generate bytes for splice descriptors
+	//spliceDescriptorBytes := []byte{0x00, 0x0A, 0x00, 0x08, 0x43, 0x55, 0x45, 0x49, 0x00, 0x38, 0x32, 0x31}
+	spliceDescriptorBytes := make([]byte, 2)
+	for i := range s.descriptors {
+		spliceDescriptorBytes = append(spliceDescriptorBytes, s.descriptors[i].Bytes()...)
+	}
+	spliceDescriptorLoopLength := len(spliceDescriptorBytes) - 2
+	spliceDescriptorBytes[0] = byte(spliceDescriptorLoopLength >> 8)
+	spliceDescriptorBytes[1] = byte(spliceDescriptorLoopLength)
+
+	fmt.Printf("%X\n", spliceDescriptorBytes)
 
 	minSectionLength := 11 + s.spliceCommandLength + s.descriptorLoopLength
 	if minSectionLength > s.psi.SectionLength {
 		s.psi.SectionLength = minSectionLength
 	}
 
-	s.data = make([]byte, int(s.psi.PointerField)+4+int(s.psi.SectionLength))
-	section := s.data[int(s.psi.PointerField)+int(psi.PSIHeaderLen):]
+	// slices that point to the starting position of their names
+	data := make([]byte, int(s.psi.PointerField)+4+int(s.psi.SectionLength))
+	section := data[int(s.psi.PointerField)+int(psi.PSIHeaderLen):]
+	commandInfo := section[11:]
+	spliceDescriptor := commandInfo[len(spliceCommandBytes):]
 	ptsAdj := s.pts - s.commandInfo.PTS()
 
 	section[0] = s.protocolVersion
 	if s.encryptedPacket {
 		section[1] = 0x80 // 1000 0000
 	}
-	s.cwIndex = 0xFF
-	s.tier = 0xFFF
+	//s.cwIndex = 0xFF
+	//s.tier = 0xFFF
 	section[1] = (s.encryptionAlgorithm & 0x3F) << 1    // 0111 1110
 	section[1] |= byte(ptsAdj>>32) & 0x01               // 0000 0001
 	section[2] = byte(ptsAdj >> 24)                     // 1111 1111
@@ -97,10 +111,14 @@ func (s *scte35) Bytes() []byte {
 	section[9] = byte(s.spliceCommandLength)            // 1111 1111
 	section[10] = byte(s.commandType)                   // 1111 1111
 
-	copy(s.data, s.psi.Bytes())
-	copy(section[11:], s.commandInfo.Bytes())
+	copy(data, psiBytes)
+	copy(commandInfo, spliceCommandBytes)
+	copy(spliceDescriptor, spliceDescriptorBytes)
+
+	crc := gots.ComputeCRC(data[1 : len(data)-4])
+	copy(data[len(data)-4:], crc)
 	//s.data = s.data[s.psi.PointerField+1:]
 
 	//original code
-	return s.data
+	return data
 }

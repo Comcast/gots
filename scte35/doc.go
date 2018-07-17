@@ -56,6 +56,15 @@ var SpliceCommandTypeNames = map[SpliceCommandType]string{
 	PrivateCommand:       "PrivateCommand",
 }
 
+type DeviceRestrictions byte
+
+const (
+	RestrictGroup0 DeviceRestrictions = 0x00
+	RestrictGroup1 DeviceRestrictions = 0x01
+	RestrictGroup2 DeviceRestrictions = 0x02
+	RestrictNone   DeviceRestrictions = 0x03
+)
+
 // SegDescType is the Segmentation Descriptor Type - not really needed for processing according
 // to method below, but included here for backwards compatibility/porting
 type SegDescType uint8
@@ -243,6 +252,8 @@ type SegmentationDescriptor interface {
 	SubSegmentsExpected() uint8
 	// HasSubSegments returns true if this segmentation descriptor has subsegment fields.
 	HasSubSegments() bool
+	// TODO
+	Bytes() []byte
 }
 
 // State maintains current state for all signals and descriptors.  The intended

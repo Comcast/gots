@@ -84,8 +84,9 @@ type spliceInsert struct {
 	isProgramSplice bool
 	spliceImmediate bool
 
-	hasPTS          bool
-	pts             gots.PTS
+	hasPTS bool
+	pts    gots.PTS
+
 	hasDuration     bool
 	duration        gots.PTS
 	autoReturn      bool
@@ -311,7 +312,7 @@ func (c *spliceInsert) Bytes() []byte {
 	}
 
 	if !c.isProgramSplice {
-		// no support for components.
+		// TODO no support for components.
 		// zero components
 		bytes = append(bytes, []byte{0x00}...)
 	}
@@ -328,6 +329,7 @@ func (c *spliceInsert) Bytes() []byte {
 		durationBytes[1] = byte(c.duration >> 24)       // 1111 1111
 		durationBytes[2] = byte(c.duration >> 16)       // 1111 1111
 		durationBytes[3] = byte(c.duration >> 8)        // 1111 1111
+		durationBytes[4] = byte(c.duration)             // 1111 1111
 		bytes = append(bytes, durationBytes...)
 	}
 

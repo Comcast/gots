@@ -39,6 +39,22 @@ type upidSt struct {
 	upid     []byte
 }
 
+type Component struct {
+	ComponentTag byte
+	PtsOffset    uint64
+}
+
+func (c *Component) Bytes() []byte {
+	bytes := make([]byte, 6)
+	bytes[0] = c.ComponentTag
+	bytes[1] |= byte(c.PtsOffset>>32) & 0x01 // 0000 0001
+	bytes[2] = byte(c.PtsOffset >> 24)       // 1111 1111
+	bytes[3] = byte(c.PtsOffset >> 16)       // 1111 1111
+	bytes[4] = byte(c.PtsOffset >> 8)        // 1111 1111
+	bytes[5] = byte(c.PtsOffset)             // 1111 1111
+	return bytes
+}
+
 type segmentationDescriptor struct {
 	// common fields we care about for sorting/identifying, but is not necessarily needed for users of this lib
 	typeID                SegDescType
@@ -56,6 +72,15 @@ type segmentationDescriptor struct {
 	eventCancelIndicator  bool
 	deliveryNotRestricted bool
 	hasSubSegments        bool
+
+	programSegmentationFlag  bool
+	segmentationDurationFlag bool
+	webDeliveryAllowedFlag   bool
+	noRegionalBlackoutFlag   bool
+	archiveAllowedFlag       bool
+	deviceRestrictions       DeviceRestrictions
+
+	components []Component
 }
 
 type segCloseType uint8
@@ -124,13 +149,21 @@ func (d *segmentationDescriptor) parseDescriptor(data []byte) error {
 		return gots.ErrSCTE35InvalidDescriptorID
 	}
 	d.eventID = binary.BigEndian.Uint32(buf.Next(4))
-	d.eventCancelIndicator = readByte()&0x80>>7 != 0
+	d.eventCancelIndicator = readByte()&0x80 != 0
 	if !d.eventCancelIndicator {
 		flags := readByte()
 		// 3rd bit in the byte
 		// if delivery_not_restricted = 0 -> deliveryNotRestricted = false
-		d.deliveryNotRestricted = flags&0x20>>5 != 0
-		if flags&0x80 == 0 {
+		d.deliveryNotRestricted = flags&0x20 != 0
+		d.hasDuration = flags&0x40 != 0
+		d.programSegmentationFlag = flags&0x80 != 0
+		if !d.deliveryNotRestricted {
+			d.webDeliveryAllowedFlag = flags&0x10 != 0
+			d.noRegionalBlackoutFlag = flags&0x08 != 0
+			d.archiveAllowedFlag = flags&0x04 != 0
+			d.deviceRestrictions = DeviceRestrictions(flags & 0x03)
+		}
+		if !d.programSegmentationFlag {
 			// skip over component info
 			ct := readByte()
 			if int(ct)*6 > buf.Len()-5 {
@@ -140,7 +173,6 @@ func (d *segmentationDescriptor) parseDescriptor(data []byte) error {
 				buf.Next(6)
 			}
 		}
-		d.hasDuration = flags&0x40 != 0
 		if d.hasDuration {
 			if buf.Len() < 10 {
 				return gots.ErrInvalidSCTE35Length
@@ -391,4 +423,82 @@ func (d *segmentationDescriptor) SubSegmentNumber() uint8 {
 
 func (d *segmentationDescriptor) SubSegmentsExpected() uint8 {
 	return d.subSegsExpected
+}
+
+func (d *segmentationDescriptor) Bytes() []byte {
+	var data, eventData []byte
+	data = make([]byte, 11)
+	data[0] = segDescTag
+	data[2] = byte(segDescID >> 24 & 0xFF)
+	data[3] = byte(segDescID >> 16 & 0xFF)
+	data[4] = byte(segDescID >> 8 & 0xFF)
+	data[5] = byte(segDescID & 0xFF)
+	data[6] = byte(d.eventID >> 24 & 0xFF)
+	data[7] = byte(d.eventID >> 16 & 0xFF)
+	data[8] = byte(d.eventID >> 8 & 0xFF)
+	data[9] = byte(d.eventID & 0xFF)
+	data[10] = 0x7F // reserved bits
+
+	if d.eventCancelIndicator {
+		data[10] |= 0x80
+	} else {
+		eventData = make([]byte, 1)
+
+		if d.deliveryNotRestricted {
+			eventData[0] |= 0x20 // 0010 0000
+			eventData[0] |= 0x1F // 0001 1111 reserved fields
+		} else {
+			if d.webDeliveryAllowedFlag {
+				eventData[0] |= 0x10 // 0001 0000
+			}
+			if d.noRegionalBlackoutFlag {
+				eventData[0] |= 0x08 // 0000 1000
+			}
+			if d.archiveAllowedFlag {
+				eventData[0] |= 0x04 // 0000 0100
+			}
+			eventData[0] |= byte(d.deviceRestrictions) & 0x03 // 0000 0011
+		}
+
+		if d.programSegmentationFlag {
+			eventData[0] |= 0x80 // 1000 0000
+		} else {
+			componentsBytes := make([]byte, 1, 6*len(d.components)+1)
+			componentsBytes[0] = byte(len(d.components)) // set component count
+			for i := range d.components {
+				componentsBytes = append(componentsBytes, d.components[i].Bytes()...)
+			}
+			eventData = append(eventData, componentsBytes...)
+		}
+
+		if d.segmentationDurationFlag {
+			eventData[0] |= 0x40 // 0100 0000
+			durationBytes := make([]byte, 5)
+			durationBytes[0] = byte(d.duration >> 32)
+			durationBytes[1] = byte(d.duration >> 24)
+			durationBytes[2] = byte(d.duration >> 16)
+			durationBytes[3] = byte(d.duration >> 8)
+			durationBytes[4] = byte(d.duration)
+			eventData = append(eventData, durationBytes...)
+		}
+		upidData := make([]byte, 2)
+		upidData[0] = byte(d.upidType)
+		upidData[1] = byte(len(d.upid))
+		upidData = append(upidData, d.upid...)
+		eventData = append(eventData, upidData...)
+
+		segmentBytes := make([]byte, 3)
+		segmentBytes[0] = byte(d.typeID)
+		segmentBytes[1] = byte(d.segNum)
+		segmentBytes[2] = byte(d.segsExpected)
+		if d.typeID == 0x34 || d.typeID == 0x36 {
+			segmentBytes = append(segmentBytes, d.subSegNum, d.subSegsExpected)
+		}
+		eventData = append(eventData, segmentBytes...)
+
+		data = append(data, eventData...)
+
+	}
+	data[1] = byte(len(data))
+	return data
 }
