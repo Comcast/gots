@@ -31,7 +31,7 @@ const (
 	// SyncByte is the expected value of the sync byte
 	SyncByte = 71 // 0x47
 	// NullPacketPid is the pid reserved for null packets
-	NullPacketPid = 8191
+	NullPacketPid = 8191 // 0x1FFF
 )
 
 // TransportScramblingControlOptions is a set of constants for

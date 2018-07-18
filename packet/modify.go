@@ -87,7 +87,7 @@ func (p Packet) SetTransportPriority(value bool) error {
 	return p.setBit(1, 0x20, value)
 }
 
-// TP returns the Transport Priority flag
+// TransportPriority returns the Transport Priority flag
 func (p Packet) TransportPriority() (bool, error) {
 	return p.getBit(1, 0x20)
 }
