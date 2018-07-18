@@ -61,51 +61,49 @@ func sectionLength(psi []byte) uint16 {
 	return uint16(psi[1]&3)<<8 | uint16(psi[2])
 }
 
+func NewPointerField(size int) []byte {
+	data := make([]byte, size+1)
+	data[0] = byte(size)
+	for i := 1; i < size+1; i++ {
+		data[i] = 0xFF
+	}
+	return data
+}
+
 // PSIFromBytes returns the PSI struct from a byte slice
-func PSIFromBytes(data []byte) PSI {
-	psi := PSI{}
+func TableHeaderFromBytes(data []byte) TableHeader {
+	th := TableHeader{}
 
-	psi.PointerField = data[0]
-	data = data[1+psi.PointerField:]
+	th.TableID = data[0]
+	th.SectionSyntaxIndicator = data[1]&0x80 != 0
+	th.PrivateIndicator = data[1]&0x40 != 0
+	th.SectionLength = uint16(data[1]&0x03 /* 0000 0011 */)<<8 | uint16(data[2])
 
-	psi.TableID = data[0]
-	psi.SectionSyntaxIndicator = data[1]&0x80 != 0
-	psi.PrivateIndicator = data[1]&0x40 != 0
-	psi.SectionLength = uint16(data[1]&0x03 /* 0000 0011 */)<<8 | uint16(data[2])
-
-	return psi
+	return th
 }
 
 // Data returns the byte representation of the PSI struct.
-func (psi PSI) Bytes() []byte {
-	len := 1 + psi.PointerField + 3
-	start := 1 + psi.PointerField
-	data := make([]byte, len)
-	data[0] = psi.PointerField
+func (th TableHeader) Bytes() []byte {
+	data := make([]byte, 3)
 
-	// stuff the gap between pointer and start
-	for i := 1; i < int(start); i++ {
-		data[i] = 0xFF
+	data[0] = th.TableID
+	if th.SectionSyntaxIndicator {
+		data[1] |= 0x80
 	}
-
-	data[start] = psi.TableID
-	if psi.SectionSyntaxIndicator {
-		data[start+1] |= 0x80
-	}
-	if psi.PrivateIndicator {
-		data[start+1] |= 0x40
+	if th.PrivateIndicator {
+		data[1] |= 0x40
 	}
 
 	// set reserved bits to 11
-	data[start+1] |= 0x30 // 0011 0000
+	data[1] |= 0x30 // 0011 0000
 
-	data[start+1] |= byte(psi.SectionLength>>8) & 0x03 // 0000 0011
-	data[start+2] = byte(psi.SectionLength)
+	data[1] |= byte(th.SectionLength>>8) & 0x03 // 0000 0011
+	data[2] = byte(th.SectionLength)
 
 	return data
 }
 
 // NewPSI will create a PSI with default values of zero and false for everything
-func NewPSI() PSI {
-	return PSI{}
+func NewTableHeader() TableHeader {
+	return TableHeader{}
 }

@@ -64,9 +64,8 @@ const (
 	CrcLen       uint16 = 4
 )
 
-// PSI interface represents operations available on all PSI
-type PSI struct {
-	PointerField           uint8
+// TableHeader struct represents operations available on all PSI
+type TableHeader struct {
 	TableID                uint8
 	SectionSyntaxIndicator bool
 	PrivateIndicator       bool
