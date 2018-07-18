@@ -32,6 +32,8 @@ import (
 	"github.com/Comcast/gots/psi"
 )
 
+// 00FC307B00006D71C7EF00FFF00506FE000000000065 025243554549000000097F970D430921424C41434B4F55543A53712B6B59396D7551646572474E694E744F6F4E36773D3D0E1E636F6D636173743A6C696E6561723A6C6963656E7365726F746174696F6E400000 020F43554549000000097F9700004100007AD7A465
+// 00FC307B00006D71C7EF00FFF00506FE000000000022 020F43554549000000097F970D00400000 																																																																	020F43554549000000097F9700004179920BB4
 // Descriptor tag types and identifiers - only segmentation descriptors are used for now
 const (
 	segDescTag = 0x02
@@ -39,24 +41,20 @@ const (
 )
 
 type scte35 struct {
-	psi psi.PSI
-
-	protocolVersion     uint8
-	encryptedPacket     bool  // not supported
-	encryptionAlgorithm uint8 // 6 bits
-	hasPTS              bool
-	pts                 gots.PTS // pts is stored adjusted in struct
-	cwIndex             uint8
-	tier                uint16 // 12 bits
-
-	spliceCommandLength uint16 // 12 bits
-	commandType         SpliceCommandType
-	commandInfo         SpliceCommand
-
+	psi                  psi.PSI
+	protocolVersion      uint8
+	encryptedPacket      bool  // not supported
+	encryptionAlgorithm  uint8 // 6 bits
+	hasPTS               bool
+	pts                  gots.PTS // pts is stored adjusted in struct
+	cwIndex              uint8
+	tier                 uint16 // 12 bits
+	spliceCommandLength  uint16 // 12 bits
+	commandType          SpliceCommandType
+	commandInfo          SpliceCommand
 	descriptorLoopLength uint16
 	descriptors          []SegmentationDescriptor
-
-	crc32 uint32
+	crc32                uint32
 
 	data []byte
 }
@@ -180,18 +178,8 @@ func (s *scte35) PTS() gots.PTS {
 	return s.pts
 }
 
-func (s *scte35) SetPTS(pts gots.PTS) {
-	s.pts = pts
-	// TODO: insert to data
-}
-
 func (s *scte35) Command() SpliceCommandType {
 	return s.commandType
-}
-
-func (s *scte35) SetCommand(cmdType SpliceCommandType) {
-	s.commandType = cmdType
-	// TODO: insert into data
 }
 
 func (s *scte35) CommandInfo() SpliceCommand {

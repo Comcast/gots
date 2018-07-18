@@ -25,7 +25,6 @@ SOFTWARE.
 package scte35
 
 import (
-	"fmt"
 	"github.com/Comcast/gots"
 	"github.com/Comcast/gots/psi"
 )
@@ -69,7 +68,6 @@ func (s *scte35) Bytes() []byte {
 	s.spliceCommandLength = uint16(len(spliceCommandBytes)) // can be set as 0xFFF (undefined), but calculate it anyways
 
 	// generate bytes for splice descriptors
-	//spliceDescriptorBytes := []byte{0x00, 0x0A, 0x00, 0x08, 0x43, 0x55, 0x45, 0x49, 0x00, 0x38, 0x32, 0x31}
 	spliceDescriptorBytes := make([]byte, 2)
 	for i := range s.descriptors {
 		spliceDescriptorBytes = append(spliceDescriptorBytes, s.descriptors[i].Bytes()...)
@@ -77,8 +75,6 @@ func (s *scte35) Bytes() []byte {
 	spliceDescriptorLoopLength := len(spliceDescriptorBytes) - 2
 	spliceDescriptorBytes[0] = byte(spliceDescriptorLoopLength >> 8)
 	spliceDescriptorBytes[1] = byte(spliceDescriptorLoopLength)
-
-	fmt.Printf("%X\n", spliceDescriptorBytes)
 
 	minSectionLength := 11 + s.spliceCommandLength + s.descriptorLoopLength
 	if minSectionLength > s.psi.SectionLength {
@@ -121,4 +117,48 @@ func (s *scte35) Bytes() []byte {
 
 	//original code
 	return data
+}
+
+type scte35 struct {
+	psi                  psi.PSI
+	protocolVersion      byte
+	encryptedPacket      bool  // not supported
+	encryptionAlgorithm  uint8 // 6 bits
+	hasPTS               bool
+	pts                  gots.PTS // pts is stored adjusted in struct
+	cwIndex              uint8
+	tier                 uint16 // 12 bits
+	spliceCommandLength  uint16 // 12 bits
+	commandType          SpliceCommandType
+	commandInfo          SpliceCommand
+	descriptorLoopLength uint16
+	descriptors          []SegmentationDescriptor
+	crc32                uint32
+
+	data []byte
+}
+
+// Only one version of the protocol exitst: Version 0
+// func (s *scte35) SetProtocolVersion(value byte) {
+// 	s.protocolVersion = protocolVersion
+// }
+
+func (s *scte35) SetHasPTS(flag bool) {
+	s.hasPTS = flag
+}
+
+func (s *scte35) SetPTS(pts gots.PTS) {
+	s.pts = pts
+}
+
+func (s *scte35) SetCommand(cmdType SpliceCommandType) {
+	s.commandType = cmdType
+}
+
+func (s *scte35) SetCommandInfo(commandInfo SpliceCommand) {
+	s.commandInfo = commandInfo
+}
+
+func (s *scte35) SetDescriptors(descriptors []SegmentationDescriptor) {
+	s.descriptors = descriptors
 }

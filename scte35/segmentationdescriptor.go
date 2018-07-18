@@ -33,10 +33,10 @@ import (
 )
 
 // This is the struct used for creating a Multiple UPID (MID)
-type upidSt struct {
-	upidType SegUPIDType
-	upidLen  int
-	upid     []byte
+type UpidSt struct {
+	UpidType SegUPIDType
+	UpidLen  int
+	Upid     []byte
 }
 
 type Component struct {
@@ -55,15 +55,23 @@ func (c *Component) Bytes() []byte {
 	return bytes
 }
 
+func componentFromBytes(bytes []byte) Component {
+	c := Component{}
+	c.ComponentTag = bytes[0]
+	c.PtsOffset = (uint64(bytes[1]) << 32 & 0x01) | (uint64(bytes[2]) << 24) |
+		(uint64(bytes[3]) << 16) | (uint64(bytes[4]) << 8) | uint64(bytes[5])
+	return c
+}
+
 type segmentationDescriptor struct {
 	// common fields we care about for sorting/identifying, but is not necessarily needed for users of this lib
 	typeID                SegDescType
 	eventID               uint32
 	hasDuration           bool
 	duration              gots.PTS
-	upidType              SegUPIDType
-	upid                  []byte
-	mid                   []upidSt //A MID can contains `n` UPID uids in it.
+	UpidType              SegUPIDType
+	Upid                  []byte
+	mid                   []UpidSt //A MID can contains `n` UPID uids in it.
 	segNum                uint8
 	segsExpected          uint8
 	subSegNum             uint8
@@ -73,12 +81,11 @@ type segmentationDescriptor struct {
 	deliveryNotRestricted bool
 	hasSubSegments        bool
 
-	programSegmentationFlag  bool
-	segmentationDurationFlag bool
-	webDeliveryAllowedFlag   bool
-	noRegionalBlackoutFlag   bool
-	archiveAllowedFlag       bool
-	deviceRestrictions       DeviceRestrictions
+	programSegmentationFlag bool
+	webDeliveryAllowedFlag  bool
+	noRegionalBlackoutFlag  bool
+	archiveAllowedFlag      bool
+	deviceRestrictions      DeviceRestrictions
 
 	components []Component
 }
@@ -164,13 +171,13 @@ func (d *segmentationDescriptor) parseDescriptor(data []byte) error {
 			d.deviceRestrictions = DeviceRestrictions(flags & 0x03)
 		}
 		if !d.programSegmentationFlag {
-			// skip over component info
+			// read component info
 			ct := readByte()
 			if int(ct)*6 > buf.Len()-5 {
 				return gots.ErrInvalidSCTE35Length
 			}
 			for ; ct > 0; ct-- {
-				buf.Next(6)
+				d.components = append(d.components, componentFromBytes(buf.Next(6)))
 			}
 		}
 		if d.hasDuration {
@@ -179,26 +186,26 @@ func (d *segmentationDescriptor) parseDescriptor(data []byte) error {
 			}
 			d.duration = uint40(buf.Next(5))
 		}
-		// upid unneeded now...
-		d.upidType = SegUPIDType(readByte())
+		// Upid unneeded now...
+		d.UpidType = SegUPIDType(readByte())
 		segUpidLen := int(readByte())
-		d.mid = []upidSt{}
+		d.mid = []UpidSt{}
 		// This is a Multiple PID, consisting of `n` UPID's
-		if d.upidType == SegUPIDMID {
+		if d.UpidType == SegUPIDMID {
 			// SCTE35 signal will either have an UPID or a MID
 			// When we have a MID, UPID value in struct will be 0.
-			d.upid = []byte{}
+			d.Upid = []byte{}
 			// Iterate over the whole MID len(segUpidLen) to get all `n` UPIDs
 			// segUpidLen is in bytes.
 			for segUpidLen != 0 {
-				upidElem := upidSt{}
-				upidElem.upidType = SegUPIDType(readByte())
+				UpidElem := UpidSt{}
+				UpidElem.UpidType = SegUPIDType(readByte())
 				segUpidLen -= 1
-				upidElem.upidLen = int(readByte())
+				UpidElem.UpidLen = int(readByte())
 				segUpidLen -= 1
-				upidElem.upid = buf.Next(upidElem.upidLen)
-				segUpidLen -= upidElem.upidLen
-				d.mid = append(d.mid, upidElem)
+				UpidElem.Upid = buf.Next(UpidElem.UpidLen)
+				segUpidLen -= UpidElem.UpidLen
+				d.mid = append(d.mid, UpidElem)
 			}
 		} else {
 			// This is a UPID, not a MID
@@ -206,7 +213,7 @@ func (d *segmentationDescriptor) parseDescriptor(data []byte) error {
 			if buf.Len() < segUpidLen+3 {
 				return gots.ErrInvalidSCTE35Length
 			}
-			d.upid = buf.Next(segUpidLen)
+			d.Upid = buf.Next(segUpidLen)
 		}
 		d.typeID = SegDescType(readByte())
 		d.segNum = readByte()
@@ -289,11 +296,11 @@ func (d *segmentationDescriptor) Duration() gots.PTS {
 }
 
 func (d *segmentationDescriptor) UPIDType() SegUPIDType {
-	return d.upidType
+	return d.UpidType
 }
 
 func (d *segmentationDescriptor) UPID() []byte {
-	return d.upid
+	return d.Upid
 }
 
 func (d *segmentationDescriptor) StreamSwitchSignalId() (string, error) {
@@ -306,11 +313,11 @@ func (d *segmentationDescriptor) StreamSwitchSignalId() (string, error) {
 	// comcast:linear:licenserotation at 0x0E
 	if len(d.mid) == 2 &&
 		!d.deliveryNotRestricted &&
-		(d.mid[0].upidType == SegUPIDADI) &&
-		(strings.Contains(string(d.mid[0].upid), "BLACKOUT")) &&
-		(d.mid[1].upidType == SegUPADSINFO) &&
-		(strings.Contains(string(d.mid[1].upid), "comcast:linear:licenserotation")) {
-		signalId = strings.TrimPrefix(string(d.mid[0].upid), "BLACKOUT:")
+		(d.mid[0].UpidType == SegUPIDADI) &&
+		(strings.Contains(string(d.mid[0].Upid), "BLACKOUT")) &&
+		(d.mid[1].UpidType == SegUPADSINFO) &&
+		(strings.Contains(string(d.mid[1].Upid), "comcast:linear:licenserotation")) {
+		signalId = strings.TrimPrefix(string(d.mid[0].Upid), "BLACKOUT:")
 	} else {
 		err = gots.ErrVSSSignalIdNotFound
 	}
@@ -423,82 +430,4 @@ func (d *segmentationDescriptor) SubSegmentNumber() uint8 {
 
 func (d *segmentationDescriptor) SubSegmentsExpected() uint8 {
 	return d.subSegsExpected
-}
-
-func (d *segmentationDescriptor) Bytes() []byte {
-	var data, eventData []byte
-	data = make([]byte, 11)
-	data[0] = segDescTag
-	data[2] = byte(segDescID >> 24 & 0xFF)
-	data[3] = byte(segDescID >> 16 & 0xFF)
-	data[4] = byte(segDescID >> 8 & 0xFF)
-	data[5] = byte(segDescID & 0xFF)
-	data[6] = byte(d.eventID >> 24 & 0xFF)
-	data[7] = byte(d.eventID >> 16 & 0xFF)
-	data[8] = byte(d.eventID >> 8 & 0xFF)
-	data[9] = byte(d.eventID & 0xFF)
-	data[10] = 0x7F // reserved bits
-
-	if d.eventCancelIndicator {
-		data[10] |= 0x80
-	} else {
-		eventData = make([]byte, 1)
-
-		if d.deliveryNotRestricted {
-			eventData[0] |= 0x20 // 0010 0000
-			eventData[0] |= 0x1F // 0001 1111 reserved fields
-		} else {
-			if d.webDeliveryAllowedFlag {
-				eventData[0] |= 0x10 // 0001 0000
-			}
-			if d.noRegionalBlackoutFlag {
-				eventData[0] |= 0x08 // 0000 1000
-			}
-			if d.archiveAllowedFlag {
-				eventData[0] |= 0x04 // 0000 0100
-			}
-			eventData[0] |= byte(d.deviceRestrictions) & 0x03 // 0000 0011
-		}
-
-		if d.programSegmentationFlag {
-			eventData[0] |= 0x80 // 1000 0000
-		} else {
-			componentsBytes := make([]byte, 1, 6*len(d.components)+1)
-			componentsBytes[0] = byte(len(d.components)) // set component count
-			for i := range d.components {
-				componentsBytes = append(componentsBytes, d.components[i].Bytes()...)
-			}
-			eventData = append(eventData, componentsBytes...)
-		}
-
-		if d.segmentationDurationFlag {
-			eventData[0] |= 0x40 // 0100 0000
-			durationBytes := make([]byte, 5)
-			durationBytes[0] = byte(d.duration >> 32)
-			durationBytes[1] = byte(d.duration >> 24)
-			durationBytes[2] = byte(d.duration >> 16)
-			durationBytes[3] = byte(d.duration >> 8)
-			durationBytes[4] = byte(d.duration)
-			eventData = append(eventData, durationBytes...)
-		}
-		upidData := make([]byte, 2)
-		upidData[0] = byte(d.upidType)
-		upidData[1] = byte(len(d.upid))
-		upidData = append(upidData, d.upid...)
-		eventData = append(eventData, upidData...)
-
-		segmentBytes := make([]byte, 3)
-		segmentBytes[0] = byte(d.typeID)
-		segmentBytes[1] = byte(d.segNum)
-		segmentBytes[2] = byte(d.segsExpected)
-		if d.typeID == 0x34 || d.typeID == 0x36 {
-			segmentBytes = append(segmentBytes, d.subSegNum, d.subSegsExpected)
-		}
-		eventData = append(eventData, segmentBytes...)
-
-		data = append(data, eventData...)
-
-	}
-	data[1] = byte(len(data))
-	return data
 }
