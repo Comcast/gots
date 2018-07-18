@@ -28,6 +28,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	//"encoding/hex"
+	"github.com/Comcast/gots/psi"
 	"testing"
 )
 
@@ -36,16 +37,18 @@ func TestCreate(t *testing.T) {
 	base64Bytes, _ := base64.StdEncoding.DecodeString("APwwNQAAAAAAAAD/8AEAACQCIkNVRUnAAAAAf78BEzU5MzkwMjY1NjUxNzc3OTIxNjMBAQHrr2Ob")
 	target := base64Bytes
 	scte, _ := NewSCTE35(target)
-	generated := scte.Bytes()
-	if !bytes.Equal(target, generated) {
-		t.Errorf("\n   Target: %X\nGenerated: %X\n", target, generated)
-	}
+	scte.(*scte35).generateData()
+	generated := append(psi.NewPointerField(0), scte.Data()...)
+	//if !bytes.Equal(target, generated) {
+	t.Errorf("\n   Target: %X\nGenerated: %X\n", target, generated)
+	//}
 }
 
 func TestCreate2(t *testing.T) {
 	target := vss
 	scte, _ := NewSCTE35(target)
-	generated := scte.Bytes()
+	scte.(*scte35).generateData()
+	generated := append(psi.NewPointerField(0), scte.Data()...)
 	if !bytes.Equal(target, generated) {
 		t.Errorf("\n   Target: %X\nGenerated: %X\n", target, generated)
 	}

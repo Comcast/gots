@@ -32,8 +32,6 @@ import (
 	"github.com/Comcast/gots/psi"
 )
 
-// 00FC307B00006D71C7EF00FFF00506FE000000000065 025243554549000000097F970D430921424C41434B4F55543A53712B6B59396D7551646572474E694E744F6F4E36773D3D0E1E636F6D636173743A6C696E6561723A6C6963656E7365726F746174696F6E400000 020F43554549000000097F9700004100007AD7A465
-// 00FC307B00006D71C7EF00FFF00506FE000000000022 020F43554549000000097F970D00400000 																																																																	020F43554549000000097F9700004179920BB4
 // Descriptor tag types and identifiers - only segmentation descriptors are used for now
 const (
 	segDescTag = 0x02
@@ -41,7 +39,7 @@ const (
 )
 
 type scte35 struct {
-	psi                  psi.PSI
+	psi                  psi.TableHeader
 	protocolVersion      uint8
 	encryptedPacket      bool  // not supported
 	encryptionAlgorithm  uint8 // 6 bits
@@ -55,8 +53,10 @@ type scte35 struct {
 	descriptorLoopLength uint16
 	descriptors          []SegmentationDescriptor
 	crc32                uint32
+	alignmentStuffing    int
 
-	data []byte
+	updateBytes bool // if set, the data will be updated on the next function call to get data
+	data        []byte
 }
 
 // NewSCTE35 creates a new SCTE35 signal from the provided byte slice. The byte slice is parsed and relevant info is made available fir the SCTE35 interface. If the message cannot me parsed, an error is returned.
@@ -81,11 +81,10 @@ func (s *scte35) parseTable(data []byte) error {
 	if buf.Len() < int(uint16(psi.PointerField(data))+psi.PSIHeaderLen+15) {
 		return gots.ErrInvalidSCTE35Length
 	}
-	s.psi = psi.PSIFromBytes(data)
+	// read over the table header
+	buf.Next(int(psi.PointerField(data) + 1))
+	s.psi = psi.TableHeaderFromBytes(buf.Next(3))
 	if s.psi.TableID == 0xfc {
-		// read over the table header - +1 to skip protocol version
-		headerLen := psi.PSIHeaderLen + uint16(psi.PointerField(data))
-		buf.Next(int(headerLen))
 		s.protocolVersion = readByte()
 		if readByte()&0x80 != 0 {
 			return gots.ErrSCTE35EncryptionUnsupported
@@ -167,6 +166,7 @@ func (s *scte35) parseTable(data []byte) error {
 	//remove the pointer field and associated data off the top so we only get the
 	//table data
 	s.data = data[psi.PointerField(data)+1:]
+	s.updateBytes = false // do not update on next call of Data()
 	return nil
 }
 
@@ -190,7 +190,18 @@ func (s *scte35) Descriptors() []SegmentationDescriptor {
 	return s.descriptors
 }
 
+func (s *scte35) Tier() uint16 {
+	return s.tier
+}
+
+func (s *scte35) AlignmentStuffing() int {
+	return s.alignmentStuffing
+}
+
 func (s *scte35) Data() []byte {
+	if s.updateBytes {
+		s.generateData()
+	}
 	return s.data
 }
 

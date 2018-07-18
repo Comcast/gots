@@ -158,19 +158,32 @@ const (
 type SCTE35 interface {
 	// HasPTS returns true if there is a pts time
 	HasPTS() bool
+	SetHasPTS(flag bool)
 	// PTS returns the PTS time of the signal if it exists. Includes adjustment.
 	PTS() gots.PTS
+	SetPTS(pts gots.PTS)
+	AdjustPTS(pts gots.PTS)
 	// Command returns the signal's splice command
 	Command() SpliceCommandType
+	SetCommand(cmdType SpliceCommandType)
 	// CommandInfo returns an object describing fields of the signal's splice
 	// command structure
 	CommandInfo() SpliceCommand
+	SetCommandInfo(commandInfo SpliceCommand)
 	// Descriptors returns a slice of the signals SegmentationDescriptors sorted
 	// by descriptor weight (least important signals first)
 	Descriptors() []SegmentationDescriptor
+	SetDescriptors(descriptors []SegmentationDescriptor)
 	// Data returns the raw data bytes of the scte signal
 	Data() []byte
-	Bytes() []byte
+
+	//
+	AlignmentStuffing() int
+	SetAlignmentStuffing(alignmentStuffing int)
+
+	//
+	Tier() uint16
+	SetTier(tier uint16)
 }
 
 type SpliceCommand interface {

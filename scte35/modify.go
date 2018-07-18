@@ -32,68 +32,75 @@ import (
 func CreateSCTE35() SCTE35 {
 	scte35 :=
 		&scte35{
-			protocolVersion:     0,
+			protocolVersion:     0,     // only version 0 exists
 			encryptedPacket:     false, // no support for encryption
-			encryptionAlgorithm: 0,
-			hasPTS:              false,
-			pts:                 0,
-			cwIndex:             0,
+			encryptionAlgorithm: 0,     // no encryption support, no way to change
+			hasPTS:              false, // obtained from splice command, null splice command doesnt have it
+			pts:                 0,     // no pts
+			cwIndex:             0,     // undefined, without encryption
 			tier:                0xFFF, // ignore tier value
 
-			spliceCommandLength: 0,
-			commandType:         SpliceNull,
-			commandInfo:         &spliceNull{},
+			spliceCommandLength: 0,             // null command has no length
+			commandType:         SpliceNull,    // null command type by default
+			commandInfo:         &spliceNull{}, // info pooints to null command
 
-			descriptorLoopLength: 0,
-			descriptors:          []SegmentationDescriptor{},
-			// TODO: data
+			descriptorLoopLength: 0,                          // no descriptors by default
+			descriptors:          []SegmentationDescriptor{}, // empty slice of descriptors
+
+			updateBytes: true, // update the bytes on the next call to Data()
 		}
 	scte35.psi =
-		psi.PSI{
-			PointerField:           0,
-			TableID:                0xFC,
-			SectionSyntaxIndicator: false,
-			PrivateIndicator:       false,
-			SectionLength:          1,
+		psi.TableHeader{
+			TableID:                0xFC,  // always 0xFC for scte35
+			SectionSyntaxIndicator: false, // always false for scte35
+			PrivateIndicator:       false, // always false for scte35
+			SectionLength:          0,     // to be calculated when converting to bytes
 		}
-	// TODO: generate data slice
-	scte35.data = append(scte35.psi.Bytes(), scte35.data...)
 	return scte35
 }
 
-func (s *scte35) Bytes() []byte {
+func (s *scte35) generateData() {
 	// splice command generate bytes
-	psiBytes := s.psi.Bytes()
+	pointerBytes := []byte{} // psi.NewPointerField(0)
+	pointerLength := len(pointerBytes)
+
+	tableHeaderBytes := s.psi.Bytes()
+	tableHeaderLength := len(tableHeaderBytes)
+
 	spliceCommandBytes := s.commandInfo.Bytes()
-	s.spliceCommandLength = uint16(len(spliceCommandBytes)) // can be set as 0xFFF (undefined), but calculate it anyways
+	// spliceCommandLength can be set as 0xFFF (undefined), but calculate it anyways
+	spliceCommandLength := len(spliceCommandBytes)
+	s.spliceCommandLength = uint16(spliceCommandLength)
 
 	// generate bytes for splice descriptors
-	spliceDescriptorBytes := make([]byte, 2)
+	descriptorBytes := make([]byte, 2)
 	for i := range s.descriptors {
-		spliceDescriptorBytes = append(spliceDescriptorBytes, s.descriptors[i].Bytes()...)
+		descriptorBytes = append(descriptorBytes, s.descriptors[i].Bytes()...)
 	}
-	spliceDescriptorLoopLength := len(spliceDescriptorBytes) - 2
-	spliceDescriptorBytes[0] = byte(spliceDescriptorLoopLength >> 8)
-	spliceDescriptorBytes[1] = byte(spliceDescriptorLoopLength)
+	descriptorLoopLength := len(descriptorBytes) - 2
+	descriptorBytes[0] = byte(descriptorLoopLength >> 8)
+	descriptorBytes[1] = byte(descriptorLoopLength)
 
-	minSectionLength := 11 + s.spliceCommandLength + s.descriptorLoopLength
-	if minSectionLength > s.psi.SectionLength {
-		s.psi.SectionLength = minSectionLength
-	}
+	const staticFieldsLength = 13
+	const crcLength = 4
+
+	sectionLength := staticFieldsLength + spliceCommandLength + descriptorLoopLength + crcLength + s.alignmentStuffing
+	s.psi.SectionLength = uint16(sectionLength)
 
 	// slices that point to the starting position of their names
-	data := make([]byte, int(s.psi.PointerField)+4+int(s.psi.SectionLength))
-	section := data[int(s.psi.PointerField)+int(psi.PSIHeaderLen):]
-	commandInfo := section[11:]
-	spliceDescriptor := commandInfo[len(spliceCommandBytes):]
+	data := make([]byte, pointerLength+tableHeaderLength+sectionLength)
+	tableHeader := data[pointerLength:]
+	section := tableHeader[tableHeaderLength:]
+	spliceCommand := section[11:]
+	spliceDescriptor := spliceCommand[spliceCommandLength:]
+	crc := data[len(data)-crcLength:]
+
 	ptsAdj := s.pts - s.commandInfo.PTS()
 
-	section[0] = s.protocolVersion
 	if s.encryptedPacket {
 		section[1] = 0x80 // 1000 0000
 	}
-	//s.cwIndex = 0xFF
-	//s.tier = 0xFFF
+	section[0] = s.protocolVersion                      // 1111 1111
 	section[1] = (s.encryptionAlgorithm & 0x3F) << 1    // 0111 1110
 	section[1] |= byte(ptsAdj>>32) & 0x01               // 0000 0001
 	section[2] = byte(ptsAdj >> 24)                     // 1111 1111
@@ -107,58 +114,54 @@ func (s *scte35) Bytes() []byte {
 	section[9] = byte(s.spliceCommandLength)            // 1111 1111
 	section[10] = byte(s.commandType)                   // 1111 1111
 
-	copy(data, psiBytes)
-	copy(commandInfo, spliceCommandBytes)
-	copy(spliceDescriptor, spliceDescriptorBytes)
+	copy(data, pointerBytes)
+	copy(tableHeader, tableHeaderBytes)
+	copy(spliceCommand, spliceCommandBytes)
+	copy(spliceDescriptor, descriptorBytes)
 
-	crc := gots.ComputeCRC(data[1 : len(data)-4])
-	copy(data[len(data)-4:], crc)
-	//s.data = s.data[s.psi.PointerField+1:]
-
-	//original code
-	return data
+	crcBytes := gots.ComputeCRC(data[:len(data)-crcLength])
+	copy(crc, crcBytes)
+	s.data = data
+	s.updateBytes = false
 }
-
-type scte35 struct {
-	psi                  psi.PSI
-	protocolVersion      byte
-	encryptedPacket      bool  // not supported
-	encryptionAlgorithm  uint8 // 6 bits
-	hasPTS               bool
-	pts                  gots.PTS // pts is stored adjusted in struct
-	cwIndex              uint8
-	tier                 uint16 // 12 bits
-	spliceCommandLength  uint16 // 12 bits
-	commandType          SpliceCommandType
-	commandInfo          SpliceCommand
-	descriptorLoopLength uint16
-	descriptors          []SegmentationDescriptor
-	crc32                uint32
-
-	data []byte
-}
-
-// Only one version of the protocol exitst: Version 0
-// func (s *scte35) SetProtocolVersion(value byte) {
-// 	s.protocolVersion = protocolVersion
-// }
 
 func (s *scte35) SetHasPTS(flag bool) {
 	s.hasPTS = flag
+	s.updateBytes = true
 }
 
 func (s *scte35) SetPTS(pts gots.PTS) {
 	s.pts = pts
+	s.updateBytes = true
+}
+
+func (s *scte35) AdjustPTS(pts gots.PTS) {
+	// adjustment will be done by the function that generates the bytes
+	s.pts = pts
+	s.updateBytes = true
 }
 
 func (s *scte35) SetCommand(cmdType SpliceCommandType) {
 	s.commandType = cmdType
+	s.updateBytes = true
 }
 
 func (s *scte35) SetCommandInfo(commandInfo SpliceCommand) {
 	s.commandInfo = commandInfo
+	s.updateBytes = true
 }
 
 func (s *scte35) SetDescriptors(descriptors []SegmentationDescriptor) {
 	s.descriptors = descriptors
+	s.updateBytes = true
+}
+
+func (s *scte35) SetAlignmentStuffing(alignmentStuffing int) {
+	s.alignmentStuffing = alignmentStuffing
+	s.updateBytes = true
+}
+
+func (s *scte35) SetTier(tier uint16) {
+	s.tier = tier
+	s.updateBytes = true
 }
