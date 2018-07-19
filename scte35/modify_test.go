@@ -26,22 +26,18 @@ package scte35
 
 import (
 	"bytes"
-	"encoding/base64"
-	//"encoding/hex"
 	"github.com/Comcast/gots/psi"
 	"testing"
 )
 
 func TestCreate(t *testing.T) {
-	//base64Bytes, _ := hex.DecodeString("00FC302F0000CFA9798200FFFFFF05620020027FEFFF58EDE344FE007B98A003350000000A0008435545490038323151C630E9") // set len of descriptors
-	base64Bytes, _ := base64.StdEncoding.DecodeString("APwwNQAAAAAAAAD/8AEAACQCIkNVRUnAAAAAf78BEzU5MzkwMjY1NjUxNzc3OTIxNjMBAQHrr2Ob")
-	target := base64Bytes
+	target := testVss
 	scte, _ := NewSCTE35(target)
 	scte.(*scte35).generateData()
 	generated := append(psi.NewPointerField(0), scte.Data()...)
-	//if !bytes.Equal(target, generated) {
-	t.Errorf("\n   Target: %X\nGenerated: %X\n", target, generated)
-	//}
+	if !bytes.Equal(target, generated) {
+		t.Errorf("\n   Target: %X\nGenerated: %X\n", target, generated)
+	}
 }
 
 func TestCreate2(t *testing.T) {

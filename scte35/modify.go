@@ -67,7 +67,7 @@ func (s *scte35) generateData() {
 	tableHeaderBytes := s.psi.Bytes()
 	tableHeaderLength := len(tableHeaderBytes)
 
-	spliceCommandBytes := s.commandInfo.Bytes()
+	spliceCommandBytes := s.commandInfo.Data()
 	// spliceCommandLength can be set as 0xFFF (undefined), but calculate it anyways
 	spliceCommandLength := len(spliceCommandBytes)
 	s.spliceCommandLength = uint16(spliceCommandLength)
@@ -75,7 +75,7 @@ func (s *scte35) generateData() {
 	// generate bytes for splice descriptors
 	descriptorBytes := make([]byte, 2)
 	for i := range s.descriptors {
-		descriptorBytes = append(descriptorBytes, s.descriptors[i].Bytes()...)
+		descriptorBytes = append(descriptorBytes, s.descriptors[i].Data()...)
 	}
 	descriptorLoopLength := len(descriptorBytes) - 2
 	descriptorBytes[0] = byte(descriptorLoopLength >> 8)
@@ -95,6 +95,7 @@ func (s *scte35) generateData() {
 	spliceDescriptor := spliceCommand[spliceCommandLength:]
 	crc := data[len(data)-crcLength:]
 
+	// TODO: This is wrong
 	ptsAdj := s.pts - s.commandInfo.PTS()
 
 	if s.encryptedPacket {
@@ -119,7 +120,7 @@ func (s *scte35) generateData() {
 	copy(spliceCommand, spliceCommandBytes)
 	copy(spliceDescriptor, descriptorBytes)
 
-	crcBytes := gots.ComputeCRC(data[:len(data)-crcLength])
+	crcBytes := gots.ComputeCRC(tableHeader[:len(data)-crcLength])
 	copy(crc, crcBytes)
 	s.data = data
 	s.updateBytes = false
