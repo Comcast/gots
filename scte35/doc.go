@@ -156,34 +156,50 @@ const (
 
 // SCTE35 represent operations available on a SCTE35 message.
 type SCTE35 interface {
-	// HasPTS returns true if there is a pts time
+	// HasPTS returns true if there is a pts time.
 	HasPTS() bool
+	// SetHasPTS sets determines if this SCTE35 message has a PTS
 	SetHasPTS(flag bool)
 	// PTS returns the PTS time of the signal if it exists. Includes adjustment.
 	PTS() gots.PTS
+	// PTS sets the PTS time of the signal, Includes adjustment. If HasPTS is
+	// false, then it will have no effect until it is set to true.
 	SetPTS(pts gots.PTS)
+	// AdjustPTS will modify the pts adjustment field. The disired PTS value
+	// after adjustment should be passed, The adjustment value will be calculated.
 	AdjustPTS(pts gots.PTS)
-	// Command returns the signal's splice command
+	// Tier returns which authorization tier this message was assigned to.
+	// The tier value of 0XFFF is the default and will ignored. When using tiers,
+	// The SCTE35 message must fit entirely into the ts payload without being split up.
+	Tier() uint16
+	// SetTier sets which authorization tier this message was assigned to.
+	// The tier value of 0XFFF is the default and will ignored. When using tiers,
+	// The SCTE35 message must fit entirely into the ts payload without being split up.
+	SetTier(tier uint16)
+	// Command returns the signal's splice command.
 	Command() SpliceCommandType
+	// SetCommand sets the the signal's splice command.
 	SetCommand(cmdType SpliceCommandType)
 	// CommandInfo returns an object describing fields of the signal's splice
 	// command structure
 	CommandInfo() SpliceCommand
+	// SetCommandInfo sets the object describing fields of the signal's splice
+	// command structure
 	SetCommandInfo(commandInfo SpliceCommand)
 	// Descriptors returns a slice of the signals SegmentationDescriptors sorted
 	// by descriptor weight (least important signals first)
 	Descriptors() []SegmentationDescriptor
+	// SetDescriptors sets a slice of the signals SegmentationDescriptors they
+	// will be sorted by descriptor weight (least important signals first) TODO
 	SetDescriptors(descriptors []SegmentationDescriptor)
+	// AlignmentStuffing returns how many stuffing bytes will be added to the SCTE35
+	// message at the end.
+	AlignmentStuffing() int
+	// SetAlignmentStuffing sets how many stuffing bytes will be added to the SCTE35
+	// message at the end.
+	SetAlignmentStuffing(alignmentStuffing int)
 	// Data returns the raw data bytes of the scte signal
 	Data() []byte
-
-	//
-	AlignmentStuffing() int
-	SetAlignmentStuffing(alignmentStuffing int)
-
-	//
-	Tier() uint16
-	SetTier(tier uint16)
 }
 
 type SpliceCommand interface {
@@ -193,8 +209,12 @@ type SpliceCommand interface {
 	HasPTS() bool
 	// PTS returns the PTS time of the command, not including adjustment.
 	PTS() gots.PTS
+	// SetHasPTS sets the flag that indicates if there is a pts time on the command
+	SetHasPTS(value bool)
+	// SetPTS sets the PTS
+	SetPTS(value gots.PTS)
 	// returns the bytes of this splice command
-	Bytes() []byte
+	Data() []byte
 }
 
 type TimeSignalCommand interface {
@@ -203,24 +223,54 @@ type TimeSignalCommand interface {
 
 type SpliceInsertCommand interface {
 	SpliceCommand
-	// IsEventCanceled returns the event cancel indicator
-	IsEventCanceled() bool
-	// IsOut returns the value of the out of network indicator
-	IsOut() bool
 	// EventID returns the event id
 	EventID() uint32
+	// SetEventID sets the event id
+	SetEventID(value uint32)
+	// IsEventCanceled returns the event cancel indicator
+	IsEventCanceled() bool
+	// SetIsEventCanceled sets the the event cancel indicator
+	SetIsEventCanceled(value bool)
+	// IsOut returns the value of the out of network indicator
+	IsOut() bool
+	// SetIsOut sets the out of network indicator
+	SetIsOut(value bool)
+	// IsProgramSplice returns if the program_splice_flag is set
+	IsProgramSplice() bool
+	// SetIsProgramSplice sets the program splice flag
+	SetIsProgramSplice(value bool)
 	// HasDuration returns true if there is a duration
 	HasDuration() bool
+	// SetHasDuration sets the duration flag
+	SetHasDuration(value bool)
+	// SpliceImmediate returns if the splice_immediate_flag is set
+	SpliceImmediate() bool
+	// SetSpliceImmediate sets the splice immediate flag
+	SetSpliceImmediate(value bool)
+	// IsAutoReturn returns the boolean value of the auto return field
+
+	// TODO
+	// COMPONENTS ?
+
+	IsAutoReturn() bool
+	// SetIsAutoReturn sets the auto_return flag
+	SetIsAutoReturn(value bool)
 	// Duration returns the PTS duration of the command
 	Duration() gots.PTS
-	// IsAutoReturn returns the boolean value of the auto return field
-	IsAutoReturn() bool
+	// SetDuration sets the PTS duration of the command
+	SetDuration(value gots.PTS)
 	// UniqueProgramId returns the unique_program_id field
 	UniqueProgramId() uint16
+	// SetUniqueProgramId sets the unique program Id
+	SetUniqueProgramId(value uint16)
 	// AvailNum returns the avail_num field, index of this avail or zero if unused
 	AvailNum() uint8
+	// SetAvailNum sets the avail_num field, zero if unused. otherwise index of the avail
+	SetAvailNum(value uint8)
 	// AvailsExpected returns avails_expected field, number of avails for program
 	AvailsExpected() uint8
+	// SetAvailsExpected sets the expected number of avails
+	SetAvailsExpected(value uint8)
 }
 
 // SegmentationDescriptor describes the segmentation descriptor interface.
@@ -265,8 +315,33 @@ type SegmentationDescriptor interface {
 	SubSegmentsExpected() uint8
 	// HasSubSegments returns true if this segmentation descriptor has subsegment fields.
 	HasSubSegments() bool
+	// SetEventID sets the event id
+	SetEventID(value uint32)
+	// SetTypeID sets the type id
+	SetTypeID(value SegDescType)
+	// SetIsEventCanceled sets the the event cancel indicator
+	SetIsEventCanceled(value bool)
+
+	SetHasDuration(value bool)
+
+	SetDuration(value gots.PTS)
+
+	SetUPIDType(value SegUPIDType)
+
+	SetUPID(value []byte)
+
+	SetSegmentNumber(value uint8)
+
+	SetSegmentsExpected(value uint8)
+
+	SetSubSegmentNumber(value uint8)
+
+	SetSubSegmentsExpected(value uint8)
+
+	SetHasSubSegments(value bool)
+
 	// TODO
-	Bytes() []byte
+	Data() []byte
 }
 
 // State maintains current state for all signals and descriptors.  The intended
