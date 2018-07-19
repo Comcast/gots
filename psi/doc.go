@@ -51,7 +51,7 @@ const (
 	COPYRIGHT          uint8 = 13  // 0000 1101 (0x0D)
 	MAXIMUM_BITRATE    uint8 = 14  // 0000 1110 (0x0E)
 	AVC_VIDEO          uint8 = 40  // 0010 1000 (0x28)
-	STREAM_IDENTIFIER  uint8 = 82  //           (0x52)
+	STREAM_IDENTIFIER  uint8 = 82  // 0101 0010 (0x52)
 	SCTE_ADAPTATION    uint8 = 151 // 1001 0111 (0x97)
 	EBP                uint8 = 233 // 1110 1001 (0xE9)
 	EC3                uint8 = 204 // 1100 1100 (0xCC)

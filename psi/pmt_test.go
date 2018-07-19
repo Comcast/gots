@@ -132,6 +132,7 @@ func TestParseMultipleTables(t *testing.T) {
 		}
 	}
 }
+
 func TestBuildPMT(t *testing.T) {
 	pkt, _ := hex.DecodeString("474064100002b02d0001cb0000e065f0060504435545491b" +
 		"e065f0050e030004b00fe066f0060a04656e670086e06ef0" +
@@ -727,6 +728,36 @@ func TestReadPMTSCTE(t *testing.T) {
 		return
 	}
 	// sanity check (tests integration a bit)
+	if len(pmt.ElementaryStreams()) != 7 {
+		t.Errorf("PMT read is invalid, did not have expected number of streams")
+	}
+}
+
+func TestReadPMT_MultipleTables_MultiplePackets(t *testing.T) {
+	bs, _ := hex.DecodeString("47403b1e00c0001500000100610000000000000100000000" +
+		"0035e3e2d702b0b20001c50000eefdf01809044749e10b05" +
+		"0441432d330504454143330504435545491beefdf0102a02" +
+		"7e1f9700e9080c001f418507d04181eefef00f810706380f" +
+		"ff1f003f0a04656e670081eefff00f8107061003ff1f003f" +
+		"0a047370610086ef00f00f8a01009700e9080c001f418507" +
+		"d041c0ef01f012050445545631a100e9080c001f418507d0" +
+		"41c0ef02f013050445545631a20100e9080c001f47003b1f" +
+		"418507d041c0ef03f008bf06496e76696469a5cff3afffff" +
+		"ffffffffffffffffffffffffffffffffffffffffffffffff" +
+		"ffffffffffffffffffffffffffffffffffffffffffffffff" +
+		"ffffffffffffffffffffffffffffffffffffffffffffffff" +
+		"ffffffffffffffffffffffffffffffffffffffffffffffff" +
+		"ffffffffffffffffffffffffffffffffffffffffffffffff" +
+		"ffffffffffffffffffffffffffffffffffffffffffffffff" +
+		"ffffffffffffffffffffffffffffffff") // two tables (0xc0 and 0x2) combined across two packets
+	r := bytes.NewReader(bs)
+
+	pid := uint16(59)
+	pmt, err := ReadPMT(r, pid)
+	if err != nil {
+		t.Errorf("Unexpected error reading PMT: %v", err)
+		return
+	}
 	if len(pmt.ElementaryStreams()) != 7 {
 		t.Errorf("PMT read is invalid, did not have expected number of streams")
 	}
