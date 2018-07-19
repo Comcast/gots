@@ -227,6 +227,14 @@ func (c *spliceInsert) AvailsExpected() uint8 {
 	return c.availsExpected
 }
 
+func (c *spliceInsert) IsProgramSplice() bool {
+	return c.isProgramSplice
+}
+
+func (c *spliceInsert) SpliceImmediate() bool {
+	return c.spliceImmediate
+}
+
 // parseSpliceTime parses a splice_time() structure and returns the values of
 // time_specified_flag and pts_time.
 // If the time_specified_flag is 0, pts will have a value of gots.PTS(0).
@@ -251,94 +259,4 @@ func parseSpliceTime(buf *bytes.Buffer) (timeSpecified bool, pts gots.PTS, err e
 	}
 	pts = uint40(buf.Next(5)) & 0x01ffffffff
 	return true, pts, nil
-}
-
-func (c *spliceNull) Bytes() []byte {
-	return []byte{}
-}
-
-func spliceTimeBytes(hasPTS bool, pts gots.PTS) []byte {
-	if hasPTS {
-		bytes := make([]byte, 5)
-		bytes[0] = 0xFE                  // 1111 1110
-		bytes[0] |= byte(pts>>32) & 0x01 // 0000 0001
-		bytes[1] = byte(pts >> 24)       // 1111 1111
-		bytes[2] = byte(pts >> 16)       // 1111 1111
-		bytes[3] = byte(pts >> 8)        // 1111 1111
-		bytes[4] = byte(pts)             // 1111 1111
-		return bytes
-	}
-	// return 0111 1110
-	return []byte{0x7E} // only reserved bits are set
-}
-
-func (c *timeSignal) Bytes() []byte {
-	return spliceTimeBytes(c.HasPTS(), c.pts)
-}
-
-func (c *spliceInsert) Bytes() []byte {
-	bytes := make([]byte, 6)
-	bytes[0] = byte(c.eventID >> 24)
-	bytes[1] = byte(c.eventID >> 16)
-	bytes[2] = byte(c.eventID >> 8)
-	bytes[3] = byte(c.eventID)
-
-	bytes[4] = 0x7F // reserved
-
-	if c.eventCancelIndicator {
-		bytes[4] |= 0x80
-	}
-
-	bytes[5] = 0x0F // reserved
-
-	if c.outOfNetworkIndicator {
-		bytes[5] |= 0x80
-	}
-	if c.isProgramSplice {
-		bytes[5] |= 0x40
-	}
-	if c.isProgramSplice {
-		bytes[5] |= 0x40
-	}
-	if c.hasDuration {
-		bytes[5] |= 0x20
-	}
-	if c.spliceImmediate {
-		bytes[5] |= 0x10
-	}
-
-	if c.isProgramSplice && !c.spliceImmediate {
-		bytes = append(bytes, spliceTimeBytes(c.hasPTS, c.pts)...)
-	}
-
-	if !c.isProgramSplice {
-		// TODO no support for components.
-		// zero components
-		bytes = append(bytes, []byte{0x00}...)
-	}
-
-	if c.hasDuration {
-		durationBytes := make([]byte, 5)
-		// break_duration() structure:
-
-		durationBytes[0] |= 0x7E // reserved
-		if c.autoReturn {
-			durationBytes[0] |= 0x80
-		}
-		durationBytes[0] |= byte(c.duration>>32) & 0x01 // 0000 0001
-		durationBytes[1] = byte(c.duration >> 24)       // 1111 1111
-		durationBytes[2] = byte(c.duration >> 16)       // 1111 1111
-		durationBytes[3] = byte(c.duration >> 8)        // 1111 1111
-		durationBytes[4] = byte(c.duration)             // 1111 1111
-		bytes = append(bytes, durationBytes...)
-	}
-
-	endingBytes := make([]byte, 4)
-	endingBytes[0] = byte(c.uniqueProgramId >> 8)
-	endingBytes[1] = byte(c.uniqueProgramId)
-	endingBytes[2] = byte(c.availNum)
-	endingBytes[3] = byte(c.availsExpected)
-
-	bytes = append(bytes, endingBytes...)
-	return bytes
 }

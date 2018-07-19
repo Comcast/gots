@@ -24,7 +24,11 @@ SOFTWARE.
 
 package scte35
 
-func (d *segmentationDescriptor) Bytes() []byte {
+import (
+	"github.com/Comcast/gots"
+)
+
+func (d *segmentationDescriptor) Data() []byte {
 	var data, eventData []byte
 	data = make([]byte, 11)
 	data[0] = segDescTag
@@ -36,7 +40,7 @@ func (d *segmentationDescriptor) Bytes() []byte {
 	data[7] = byte(d.eventID >> 16)
 	data[8] = byte(d.eventID >> 8)
 	data[9] = byte(d.eventID)
-	data[10] = 0x7F // reserved bits
+	data[10] = 0x7F // 0111 1111 reserved bits set to 1
 
 	if d.eventCancelIndicator {
 		data[10] |= 0x80
@@ -110,4 +114,52 @@ func (d *segmentationDescriptor) Bytes() []byte {
 	}
 	data[1] = byte(len(data) - 2)
 	return data
+}
+
+func (d *segmentationDescriptor) SetEventID(value uint32) {
+	d.eventID = value
+}
+
+func (d *segmentationDescriptor) SetTypeID(value SegDescType) {
+	d.typeID = value
+}
+
+func (d *segmentationDescriptor) SetIsEventCanceled(value bool) {
+	d.eventCancelIndicator = value
+}
+
+func (d *segmentationDescriptor) SetHasDuration(value bool) {
+	d.hasDuration = value
+}
+
+func (d *segmentationDescriptor) SetDuration(value gots.PTS) {
+	d.duration = value
+}
+
+func (d *segmentationDescriptor) SetUPIDType(value SegUPIDType) {
+	d.UpidType = value
+}
+
+func (d *segmentationDescriptor) SetUPID(value []byte) {
+	d.Upid = value
+}
+
+func (d *segmentationDescriptor) SetSegmentNumber(value uint8) {
+	d.segNum = value
+}
+
+func (d *segmentationDescriptor) SetSegmentsExpected(value uint8) {
+	d.segsExpected = value
+}
+
+func (d *segmentationDescriptor) SetSubSegmentNumber(value uint8) {
+	d.subSegNum = value
+}
+
+func (d *segmentationDescriptor) SetSubSegmentsExpected(value uint8) {
+	d.subSegsExpected = value
+}
+
+func (d *segmentationDescriptor) SetHasSubSegments(value bool) {
+	d.hasSubSegments = value
 }
