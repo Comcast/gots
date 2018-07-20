@@ -30,6 +30,7 @@ import (
 	"github.com/Comcast/gots/psi"
 )
 
+// SpliceCommandType is a type used to describe the types of splice commands.
 type SpliceCommandType uint16
 
 const (
@@ -56,14 +57,22 @@ var SpliceCommandTypeNames = map[SpliceCommandType]string{
 	PrivateCommand:       "PrivateCommand",
 }
 
+// DeviceRestrictions type is used to specify what group that the segment is restricted to.
 type DeviceRestrictions byte
 
 const (
 	RestrictGroup0 DeviceRestrictions = 0x00
 	RestrictGroup1 DeviceRestrictions = 0x01
 	RestrictGroup2 DeviceRestrictions = 0x02
-	RestrictNone   DeviceRestrictions = 0x03
+	RestrictNone   DeviceRestrictions = 0x03 // no restrictions
 )
+
+var DeviceRestrictionsNames = map[DeviceRestrictions]string{
+	RestrictGroup0: "RestrictGroup0",
+	RestrictGroup1: "RestrictGroup1",
+	RestrictGroup2: "RestrictGroup2",
+	RestrictNone:   "RestrictNone",
+}
 
 // SegDescType is the Segmentation Descriptor Type - not really needed for processing according
 // to method below, but included here for backwards compatibility/porting
@@ -162,12 +171,13 @@ type SCTE35 interface {
 	SetHasPTS(flag bool)
 	// PTS returns the PTS time of the signal if it exists. Includes adjustment.
 	PTS() gots.PTS
-	// PTS sets the PTS time of the signal, Includes adjustment. If HasPTS is
-	// false, then it will have no effect until it is set to true.
+	// SetPTS sets the PTS time of the signal's command. There will be no PTS adjustment using this function.
+	// If HasPTS is false, then it will have no effect until it is set to true. Also this command has no
+	// effect with a null Splice Command
 	SetPTS(pts gots.PTS)
 	// AdjustPTS will modify the pts adjustment field. The disired PTS value
 	// after adjustment should be passed, The adjustment value will be calculated.
-	AdjustPTS(pts gots.PTS)
+	SetAdjustPTS(pts gots.PTS)
 	// Tier returns which authorization tier this message was assigned to.
 	// The tier value of 0XFFF is the default and will ignored. When using tiers,
 	// The SCTE35 message must fit entirely into the ts payload without being split up.
@@ -200,6 +210,9 @@ type SCTE35 interface {
 	SetAlignmentStuffing(alignmentStuffing int)
 	// Data returns the raw data bytes of the scte signal
 	Data() []byte
+	// String returns a string representation of the SCTE35 message.
+	// String function is for debugging and testing.
+	String() string
 }
 
 type SpliceCommand interface {
@@ -219,6 +232,32 @@ type SpliceCommand interface {
 
 type TimeSignalCommand interface {
 	SpliceCommand
+}
+
+type Component interface {
+	// ComponentTag returns the tag of the component.
+	ComponentTag() byte
+	// HasPTS returns if the component has a PTS.
+	HasPTS() bool
+	// PTS returns the PTS of the component.
+	PTS() gots.PTS
+	// SetComponentTag sets the component tag, which is used for the identification of the component.
+	SetComponentTag(value byte)
+	// SetHasPTS sets a flag that determines if the component has a PTS.
+	SetHasPTS(value bool)
+	// SetPTS sets the PTS of the component.
+	SetPTS(value gots.PTS)
+}
+
+type ComponentOffset interface {
+	// ComponentTag returns the tag of the component.
+	ComponentTag() byte
+	// PTS returns the PTS offset of the component.
+	PTSOffset() gots.PTS
+	// SetComponentTag sets the component tag, which is used for the identification of the component.
+	SetComponentTag(value byte)
+	// SetPTS sets the PTS offset of the component.
+	SetPTSOffset(value gots.PTS)
 }
 
 type SpliceInsertCommand interface {
@@ -247,11 +286,9 @@ type SpliceInsertCommand interface {
 	SpliceImmediate() bool
 	// SetSpliceImmediate sets the splice immediate flag
 	SetSpliceImmediate(value bool)
+	// Components returns the components of the splice command
+	Components() []Component
 	// IsAutoReturn returns the boolean value of the auto return field
-
-	// TODO
-	// COMPONENTS ?
-
 	IsAutoReturn() bool
 	// SetIsAutoReturn sets the auto_return flag
 	SetIsAutoReturn(value bool)
@@ -273,75 +310,117 @@ type SpliceInsertCommand interface {
 	SetAvailsExpected(value uint8)
 }
 
+// UPID describes the UPID, this is only used for MID.
+type UPID interface {
+	// UPIDType returns the type of UPID stored
+	UPIDType() SegUPIDType
+	// UPID returns the actual UPID
+	UPID() []byte
+	// SetUPIDType will set the type of the UPID
+	SetUPIDType(value SegUPIDType)
+	// UPID set the actual UPID
+	SetUPID(value []byte)
+}
+
 // SegmentationDescriptor describes the segmentation descriptor interface.
 type SegmentationDescriptor interface {
 	// SCTE35 returns the SCTE35 signal this segmentation descriptor was found in.
 	SCTE35() SCTE35
 	// EventID returns the event id
 	EventID() uint32
-	// TypeID returns the segmentation type for descriptor
-	TypeID() SegDescType
+	// SetEventID sets the event id
+	SetEventID(value uint32)
 	// IsEventCanceled returns the event cancel indicator
 	IsEventCanceled() bool
+	// SetIsEventCanceled sets the the event cancel indicator
+	SetIsEventCanceled(value bool)
+	// HasProgramSegmentation returns if the descriptor has program segmentation
+	HasProgramSegmentation() bool
+	// SetHasProgramSegmentation if the descriptor has program segmentation
+	SetHasProgramSegmentation(value bool)
+	// HasDuration returns true if there is a duration associated with the descriptor
+	HasDuration() bool
+	// SetHasDuration determines if a duration is present in the descriptor
+	SetHasDuration(value bool)
+	// Duration returns the duration of the descriptor
+	Duration() gots.PTS
+	// SetDuration sets the duration of the descriptor
+	SetDuration(value gots.PTS)
+	// IsDeliveryNotRestricted returns if the delivery is not restricted
+	IsDeliveryNotRestricted() bool
+	// SetIsDeliveryNotRestricted sets a flag that determines if the delivery is not restricted
+	SetIsDeliveryNotRestricted(bool)
+	// IsWebDeliveryAllowed returns if web delivery is allowed, this field has no meaning if delivery is not restricted.
+	IsWebDeliveryAllowed() bool
+	// SetIsWebDeliveryAllowed sets a flag that determines if web delivery is allowed, this field has no meaning if delivery is not restricted.
+	SetIsWebDeliveryAllowed(bool)
+	// HasNoRegionalBlackout returns true if there is no regional blackout, this field has no meaning if delivery is not restricted.
+	HasNoRegionalBlackout() bool
+	// SetHasNoRegionalBlackout sets a flag that determines if there is no regional blackout, this field has no meaning if delivery is not restricted.
+	SetHasNoRegionalBlackout(bool)
+	// IsArchiveAllowed returns true if there are restrictions to storing/recording this segment, this field has no meaning if delivery is not restricted.
+	IsArchiveAllowed() bool
+	// SetIsArchiveAllowed sets a flag that determines if there are restrictions to storing/recording this segment, this field has no meaning if delivery is not restricted.
+	SetIsArchiveAllowed(bool)
+	// DeviceRestrictions returns which device group the segment is restriced to, this field has no meaning if delivery is not restricted.
+	DeviceRestrictions() DeviceRestrictions
+	// SetDeviceRestrictions sets which device group the segment is restriced to, this field has no meaning if delivery is not restricted.
+	SetDeviceRestrictions(DeviceRestrictions)
+	// Components will return components' offsets
+	Components() []ComponentOffset
+	// Components will set components' offsets
+	SetComponents([]ComponentOffset)
+	// UPIDType returns the type of the upid
+	UPIDType() SegUPIDType
+	// SetUPIDType sets the type of upid, only works if UPIDType is not SegUPIDMID
+	SetUPIDType(value SegUPIDType)
+	// UPID returns the upid of the descriptor, if the UPIDType is not SegUPIDMID
+	UPID() []byte
+	// SetUPID sets the upid of the descriptor
+	SetUPID(value []byte)
+	// MID returns multiple UPIDs, if UPIDType is SegUPIDMID
+	MID() []UPID
+	// SetMID sets multiple UPIDs, only works if UPIDType is SegUPIDMID
+	SetMID(value []UPID)
+	// TypeID returns the segmentation type for descriptor
+	TypeID() SegDescType
+	// SetTypeID sets the type id
+	SetTypeID(value SegDescType)
+	// SegmentNumber returns the segment number for this descriptor.
+	SegmentNumber() uint8
+	// SetSegmentNumber sets the segment number for this descriptor.
+	SetSegmentNumber(value uint8)
+	// SegmentsExpected returns the number of expected segments for this descriptor.
+	SegmentsExpected() uint8
+	// SetSegmentsExpected sets the number of expected segments for this descriptor.
+	SetSegmentsExpected(value uint8)
+	// HasSubSegments returns true if this segmentation descriptor has subsegment fields.
+	HasSubSegments() bool
+	// SubSegmentNumber returns the sub-segment number for this descriptor.
+	SubSegmentNumber() uint8
+	// SetSubSegmentNumber sets the sub-segment number for this descriptor.
+	SetSubSegmentNumber(value uint8)
+	// SubSegmentsExpected returns the number of expected sub-segments for this descriptor.
+	SubSegmentsExpected() uint8
+	// SetSubSegmentsExpected sets the number of expected sub-segments for this descriptor.
+	SetSubSegmentsExpected(value uint8)
+	// StreamSwitchSignalID returns the signalID of streamswitch signal if
+	// present in the descriptor
+	StreamSwitchSignalId() (string, error)
 	// IsOut returns true if a signal is an out
 	IsOut() bool
 	// IsIn returns true if a signal is an in
 	IsIn() bool
-	// HasDuration returns true if there is a duration associated with the descriptor
-	HasDuration() bool
-	// Duration returns the duration of the descriptor
-	Duration() gots.PTS
-	// UPIDType returns the type of the upid
-	UPIDType() SegUPIDType
-	// UPID returns the upid of the descriptor
-	UPID() []byte
-	// StreamSwitchSignalID returns the signalID of streamswitch signal if
-	// present in the descriptor
-	StreamSwitchSignalId() (string, error)
-	// SegmentNum returns the segment_num descriptor field
-	SegmentNum() uint8
 	// CanClose returns true if this descriptor can close the passed in descriptor
 	CanClose(out SegmentationDescriptor) bool
 	// Equal returns true/false if segmentation descriptor is functionally
 	// equal (i.e. a duplicate)
 	Equal(sd SegmentationDescriptor) bool
-	// SegmentNumber returns the segment number for this descriptor.
-	SegmentNumber() uint8
-	// SegmentsExpected returns the number of expected segments for this descriptor.
-	SegmentsExpected() uint8
-	// SubSegmentNumber returns the sub-segment number for this descriptor.
-	SubSegmentNumber() uint8
-	// SubSegmentsExpected returns the number of expected sub-segments for this descriptor.
-	SubSegmentsExpected() uint8
-	// HasSubSegments returns true if this segmentation descriptor has subsegment fields.
-	HasSubSegments() bool
-	// SetEventID sets the event id
-	SetEventID(value uint32)
-	// SetTypeID sets the type id
-	SetTypeID(value SegDescType)
-	// SetIsEventCanceled sets the the event cancel indicator
-	SetIsEventCanceled(value bool)
-
-	SetHasDuration(value bool)
-
-	SetDuration(value gots.PTS)
-
-	SetUPIDType(value SegUPIDType)
-
-	SetUPID(value []byte)
-
-	SetSegmentNumber(value uint8)
-
-	SetSegmentsExpected(value uint8)
-
-	SetSubSegmentNumber(value uint8)
-
-	SetSubSegmentsExpected(value uint8)
-
-	SetHasSubSegments(value bool)
-
-	// TODO
+	// Data returns the raw data bytes of the SegmentationDescriptor
 	Data() []byte
+	// SegmentNum is deprecated, use SegmentNumber instead.
+	// SegmentNum returns the segment_num descriptor field.
+	SegmentNum() uint8
 }
 
 // State maintains current state for all signals and descriptors.  The intended

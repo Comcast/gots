@@ -33,33 +33,74 @@ import (
 )
 
 // This is the struct used for creating a Multiple UPID (MID)
-type UpidSt struct {
+type upidSt struct {
 	UpidType SegUPIDType
-	UpidLen  int
+	upidLen  int
 	Upid     []byte
 }
 
-type Component struct {
-	ComponentTag byte
-	PtsOffset    uint64
+func CreateUPID() UPID {
+	return &upidSt{}
 }
 
-func (c *Component) Bytes() []byte {
+func (u *upidSt) UPIDType() SegUPIDType {
+	return u.UpidType
+}
+
+func (u *upidSt) UPID() []byte {
+	return u.Upid
+}
+
+func (u *upidSt) SetUPIDType(value SegUPIDType) {
+	u.UpidType = value
+}
+
+func (u *upidSt) SetUPID(value []byte) {
+	u.Upid = value
+}
+
+type componentOffset struct {
+	componentTag byte
+	ptsOffset    gots.PTS
+}
+
+func NewComponentOffset() ComponentOffset {
+	return &componentOffset{}
+}
+
+func (c *componentOffset) ComponentTag() byte {
+	return c.componentTag
+}
+
+func (c *componentOffset) PTSOffset() gots.PTS {
+	return c.ptsOffset
+}
+
+func (c *componentOffset) SetComponentTag(value byte) {
+	c.componentTag = value
+}
+
+func (c *componentOffset) SetPTSOffset(value gots.PTS) {
+	c.ptsOffset = value
+}
+
+func (c *componentOffset) data() []byte {
 	bytes := make([]byte, 6)
-	bytes[0] = c.ComponentTag
-	bytes[1] |= byte(c.PtsOffset>>32) & 0x01 // 0000 0001
-	bytes[2] = byte(c.PtsOffset >> 24)       // 1111 1111
-	bytes[3] = byte(c.PtsOffset >> 16)       // 1111 1111
-	bytes[4] = byte(c.PtsOffset >> 8)        // 1111 1111
-	bytes[5] = byte(c.PtsOffset)             // 1111 1111
+	bytes[0] = c.componentTag
+	bytes[1] |= byte(c.ptsOffset>>32) & 0x01 // 0000 0001
+	bytes[2] = byte(c.ptsOffset >> 24)       // 1111 1111
+	bytes[3] = byte(c.ptsOffset >> 16)       // 1111 1111
+	bytes[4] = byte(c.ptsOffset >> 8)        // 1111 1111
+	bytes[5] = byte(c.ptsOffset)             // 1111 1111
 	return bytes
 }
 
-func componentFromBytes(bytes []byte) Component {
-	c := Component{}
-	c.ComponentTag = bytes[0]
-	c.PtsOffset = (uint64(bytes[1]) << 32 & 0x01) | (uint64(bytes[2]) << 24) |
+func componentFromBytes(bytes []byte) componentOffset {
+	c := componentOffset{}
+	c.componentTag = bytes[0]
+	pts := (uint64(bytes[1]) << 32 & 0x01) | (uint64(bytes[2]) << 24) |
 		(uint64(bytes[3]) << 16) | (uint64(bytes[4]) << 8) | uint64(bytes[5])
+	c.ptsOffset = gots.PTS(pts)
 	return c
 }
 
@@ -71,7 +112,7 @@ type segmentationDescriptor struct {
 	duration              gots.PTS
 	UpidType              SegUPIDType
 	Upid                  []byte
-	mid                   []UpidSt //A MID can contains `n` UPID uids in it.
+	mid                   []upidSt //A MID can contains `n` UPID uids in it.
 	segNum                uint8
 	segsExpected          uint8
 	subSegNum             uint8
@@ -87,7 +128,7 @@ type segmentationDescriptor struct {
 	archiveAllowedFlag      bool
 	deviceRestrictions      DeviceRestrictions
 
-	components []Component
+	components []componentOffset
 }
 
 type segCloseType uint8
@@ -189,7 +230,7 @@ func (d *segmentationDescriptor) parseDescriptor(data []byte) error {
 		// Upid unneeded now...
 		d.UpidType = SegUPIDType(readByte())
 		segUpidLen := int(readByte())
-		d.mid = []UpidSt{}
+		d.mid = []upidSt{}
 		// This is a Multiple PID, consisting of `n` UPID's
 		if d.UpidType == SegUPIDMID {
 			// SCTE35 signal will either have an UPID or a MID
@@ -198,13 +239,13 @@ func (d *segmentationDescriptor) parseDescriptor(data []byte) error {
 			// Iterate over the whole MID len(segUpidLen) to get all `n` UPIDs
 			// segUpidLen is in bytes.
 			for segUpidLen != 0 {
-				UpidElem := UpidSt{}
+				UpidElem := upidSt{}
 				UpidElem.UpidType = SegUPIDType(readByte())
 				segUpidLen -= 1
-				UpidElem.UpidLen = int(readByte())
+				UpidElem.upidLen = int(readByte())
 				segUpidLen -= 1
-				UpidElem.Upid = buf.Next(UpidElem.UpidLen)
-				segUpidLen -= UpidElem.UpidLen
+				UpidElem.Upid = buf.Next(UpidElem.upidLen)
+				segUpidLen -= UpidElem.upidLen
 				d.mid = append(d.mid, UpidElem)
 			}
 		} else {
@@ -300,6 +341,10 @@ func (d *segmentationDescriptor) UPIDType() SegUPIDType {
 }
 
 func (d *segmentationDescriptor) UPID() []byte {
+	// Check if this data should exist
+	if d.UpidType == SegUPIDMID {
+		return []byte{}
+	}
 	return d.Upid
 }
 
@@ -412,6 +457,10 @@ func (d *segmentationDescriptor) Equal(c SegmentationDescriptor) bool {
 	return true
 }
 
+func (d *segmentationDescriptor) HasProgramSegmentation() bool {
+	return d.programSegmentationFlag
+}
+
 func (d *segmentationDescriptor) SegmentNumber() uint8 {
 	return d.segNum
 }
@@ -430,4 +479,24 @@ func (d *segmentationDescriptor) SubSegmentNumber() uint8 {
 
 func (d *segmentationDescriptor) SubSegmentsExpected() uint8 {
 	return d.subSegsExpected
+}
+
+func (d *segmentationDescriptor) IsDeliveryNotRestricted() bool {
+	return d.deliveryNotRestricted
+}
+
+func (d *segmentationDescriptor) IsWebDeliveryAllowed() bool {
+	return d.webDeliveryAllowedFlag
+}
+
+func (d *segmentationDescriptor) IsArchiveAllowed() bool {
+	return d.archiveAllowedFlag
+}
+
+func (d *segmentationDescriptor) HasNoRegionalBlackout() bool {
+	return d.noRegionalBlackoutFlag
+}
+
+func (d *segmentationDescriptor) DeviceRestrictions() DeviceRestrictions {
+	return d.deviceRestrictions
 }

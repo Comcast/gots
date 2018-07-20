@@ -28,6 +28,10 @@ import (
 	"github.com/Comcast/gots"
 )
 
+func CreateSegmentationDescriptor() SegmentationDescriptor {
+	return &segmentationDescriptor{}
+}
+
 func (d *segmentationDescriptor) Data() []byte {
 	var data, eventData []byte
 	data = make([]byte, 11)
@@ -69,7 +73,7 @@ func (d *segmentationDescriptor) Data() []byte {
 			componentsBytes := make([]byte, 1, 6*len(d.components)+1)
 			componentsBytes[0] = byte(len(d.components)) // set component count
 			for i := range d.components {
-				componentsBytes = append(componentsBytes, d.components[i].Bytes()...)
+				componentsBytes = append(componentsBytes, d.components[i].data()...)
 			}
 			eventData = append(eventData, componentsBytes...)
 		}
@@ -92,7 +96,7 @@ func (d *segmentationDescriptor) Data() []byte {
 		} else {
 			for i := range d.mid {
 				UpidData = append(UpidData, byte(d.mid[i].UpidType))
-				UpidData = append(UpidData, byte(d.mid[i].UpidLen))
+				UpidData = append(UpidData, byte(d.mid[i].upidLen))
 				UpidData = append(UpidData, d.mid[i].Upid...)
 			}
 		}
@@ -122,6 +126,11 @@ func (d *segmentationDescriptor) SetEventID(value uint32) {
 
 func (d *segmentationDescriptor) SetTypeID(value SegDescType) {
 	d.typeID = value
+	if d.typeID == 0x34 || d.typeID == 0x36 {
+		d.hasSubSegments = true
+	} else {
+		d.hasSubSegments = false
+	}
 }
 
 func (d *segmentationDescriptor) SetIsEventCanceled(value bool) {
@@ -138,9 +147,22 @@ func (d *segmentationDescriptor) SetDuration(value gots.PTS) {
 
 func (d *segmentationDescriptor) SetUPIDType(value SegUPIDType) {
 	d.UpidType = value
+	// only one can be set at a time
+	if d.UpidType == SegUPIDMID {
+		d.Upid = []byte{}
+	} else if d.UpidType == SegUPIDNotUsed {
+		d.mid = []upidSt{}
+		d.Upid = []byte{}
+	} else {
+		d.mid = []upidSt{}
+	}
 }
 
 func (d *segmentationDescriptor) SetUPID(value []byte) {
+	// Check if this data can be set
+	if d.UpidType == SegUPIDMID {
+		return
+	}
 	d.Upid = value
 }
 
@@ -160,6 +182,67 @@ func (d *segmentationDescriptor) SetSubSegmentsExpected(value uint8) {
 	d.subSegsExpected = value
 }
 
-func (d *segmentationDescriptor) SetHasSubSegments(value bool) {
-	d.hasSubSegments = value
+func (d *segmentationDescriptor) SetHasProgramSegmentation(value bool) {
+	d.programSegmentationFlag = value
+}
+
+func (d *segmentationDescriptor) SetIsDeliveryNotRestricted(value bool) {
+	d.deliveryNotRestricted = value
+}
+
+func (d *segmentationDescriptor) SetIsWebDeliveryAllowed(value bool) {
+	d.webDeliveryAllowedFlag = value
+}
+
+func (d *segmentationDescriptor) SetIsArchiveAllowed(value bool) {
+	d.archiveAllowedFlag = value
+}
+
+func (d *segmentationDescriptor) SetHasNoRegionalBlackout(value bool) {
+	d.noRegionalBlackoutFlag = value
+}
+
+func (d *segmentationDescriptor) SetDeviceRestrictions(value DeviceRestrictions) {
+	d.deviceRestrictions = value
+}
+
+func (d *segmentationDescriptor) MID() []UPID {
+	// Check if this data should exist.
+	if d.UpidType != SegUPIDMID {
+		return nil
+	}
+	mid := make([]UPID, len(d.mid))
+	for i := range d.mid {
+		mid[i] = &d.mid[i]
+	}
+	return mid
+}
+
+func (d *segmentationDescriptor) SetMID(value []UPID) {
+	// Check if this data can be set
+	if d.UpidType != SegUPIDMID {
+		return
+	}
+	d.mid = make([]upidSt, len(value))
+	for i := range value {
+		d.mid[i].UpidType = value[i].UPIDType()
+		d.mid[i].Upid = value[i].UPID()
+		d.mid[i].upidLen = len(d.mid[i].Upid)
+	}
+}
+
+func (d *segmentationDescriptor) Components() []ComponentOffset {
+	components := make([]ComponentOffset, len(d.components))
+	for i := range d.components {
+		components[i] = &d.components[i]
+	}
+	return components
+}
+
+func (d *segmentationDescriptor) SetComponents(value []ComponentOffset) {
+	d.components = make([]componentOffset, len(value))
+	for i := range value {
+		d.components[i].componentTag = value[i].ComponentTag()
+		d.components[i].ptsOffset = value[i].PTSOffset()
+	}
 }

@@ -28,8 +28,36 @@ import (
 	"github.com/Comcast/gots"
 )
 
+func CreateSpliceInsertCommand() SpliceCommand {
+	return &spliceInsert{
+		// enable this to have less variable sized fields by
+		// default, do not use component splice mode by default
+		isProgramSplice: true,
+	}
+}
+
+func CreateTimeSignalCommand() SpliceCommand {
+	return &timeSignal{}
+}
+
+func CreateSpliceNull() SpliceCommand {
+	return &spliceNull{}
+}
+
+func (c *component) SetComponentTag(value byte) {
+	c.componentTag = value
+}
+
+func (c *component) SetHasPTS(value bool) {
+	c.hasPts = value
+}
+
+func (c *component) SetPTS(value gots.PTS) {
+	c.pts = value
+}
+
 func (c *spliceNull) Data() []byte {
-	return []byte{}
+	return []byte{} // return empty slice
 }
 
 func (c *spliceNull) SetHasPTS(value bool) {
@@ -56,7 +84,7 @@ func spliceTimeBytes(hasPTS bool, pts gots.PTS) []byte {
 }
 
 func (c *timeSignal) Data() []byte {
-	return spliceTimeBytes(c.HasPTS(), c.pts)
+	return spliceTimeBytes(c.hasPTS, c.pts)
 }
 
 func (c *timeSignal) SetHasPTS(value bool) {
@@ -103,9 +131,17 @@ func (c *spliceInsert) Data() []byte {
 	}
 
 	if !c.isProgramSplice {
-		// TODO no support for components.
-		// zero components
-		bytes = append(bytes, []byte{0x00}...)
+		componentCount := byte(len(c.components))
+		componentsBytes := []byte{componentCount}
+		for _, component := range c.components {
+			componentBytes := make([]byte, 1)
+			componentBytes[0] = component.ComponentTag()
+			if c.spliceImmediate {
+				componentBytes = append(componentBytes, spliceTimeBytes(component.HasPTS(), component.PTS())...)
+			}
+			componentsBytes = append(componentsBytes, componentBytes...)
+		}
+		bytes = append(bytes, componentsBytes...)
 	}
 
 	if c.hasDuration {

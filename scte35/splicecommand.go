@@ -76,6 +76,29 @@ func (c *spliceNull) PTS() gots.PTS {
 	return 0
 }
 
+type component struct {
+	componentTag byte
+
+	hasPts bool
+	pts    gots.PTS
+}
+
+func CreateComponent() Component {
+	return &component{}
+}
+
+func (c *component) ComponentTag() byte {
+	return c.componentTag
+}
+
+func (c *component) HasPTS() bool {
+	return c.hasPts
+}
+
+func (c *component) PTS() gots.PTS {
+	return c.pts
+}
+
 type spliceInsert struct {
 	eventID               uint32
 	eventCancelIndicator  bool
@@ -86,6 +109,8 @@ type spliceInsert struct {
 
 	hasPTS bool
 	pts    gots.PTS
+
+	components []Component
 
 	hasDuration     bool
 	duration        gots.PTS
@@ -151,17 +176,23 @@ func (c *spliceInsert) parse(buf *bytes.Buffer) error {
 		if err != nil {
 			return gots.ErrInvalidSCTE35Length
 		}
-		// skip components for now
+		// read components
 		for ; cc > 0; cc-- {
 			// component_tag
-			if _, err := buf.ReadByte(); err != nil {
+			tag, err := buf.ReadByte()
+			if err != nil {
 				return gots.ErrInvalidSCTE35Length
 			}
+			comp := &component{componentTag: tag}
 			if !c.spliceImmediate {
-				if _, _, err := parseSpliceTime(buf); err != nil {
+				hasPts, pts, err := parseSpliceTime(buf)
+				if err != nil {
 					return err
 				}
+				comp.hasPts = hasPts
+				comp.pts = pts
 			}
+			c.components = append(c.components, comp)
 		}
 	}
 	if c.hasDuration {
@@ -209,6 +240,10 @@ func (c *spliceInsert) HasDuration() bool {
 
 func (c *spliceInsert) Duration() gots.PTS {
 	return c.duration
+}
+
+func (c *spliceInsert) Components() []Component {
+	return c.components
 }
 
 func (c *spliceInsert) IsAutoReturn() bool {
