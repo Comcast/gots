@@ -35,16 +35,93 @@ func TestCreate(t *testing.T) {
 	scte, _ := NewSCTE35(target)
 	scte.(*scte35).generateData()
 	generated := append(psi.NewPointerField(0), scte.Data()...)
+	//fmt.Println(scte)
 	if !bytes.Equal(target, generated) {
 		t.Errorf("\n   Target: %X\nGenerated: %X\n", target, generated)
 	}
 }
 
-func TestCreate2(t *testing.T) {
+func TestCreateVss(t *testing.T) {
+	target := vss
+	scte := CreateSCTE35()
+	scte.SetTier(0xFFF)
+	scte.SetCommand(TimeSignal)
+	cmd := CreateTimeSignalCommand()
+	cmd.SetHasPTS(true)
+	cmd.SetPTS(0x00000000)
+	scte.SetCommandInfo(cmd)
+	scte.SetAdjustPTS(0x6D71C7EF)
+
+	descriptors := make([]SegmentationDescriptor, 0, 2)
+
+	descriptor := CreateSegmentationDescriptor()
+	descriptor.SetEventID(9)
+	descriptor.SetIsEventCanceled(false)
+	descriptor.SetHasProgramSegmentation(true)
+	descriptor.SetHasDuration(false)
+	descriptor.SetIsDeliveryNotRestricted(false)
+	descriptor.SetIsWebDeliveryAllowed(true)
+	descriptor.SetHasNoRegionalBlackout(false)
+	descriptor.SetIsArchiveAllowed(true)
+	descriptor.SetDeviceRestrictions(RestrictNone)
+	descriptor.SetUPIDType(SegUPIDMID)
+
+	mid := make([]UPID, 0, 2)
+	upid := CreateUPID()
+	upid.SetUPIDType(SegUPIDADI)
+	upid.SetUPID([]byte{
+		0x42, 0x4C, 0x41, 0x43, 0x4B, 0x4F, 0x55, 0x54, 0x3A, 0x53, 0x71,
+		0x2B, 0x6B, 0x59, 0x39, 0x6D, 0x75, 0x51, 0x64, 0x65, 0x72, 0x47,
+		0x4E, 0x69, 0x4E, 0x74, 0x4F, 0x6F, 0x4E, 0x36, 0x77, 0x3D, 0x3D,
+	})
+	mid = append(mid, upid)
+
+	upid = CreateUPID()
+	upid.SetUPIDType(SegUPADSINFO)
+	upid.SetUPID([]byte{
+		0x63, 0x6F, 0x6D, 0x63, 0x61, 0x73, 0x74, 0x3A, 0x6C, 0x69,
+		0x6E, 0x65, 0x61, 0x72, 0x3A, 0x6C, 0x69, 0x63, 0x65, 0x6E,
+		0x73, 0x65, 0x72, 0x6F, 0x74, 0x61, 0x74, 0x69, 0x6F, 0x6E,
+	})
+	mid = append(mid, upid)
+	descriptor.SetMID(mid)
+
+	descriptor.SetTypeID(0x40)
+	descriptor.SetSegmentNumber(0)
+	descriptor.SetSegmentsExpected(0)
+	descriptors = append(descriptors, descriptor)
+
+	descriptor = CreateSegmentationDescriptor()
+	descriptor.SetEventID(9)
+	descriptor.SetIsEventCanceled(false)
+	descriptor.SetHasProgramSegmentation(true)
+	descriptor.SetHasDuration(false)
+	descriptor.SetIsDeliveryNotRestricted(false)
+	descriptor.SetIsWebDeliveryAllowed(true)
+	descriptor.SetHasNoRegionalBlackout(false)
+	descriptor.SetIsArchiveAllowed(true)
+	descriptor.SetDeviceRestrictions(RestrictNone)
+	descriptor.SetUPIDType(SegUPIDNotUsed)
+	descriptor.SetTypeID(0x41)
+	descriptor.SetSegmentNumber(0)
+	descriptor.SetSegmentsExpected(0)
+	descriptors = append(descriptors, descriptor)
+
+	scte.SetDescriptors(descriptors)
+
+	generated := append(psi.NewPointerField(0), scte.Data()...)
+
+	if !bytes.Equal(target, generated) {
+		t.Errorf("\n   Target: %X\nGenerated: %X\n", target, generated)
+	}
+}
+
+func TestVSSData(t *testing.T) {
 	target := vss
 	scte, _ := NewSCTE35(target)
 	scte.(*scte35).generateData()
 	generated := append(psi.NewPointerField(0), scte.Data()...)
+
 	if !bytes.Equal(target, generated) {
 		t.Errorf("\n   Target: %X\nGenerated: %X\n", target, generated)
 	}
