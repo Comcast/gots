@@ -44,12 +44,11 @@ func CreateSCTE35() SCTE35 {
 			commandType:         SpliceNull,    // null command type by default
 			commandInfo:         &spliceNull{}, // info pooints to null command
 
-			descriptorLoopLength: 0,                          // no descriptors by default
-			descriptors:          []SegmentationDescriptor{}, // empty slice of descriptors
+			descriptors: []SegmentationDescriptor{}, // empty slice of descriptors
 
 			updateBytes: true, // update the bytes on the next call to Data()
 		}
-	scte35.psi =
+	scte35.tableHeader =
 		psi.TableHeader{
 			TableID:                0xFC,  // always 0xFC for scte35
 			SectionSyntaxIndicator: false, // always false for scte35
@@ -61,12 +60,6 @@ func CreateSCTE35() SCTE35 {
 
 func (s *scte35) generateData() {
 	// splice command generate bytes
-	pointerBytes := []byte{} // psi.NewPointerField(0)
-	pointerLength := len(pointerBytes)
-
-	tableHeaderBytes := s.psi.Bytes()
-	tableHeaderLength := len(tableHeaderBytes)
-
 	spliceCommandBytes := s.commandInfo.Data()
 	// spliceCommandLength can be set as 0xFFF (undefined), but calculate it anyways
 	spliceCommandLength := len(spliceCommandBytes)
@@ -74,6 +67,9 @@ func (s *scte35) generateData() {
 
 	// generate bytes for splice descriptors
 	descriptorBytes := make([]byte, 2)
+	// append descriptors that are not extracted
+	descriptorBytes = append(descriptorBytes, s.otherDescriptorBytes...)
+	// append segmentation descriptors
 	for i := range s.descriptors {
 		descriptorBytes = append(descriptorBytes, s.descriptors[i].Data()...)
 	}
@@ -82,21 +78,23 @@ func (s *scte35) generateData() {
 	descriptorBytes[1] = byte(descriptorLoopLength)
 
 	const staticFieldsLength = 13
-	const crcLength = 4
+	const crcLength = int(psi.CrcLen)
 
 	sectionLength := staticFieldsLength + spliceCommandLength + descriptorLoopLength + crcLength + s.alignmentStuffing
-	s.psi.SectionLength = uint16(sectionLength)
+	s.tableHeader.SectionLength = uint16(sectionLength)
+
+	tableHeaderBytes := s.tableHeader.Bytes()
+	tableHeaderLength := len(tableHeaderBytes)
 
 	// slices that point to the starting position of their names
-	data := make([]byte, pointerLength+tableHeaderLength+sectionLength)
-	tableHeader := data[pointerLength:]
+	data := make([]byte, tableHeaderLength+sectionLength)
+	tableHeader := data
 	section := tableHeader[tableHeaderLength:]
 	spliceCommand := section[11:]
 	spliceDescriptor := spliceCommand[spliceCommandLength:]
 	crc := data[len(data)-crcLength:]
 
-	// TODO: This is wrong
-	ptsAdj := s.pts - s.commandInfo.PTS()
+	ptsAdj := s.pts.Subtract(s.commandInfo.PTS())
 
 	if s.encryptedPacket {
 		section[1] = 0x80 // 1000 0000
@@ -115,7 +113,6 @@ func (s *scte35) generateData() {
 	section[9] = byte(s.spliceCommandLength)            // 1111 1111
 	section[10] = byte(s.commandType)                   // 1111 1111
 
-	copy(data, pointerBytes)
 	copy(tableHeader, tableHeaderBytes)
 	copy(spliceCommand, spliceCommandBytes)
 	copy(spliceDescriptor, descriptorBytes)
@@ -133,10 +130,12 @@ func (s *scte35) SetHasPTS(flag bool) {
 
 func (s *scte35) SetPTS(pts gots.PTS) {
 	s.pts = pts
+	s.commandInfo.SetPTS(s.pts)
+	// pts adjustment will be zero since the difference between adjusted and command pts is zero
 	s.updateBytes = true
 }
 
-func (s *scte35) AdjustPTS(pts gots.PTS) {
+func (s *scte35) SetAdjustPTS(pts gots.PTS) {
 	// adjustment will be done by the function that generates the bytes
 	s.pts = pts
 	s.updateBytes = true
