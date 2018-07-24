@@ -29,13 +29,14 @@ import (
 	"github.com/Comcast/gots/psi"
 )
 
+// CreateSCTE35 creates a default SCTE35 message and returns it.
+// The default message has the tier 0xFFF and a Splice Null command.
 func CreateSCTE35() SCTE35 {
 	scte35 :=
 		&scte35{
 			protocolVersion:     0,     // only version 0 exists
 			encryptedPacket:     false, // no support for encryption
 			encryptionAlgorithm: 0,     // no encryption support, no way to change
-			hasPTS:              false, // obtained from splice command, null splice command doesnt have it
 			pts:                 0,     // no pts
 			cwIndex:             0,     // undefined, without encryption
 			tier:                0xFFF, // ignore tier value
@@ -58,6 +59,7 @@ func CreateSCTE35() SCTE35 {
 	return scte35
 }
 
+// generateData will generate the raw data bytes of the scte signal.
 func (s *scte35) generateData() {
 	// splice command generate bytes
 	spliceCommandBytes := s.commandInfo.Data()
@@ -123,11 +125,13 @@ func (s *scte35) generateData() {
 	s.updateBytes = false
 }
 
+// SetHasPTS sets if this SCTE35 message has a PTS.
 func (s *scte35) SetHasPTS(flag bool) {
-	s.hasPTS = flag
+	s.commandInfo.SetHasPTS(true)
 	s.updateBytes = true
 }
 
+// HasPTS returns true if there is a pts time.
 func (s *scte35) SetPTS(pts gots.PTS) {
 	s.pts = pts
 	s.commandInfo.SetPTS(s.pts)
@@ -135,32 +139,40 @@ func (s *scte35) SetPTS(pts gots.PTS) {
 	s.updateBytes = true
 }
 
+// AdjustPTS will modify the pts adjustment field. The disired PTS value
+// after adjustment should be passed, The adjustment value will be calculated
+// during the call to Data().
 func (s *scte35) SetAdjustPTS(pts gots.PTS) {
 	// adjustment will be done by the function that generates the bytes
 	s.pts = pts
 	s.updateBytes = true
 }
 
-func (s *scte35) SetCommand(cmdType SpliceCommandType) {
-	s.commandType = cmdType
-	s.updateBytes = true
-}
-
+// CommandInfo returns an object describing fields of the signal's splice
+// command structure.
 func (s *scte35) SetCommandInfo(commandInfo SpliceCommand) {
 	s.commandInfo = commandInfo
 	s.updateBytes = true
+	s.commandType = s.commandInfo.CommandType()
 }
 
+// SetDescriptors sets a slice of the signals SegmentationDescriptors they
+// will be sorted by descriptor weight (least important signals first) TODO
 func (s *scte35) SetDescriptors(descriptors []SegmentationDescriptor) {
 	s.descriptors = descriptors
 	s.updateBytes = true
 }
 
+// SetAlignmentStuffing sets how many stuffing bytes will be added to the SCTE35
+// message at the end.
 func (s *scte35) SetAlignmentStuffing(alignmentStuffing int) {
 	s.alignmentStuffing = alignmentStuffing
 	s.updateBytes = true
 }
 
+// SetTier sets which authorization tier this message was assigned to.
+// The tier value of 0XFFF is the default and will ignored. When using tiers,
+// the SCTE35 message must fit entirely into the ts payload without being split up.
 func (s *scte35) SetTier(tier uint16) {
 	s.tier = tier
 	s.updateBytes = true

@@ -28,6 +28,7 @@ import (
 	"github.com/Comcast/gots"
 )
 
+// CreateSpliceInsertCommand will create a default SpliceInsertCommand.
 func CreateSpliceInsertCommand() SpliceCommand {
 	return &spliceInsert{
 		// enable this to have less variable sized fields by
@@ -36,38 +37,47 @@ func CreateSpliceInsertCommand() SpliceCommand {
 	}
 }
 
+// CreateTimeSignalCommand will create a default TimeSignalCommand
 func CreateTimeSignalCommand() SpliceCommand {
 	return &timeSignal{}
 }
 
+// CreateSpliceNull will create a Null SpliceCommand
 func CreateSpliceNull() SpliceCommand {
 	return &spliceNull{}
 }
 
+// SetComponentTag sets the component tag, which is used for the identification of the component.
 func (c *component) SetComponentTag(value byte) {
 	c.componentTag = value
 }
 
+// SetHasPTS sets a flag that determines if the component has a PTS.
 func (c *component) SetHasPTS(value bool) {
 	c.hasPts = value
 }
 
+// SetPTS sets the PTS of the component.
 func (c *component) SetPTS(value gots.PTS) {
 	c.pts = value
 }
 
+// returns the bytes of this splice command.
 func (c *spliceNull) Data() []byte {
 	return []byte{} // return empty slice
 }
 
+// SetHasPTS sets the flag that indicates if there is a pts time on the command.
 func (c *spliceNull) SetHasPTS(value bool) {
 	// do nothing
 }
 
+// SetPTS sets the PTS.
 func (c *spliceNull) SetPTS(value gots.PTS) {
 	// do nothing
 }
 
+// spliceTimeBytes returns the raw data bytes of a splice time.
 func spliceTimeBytes(hasPTS bool, pts gots.PTS) []byte {
 	if hasPTS {
 		bytes := make([]byte, 5)
@@ -83,18 +93,22 @@ func spliceTimeBytes(hasPTS bool, pts gots.PTS) []byte {
 	return []byte{0x7E} // only reserved bits are set
 }
 
+// returns the bytes of this splice command.
 func (c *timeSignal) Data() []byte {
 	return spliceTimeBytes(c.hasPTS, c.pts)
 }
 
+// SetHasPTS sets the flag that indicates if there is a pts time on the command.
 func (c *timeSignal) SetHasPTS(value bool) {
 	c.hasPTS = value
 }
 
+// SetPTS sets the PTS.
 func (c *timeSignal) SetPTS(value gots.PTS) {
 	c.pts = value
 }
 
+// returns the bytes of this splice command.
 func (c *spliceInsert) Data() []byte {
 	bytes := make([]byte, 6)
 	bytes[0] = byte(c.eventID >> 24)
@@ -170,54 +184,67 @@ func (c *spliceInsert) Data() []byte {
 	return bytes
 }
 
+// SetEventID sets the event id.
 func (c *spliceInsert) SetEventID(value uint32) {
 	c.eventID = value
 }
 
+// IsOut returns the value of the out of network indicator
 func (c *spliceInsert) SetIsOut(value bool) {
 	c.outOfNetworkIndicator = value
 }
 
+// SetIsEventCanceled sets the the event cancel indicator
 func (c *spliceInsert) SetIsEventCanceled(value bool) {
 	c.eventCancelIndicator = value
 }
 
+// SetHasPTS sets the flag that indicates if there is a pts time on the command.
 func (c *spliceInsert) SetHasPTS(value bool) {
 	c.hasPTS = value
 }
 
+// SetPTS sets the PTS.
 func (c *spliceInsert) SetPTS(value gots.PTS) {
 	c.pts = value
 }
 
+// SetHasDuration sets the duration flag
 func (c *spliceInsert) SetHasDuration(value bool) {
 	c.hasDuration = value
 }
 
+// SetDuration sets the PTS duration of the command
 func (c *spliceInsert) SetDuration(value gots.PTS) {
 	c.duration = value
 }
 
+// IsAutoReturn returns the boolean value of the auto return field
 func (c *spliceInsert) SetIsAutoReturn(value bool) {
 	c.autoReturn = value
 }
 
+// SetUniqueProgramId sets the unique program Id
 func (c *spliceInsert) SetUniqueProgramId(value uint16) {
 	c.uniqueProgramId = value
 }
 
+// SetAvailNum sets the avail_num field, zero if unused. otherwise index of the avail
 func (c *spliceInsert) SetAvailNum(value uint8) {
 	c.availNum = value
 }
 
+// AvailsExpected returns avails_expected field, number of avails for program
 func (c *spliceInsert) SetAvailsExpected(value uint8) {
 	c.availsExpected = value
 }
 
+// SetIsProgramSplice sets the program splice flag
 func (c *spliceInsert) SetIsProgramSplice(value bool) {
 	c.isProgramSplice = value
 }
 
+// SetSpliceImmediate sets the splice immediate flag
 func (c *spliceInsert) SetSpliceImmediate(value bool) {
 	c.spliceImmediate = value
 }

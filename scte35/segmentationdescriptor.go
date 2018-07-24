@@ -34,29 +34,24 @@ import (
 
 // This is the struct used for creating a Multiple UPID (MID)
 type upidSt struct {
-	UpidType SegUPIDType
+	upidType SegUPIDType
 	upidLen  int
-	Upid     []byte
+	upid     []byte
 }
 
+// CreateUPID will create a default UPID. (SegUPIDNotUsed)
 func CreateUPID() UPID {
 	return &upidSt{}
 }
 
+// UPIDType returns the type of UPID stored
 func (u *upidSt) UPIDType() SegUPIDType {
-	return u.UpidType
+	return u.upidType
 }
 
+// UPID returns the actual UPID
 func (u *upidSt) UPID() []byte {
-	return u.Upid
-}
-
-func (u *upidSt) SetUPIDType(value SegUPIDType) {
-	u.UpidType = value
-}
-
-func (u *upidSt) SetUPID(value []byte) {
-	u.Upid = value
+	return u.upid
 }
 
 type componentOffset struct {
@@ -64,29 +59,26 @@ type componentOffset struct {
 	ptsOffset    gots.PTS
 }
 
-func NewComponentOffset() ComponentOffset {
+// CreateComponentOffset will create a ComponentOffset structure that
+// belongs in a SegmentationDescriptor.
+func CreateComponentOffset() ComponentOffset {
 	return &componentOffset{}
 }
 
+// ComponentTag returns the tag of the component.
 func (c *componentOffset) ComponentTag() byte {
 	return c.componentTag
 }
 
+// PTS returns the PTS offset of the component.
 func (c *componentOffset) PTSOffset() gots.PTS {
 	return c.ptsOffset
-}
-
-func (c *componentOffset) SetComponentTag(value byte) {
-	c.componentTag = value
-}
-
-func (c *componentOffset) SetPTSOffset(value gots.PTS) {
-	c.ptsOffset = value
 }
 
 func (c *componentOffset) data() []byte {
 	bytes := make([]byte, 6)
 	bytes[0] = c.componentTag
+	bytes[1] = 0xFE
 	bytes[1] |= byte(c.ptsOffset>>32) & 0x01 // 0000 0001
 	bytes[2] = byte(c.ptsOffset >> 24)       // 1111 1111
 	bytes[3] = byte(c.ptsOffset >> 16)       // 1111 1111
@@ -95,6 +87,8 @@ func (c *componentOffset) data() []byte {
 	return bytes
 }
 
+// componentFromBytes will create a componentOffset from a byte slice.
+// length of byte slice must be 5 or larger.
 func componentFromBytes(bytes []byte) componentOffset {
 	c := componentOffset{}
 	c.componentTag = bytes[0]
@@ -184,6 +178,8 @@ func init() {
 	segCloseRules[SegDescNetworkEnd][0x13] = segCloseNormal
 }
 
+// parseDescriptor will parse a slice of bytes and store the information in a
+// parseDescriptor, if possible. If not it will return an error.
 func (d *segmentationDescriptor) parseDescriptor(data []byte) error {
 	buf := bytes.NewBuffer(data)
 	// closure to ignore EOF error from buf.ReadByte().  We've already checked
@@ -240,11 +236,11 @@ func (d *segmentationDescriptor) parseDescriptor(data []byte) error {
 			// segUpidLen is in bytes.
 			for segUpidLen != 0 {
 				UpidElem := upidSt{}
-				UpidElem.UpidType = SegUPIDType(readByte())
+				UpidElem.upidType = SegUPIDType(readByte())
 				segUpidLen -= 1
 				UpidElem.upidLen = int(readByte())
 				segUpidLen -= 1
-				UpidElem.Upid = buf.Next(UpidElem.upidLen)
+				UpidElem.upid = buf.Next(UpidElem.upidLen)
 				segUpidLen -= UpidElem.upidLen
 				d.mid = append(d.mid, UpidElem)
 			}
@@ -270,22 +266,27 @@ func (d *segmentationDescriptor) parseDescriptor(data []byte) error {
 	return nil
 }
 
+// SCTE35 returns the SCTE35 signal this segmentation descriptor was found in.
 func (d *segmentationDescriptor) SCTE35() SCTE35 {
 	return d.spliceInfo
 }
 
+// EventID returns the event id
 func (d *segmentationDescriptor) EventID() uint32 {
 	return d.eventID
 }
 
+// TypeID returns the segmentation type for descriptor
 func (d *segmentationDescriptor) TypeID() SegDescType {
 	return d.typeID
 }
 
+// SetIsEventCanceled sets the the event cancel indicator
 func (d *segmentationDescriptor) IsEventCanceled() bool {
 	return d.eventCancelIndicator
 }
 
+// IsOut returns true if a signal is an out
 func (d *segmentationDescriptor) IsOut() bool {
 	switch d.TypeID() {
 	case SegDescProgramStart,
@@ -306,6 +307,7 @@ func (d *segmentationDescriptor) IsOut() bool {
 	}
 }
 
+// IsIn returns true if a signal is an in
 func (d *segmentationDescriptor) IsIn() bool {
 	switch d.TypeID() {
 	case SegDescProgramEnd,
@@ -328,18 +330,22 @@ func (d *segmentationDescriptor) IsIn() bool {
 	}
 }
 
+// HasDuration returns true if there is a duration associated with the descriptor
 func (d *segmentationDescriptor) HasDuration() bool {
 	return d.hasDuration
 }
 
+// Duration returns the duration of the descriptor
 func (d *segmentationDescriptor) Duration() gots.PTS {
 	return d.duration
 }
 
+// UPIDType returns the type of the upid
 func (d *segmentationDescriptor) UPIDType() SegUPIDType {
 	return d.UpidType
 }
 
+// UPID returns the upid of the descriptor, if the UPIDType is not SegUPIDMID
 func (d *segmentationDescriptor) UPID() []byte {
 	// Check if this data should exist
 	if d.UpidType == SegUPIDMID {
@@ -348,6 +354,8 @@ func (d *segmentationDescriptor) UPID() []byte {
 	return d.Upid
 }
 
+// StreamSwitchSignalID returns the signalID of streamswitch signal if
+// present in the descriptor
 func (d *segmentationDescriptor) StreamSwitchSignalId() (string, error) {
 	var signalId string
 	var err error
@@ -358,21 +366,24 @@ func (d *segmentationDescriptor) StreamSwitchSignalId() (string, error) {
 	// comcast:linear:licenserotation at 0x0E
 	if len(d.mid) == 2 &&
 		!d.deliveryNotRestricted &&
-		(d.mid[0].UpidType == SegUPIDADI) &&
-		(strings.Contains(string(d.mid[0].Upid), "BLACKOUT")) &&
-		(d.mid[1].UpidType == SegUPADSINFO) &&
-		(strings.Contains(string(d.mid[1].Upid), "comcast:linear:licenserotation")) {
-		signalId = strings.TrimPrefix(string(d.mid[0].Upid), "BLACKOUT:")
+		(d.mid[0].upidType == SegUPIDADI) &&
+		(strings.Contains(string(d.mid[0].upid), "BLACKOUT")) &&
+		(d.mid[1].upidType == SegUPADSINFO) &&
+		(strings.Contains(string(d.mid[1].upid), "comcast:linear:licenserotation")) {
+		signalId = strings.TrimPrefix(string(d.mid[0].upid), "BLACKOUT:")
 	} else {
 		err = gots.ErrVSSSignalIdNotFound
 	}
 	return signalId, err
 }
 
+// SegmentNum is deprecated, use SegmentNumber instead.
+// SegmentNum returns the segment_num descriptor field.
 func (d *segmentationDescriptor) SegmentNum() uint8 {
 	return d.segNum
 }
 
+// CanClose returns true if this descriptor can close the passed in descriptor
 func (d *segmentationDescriptor) CanClose(out SegmentationDescriptor) bool {
 	inRules, ok := segCloseRules[d.TypeID()]
 	// No rules associated with this signal means it can't close anything
@@ -457,46 +468,79 @@ func (d *segmentationDescriptor) Equal(c SegmentationDescriptor) bool {
 	return true
 }
 
+// SetHasProgramSegmentation if the descriptor has program segmentation
 func (d *segmentationDescriptor) HasProgramSegmentation() bool {
 	return d.programSegmentationFlag
 }
 
+// SegmentNumber returns the segment number for this descriptor.
 func (d *segmentationDescriptor) SegmentNumber() uint8 {
 	return d.segNum
 }
 
+// SegmentsExpected returns the number of expected segments for this descriptor.
 func (d *segmentationDescriptor) SegmentsExpected() uint8 {
 	return d.segsExpected
 }
 
+// HasSubSegments returns true if this segmentation descriptor has subsegment fields.
 func (d *segmentationDescriptor) HasSubSegments() bool {
 	return d.hasSubSegments
 }
 
+// SubSegmentNumber returns the sub-segment number for this descriptor.
 func (d *segmentationDescriptor) SubSegmentNumber() uint8 {
 	return d.subSegNum
 }
 
+// SubSegmentsExpected returns the number of expected sub-segments for this descriptor.
 func (d *segmentationDescriptor) SubSegmentsExpected() uint8 {
 	return d.subSegsExpected
 }
 
+// SetIsDeliveryNotRestricted sets a flag that determines if the delivery is not restricted
 func (d *segmentationDescriptor) IsDeliveryNotRestricted() bool {
 	return d.deliveryNotRestricted
 }
 
+// IsWebDeliveryAllowed returns if web delivery is allowed, this field has no meaning if delivery is not restricted.
 func (d *segmentationDescriptor) IsWebDeliveryAllowed() bool {
 	return d.webDeliveryAllowedFlag
 }
 
+// IsArchiveAllowed returns true if there are restrictions to storing/recording this segment, this field has no meaning if delivery is not restricted.
 func (d *segmentationDescriptor) IsArchiveAllowed() bool {
 	return d.archiveAllowedFlag
 }
 
+// HasNoRegionalBlackout returns true if there is no regional blackout, this field has no meaning if delivery is not restricted.
 func (d *segmentationDescriptor) HasNoRegionalBlackout() bool {
 	return d.noRegionalBlackoutFlag
 }
 
+// DeviceRestrictions returns which device group the segment is restriced to, this field has no meaning if delivery is not restricted.
 func (d *segmentationDescriptor) DeviceRestrictions() DeviceRestrictions {
 	return d.deviceRestrictions
+}
+
+// MID returns multiple UPIDs, if UPIDType is SegUPIDMID
+func (d *segmentationDescriptor) MID() []UPID {
+	// Check if this data should exist.
+	if d.UpidType != SegUPIDMID {
+		return nil
+	}
+	mid := make([]UPID, len(d.mid))
+	for i := range d.mid {
+		mid[i] = &d.mid[i]
+	}
+	return mid
+}
+
+// Components will return components' offsets
+func (d *segmentationDescriptor) Components() []ComponentOffset {
+	components := make([]ComponentOffset, len(d.components))
+	for i := range d.components {
+		components[i] = &d.components[i]
+	}
+	return components
 }

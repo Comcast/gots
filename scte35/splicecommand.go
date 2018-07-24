@@ -36,6 +36,7 @@ type timeSignal struct {
 	pts    gots.PTS
 }
 
+// CommandType returns the signal's splice command type value.
 func (c *timeSignal) CommandType() SpliceCommandType {
 	return TimeSignal
 }
@@ -53,10 +54,12 @@ func parseTimeSignal(buf *bytes.Buffer) (cmd *timeSignal, err error) {
 	return cmd, nil
 }
 
+// HasPTS returns true if there is a pts time on the command.
 func (c *timeSignal) HasPTS() bool {
 	return c.hasPTS
 }
 
+// PTS returns the PTS time of the command, not including adjustment.
 func (c *timeSignal) PTS() gots.PTS {
 	return c.pts
 }
@@ -64,14 +67,17 @@ func (c *timeSignal) PTS() gots.PTS {
 type spliceNull struct {
 }
 
+// CommandType returns the signal's splice command type value.
 func (c *spliceNull) CommandType() SpliceCommandType {
 	return SpliceNull
 }
 
+// HasPTS returns true if there is a pts time on the command.
 func (c *spliceNull) HasPTS() bool {
 	return false
 }
 
+// PTS returns the PTS time of the command, not including adjustment.
 func (c *spliceNull) PTS() gots.PTS {
 	return 0
 }
@@ -83,18 +89,22 @@ type component struct {
 	pts    gots.PTS
 }
 
+// CreateComponent will create a component that is used in SpliceInsertCommand.
 func CreateComponent() Component {
 	return &component{}
 }
 
+// ComponentTag returns the tag of the component.
 func (c *component) ComponentTag() byte {
 	return c.componentTag
 }
 
+// HasPTS returns true if there is a pts time on the command.
 func (c *component) HasPTS() bool {
 	return c.hasPts
 }
 
+// PTS returns the PTS time of the command, not including adjustment.
 func (c *component) PTS() gots.PTS {
 	return c.pts
 }
@@ -120,6 +130,7 @@ type spliceInsert struct {
 	availsExpected  uint8
 }
 
+// CommandType returns the signal's splice command type value.
 func (c *spliceInsert) CommandType() SpliceCommandType {
 	return SpliceInsert
 }
@@ -134,6 +145,7 @@ func parseSpliceInsert(buf *bytes.Buffer) (*spliceInsert, error) {
 	return cmd, nil
 }
 
+// parse will parse bytes in the form of bytes.Buffer into a splice insert struct
 func (c *spliceInsert) parse(buf *bytes.Buffer) error {
 	baseFields := buf.Next(5)
 	if len(baseFields) < 5 { // length of required fields
@@ -214,58 +226,72 @@ func (c *spliceInsert) parse(buf *bytes.Buffer) error {
 	return nil
 }
 
+// EventID returns the event id
 func (c *spliceInsert) EventID() uint32 {
 	return c.eventID
 }
 
+// IsOut returns the value of the out of network indicator
 func (c *spliceInsert) IsOut() bool {
 	return c.outOfNetworkIndicator
 }
 
+// IsEventCanceled returns the event cancel indicator
 func (c *spliceInsert) IsEventCanceled() bool {
 	return c.eventCancelIndicator
 }
 
+// HasPTS returns true if there is a pts time on the command.
 func (c *spliceInsert) HasPTS() bool {
 	return c.hasPTS
 }
 
+// PTS returns the PTS time of the command, not including adjustment.
 func (c *spliceInsert) PTS() gots.PTS {
 	return c.pts
 }
 
+// HasDuration returns true if there is a duration
 func (c *spliceInsert) HasDuration() bool {
 	return c.hasDuration
 }
 
+// Duration returns the PTS duration of the command
 func (c *spliceInsert) Duration() gots.PTS {
 	return c.duration
 }
 
+// Components returns the components of the splice command
 func (c *spliceInsert) Components() []Component {
 	return c.components
 }
 
+// IsAutoReturn returns the boolean value of the auto return field
 func (c *spliceInsert) IsAutoReturn() bool {
 	return c.autoReturn
 }
 
+// UniqueProgramId returns the unique_program_id field
 func (c *spliceInsert) UniqueProgramId() uint16 {
 	return c.uniqueProgramId
 }
 
+// AvailNum returns the avail_num field, index of this avail or zero if unused
 func (c *spliceInsert) AvailNum() uint8 {
 	return c.availNum
 }
 
+// AvailsExpected returns avails_expected field, number of avails for program
 func (c *spliceInsert) AvailsExpected() uint8 {
 	return c.availsExpected
 }
 
+// IsProgramSplice returns if the program_splice_flag is set
 func (c *spliceInsert) IsProgramSplice() bool {
 	return c.isProgramSplice
 }
 
+// SpliceImmediate returns if the splice_immediate_flag is set
 func (c *spliceInsert) SpliceImmediate() bool {
 	return c.spliceImmediate
 }

@@ -42,9 +42,8 @@ const (
 type scte35 struct {
 	tableHeader         psi.TableHeader
 	protocolVersion     uint8
-	encryptedPacket     bool  // not supported
-	encryptionAlgorithm uint8 // 6 bits
-	hasPTS              bool
+	encryptedPacket     bool     // not supported
+	encryptionAlgorithm uint8    // 6 bits
 	pts                 gots.PTS // pts is stored adjusted in struct
 	cwIndex             uint8
 	tier                uint16 // 12 bits
@@ -73,6 +72,7 @@ func NewSCTE35(data []byte) (SCTE35, error) {
 	return s, nil
 }
 
+// parseTable will parse bytes into a scte35 message struct
 func (s *scte35) parseTable(data []byte) error {
 	buf := bytes.NewBuffer(data)
 	// closure to ignore EOF error from buf.ReadByte().  We've already checked
@@ -127,7 +127,6 @@ func (s *scte35) parseTable(data []byte) error {
 			}
 			// add the pts adjustment to get the real value
 			s.pts = cmd.PTS().Add(ptsAdjustment)
-			s.hasPTS = cmd.HasPTS()
 			s.commandInfo = cmd
 		case SpliceNull:
 			s.commandInfo = &spliceNull{}
@@ -176,34 +175,47 @@ func (s *scte35) parseTable(data []byte) error {
 	return nil
 }
 
+// HasPTS returns true if there is a pts time.
 func (s *scte35) HasPTS() bool {
-	return s.hasPTS
+	return s.commandInfo.HasPTS()
 }
 
+// PTS returns the PTS time of the signal if it exists. Includes adjustment.
 func (s *scte35) PTS() gots.PTS {
 	return s.pts
 }
 
+// Command returns the signal's splice command.
 func (s *scte35) Command() SpliceCommandType {
 	return s.commandType
 }
 
+// CommandInfo returns an object describing fields of the signal's splice
+// command structure
 func (s *scte35) CommandInfo() SpliceCommand {
 	return s.commandInfo
 }
 
+// Descriptors returns a slice of the signals SegmentationDescriptors sorted
+// by descriptor weight (least important signals first)
 func (s *scte35) Descriptors() []SegmentationDescriptor {
 	return s.descriptors
 }
 
+// Tier returns which authorization tier this message was assigned to.
+// The tier value of 0XFFF is the default and will ignored. When using tier values,
+// the SCTE35 message must fit entirely into the ts payload without being split up.
 func (s *scte35) Tier() uint16 {
 	return s.tier
 }
 
+// AlignmentStuffing returns how many stuffing bytes will be added to the SCTE35
+// message at the end.
 func (s *scte35) AlignmentStuffing() int {
 	return s.alignmentStuffing
 }
 
+// Data returns the raw data bytes of the scte signal
 func (s *scte35) Data() []byte {
 	if s.updateBytes {
 		s.generateData()
@@ -224,114 +236,147 @@ func uint40(buf []byte) gots.PTS {
 	return (gots.PTS(buf[0]&0x1) << 32) | (gots.PTS(buf[1]) << 24) | (gots.PTS(buf[2]) << 16) | (gots.PTS(buf[3]) << 8) | (gots.PTS(buf[4]))
 }
 
+// String returns a string representation of the SCTE35 message.
+// String function is for debugging and testing.
 func (s *scte35) String() string {
-	indent := "   "
+	numspaces := 0
+	indentString := ""
+
+	indent := func(n int) {
+		numspaces += n
+		indentString = ""
+		for i := 0; i < numspaces; i++ {
+			indentString += "   "
+		}
+	}
+
+	indentPrintf := func(format string, a ...interface{}) string {
+		return fmt.Sprintf(indentString+format, a...)
+	}
+
 	str := ""
 	s.generateData()
-	str += fmt.Sprintf("table_id: %X\n", s.tableHeader.TableID)
-	str += fmt.Sprintf("section_syntax_indicator: %t\n", s.tableHeader.SectionSyntaxIndicator)
-	str += fmt.Sprintf("private_indicator: %t\n", s.tableHeader.PrivateIndicator)
-	str += fmt.Sprintf("section_length: %X\n", s.tableHeader.SectionLength)
+	str += indentPrintf("table_id: 0x%X\n", s.tableHeader.TableID)
+	str += indentPrintf("section_syntax_indicator: %t\n", s.tableHeader.SectionSyntaxIndicator)
+	str += indentPrintf("private_indicator: %t\n", s.tableHeader.PrivateIndicator)
+	str += indentPrintf("section_length: %d\n", s.tableHeader.SectionLength)
 
-	str += fmt.Sprintf("protocol_version: %X\n", s.protocolVersion)
-	str += fmt.Sprintf("encrypted_packet: %t\n", s.encryptedPacket)
-	str += fmt.Sprintf("encryption_algorithm: %X\n", s.encryptionAlgorithm)
+	str += indentPrintf("protocol_version: 0x%X\n", s.protocolVersion)
+	str += indentPrintf("encrypted_packet: %t\n", s.encryptedPacket)
+	str += indentPrintf("encryption_algorithm: 0x%X\n", s.encryptionAlgorithm)
 
-	str += fmt.Sprintf("pts_adjustment: %X\n", s.PTS())
-	str += fmt.Sprintf("cw_index: %X\n", s.cwIndex)
-	str += fmt.Sprintf("tier: %X\n", s.tier)
-	str += fmt.Sprintf("splice_command_type: %X\n", s.commandType)
-
+	str += indentPrintf("has_pts: %t\n", s.HasPTS())
+	str += indentPrintf("adjusted_pts: 0x%X\n", s.PTS())
+	str += indentPrintf("cw_index: 0x%X\n", s.cwIndex)
+	str += indentPrintf("tier: 0x%X\n", s.tier)
+	str += indentPrintf("splice_command_type: %s\n", SpliceCommandTypeNames[s.commandType])
+	indent(1)
 	if cmd, ok := s.commandInfo.(SpliceInsertCommand); ok {
-		str += fmt.Sprintf(indent+"splice_event_id: %X\n", cmd.EventID())
-		str += fmt.Sprintf(indent+"splice_event_cancel_indicator: %t\n", cmd.IsEventCanceled())
+		str += indentPrintf("splice_event_id: 0x%X\n", cmd.EventID())
+		str += indentPrintf("splice_event_cancel_indicator: %t\n", cmd.IsEventCanceled())
 		if !cmd.IsEventCanceled() {
-			str += fmt.Sprintf(indent+"out_of_network_indicator: %t\n", cmd.IsOut())
-			str += fmt.Sprintf(indent+"program_splice_flag: %t\n", cmd.IsProgramSplice())
-			str += fmt.Sprintf(indent+"duration_flag: %t\n", cmd.HasDuration())
-			str += fmt.Sprintf(indent+"splice_immediate_flag: %t\n", cmd.SpliceImmediate())
-			str += fmt.Sprintf(indent+"splice_time_has_pts: %t\n", cmd.HasPTS())
+			str += indentPrintf("out_of_network_indicator: %t\n", cmd.IsOut())
+			str += indentPrintf("program_splice_flag: %t\n", cmd.IsProgramSplice())
+			str += indentPrintf("duration_flag: %t\n", cmd.HasDuration())
+			str += indentPrintf("splice_immediate_flag: %t\n", cmd.SpliceImmediate())
+			str += indentPrintf("splice_time_has_pts: %t\n", cmd.HasPTS())
 			if cmd.HasPTS() {
-				str += fmt.Sprintf(indent+"splice_time_pts: %X\n", cmd.PTS())
+				str += indentPrintf("splice_time_pts: 0x%X\n", cmd.PTS())
 			}
-			str += fmt.Sprintf(indent+"component_count: %X\n", len(cmd.Components()))
+			str += indentPrintf("component_count: 0x%X\n", len(cmd.Components()))
 			for _, comp := range cmd.Components() {
-				str += fmt.Sprintf(indent + "component:\n")
-				str += fmt.Sprintf(indent+indent+"component_tag: %X\n", comp.ComponentTag())
-				str += fmt.Sprintf(indent+indent+"component_has_pts: %t\n", comp.HasPTS())
+				str += indentPrintf("component:\n")
+				indent(1)
+				str += indentPrintf("component_tag: 0x%X\n", comp.ComponentTag())
+				str += indentPrintf("component_has_pts: %t\n", comp.HasPTS())
 				if comp.HasPTS() {
-					str += fmt.Sprintf(indent+indent+"component_tag: %X\n", cmd.PTS())
+					str += indentPrintf("component_tag: 0x%X\n", cmd.PTS())
 				}
+				indent(-1)
 
 				if cmd.HasDuration() {
-					str += fmt.Sprintf(indent+"auto_return: %t\n", cmd.IsAutoReturn())
-					str += fmt.Sprintf(indent+"duration: %X\n", cmd.Duration())
+					str += indentPrintf("auto_return: %t\n", cmd.IsAutoReturn())
+					str += indentPrintf("duration: 0x%X\n", cmd.Duration())
 				}
-				str += fmt.Sprintf(indent+"unique_program_id: %t\n", cmd.UniqueProgramId())
-				str += fmt.Sprintf(indent+"avail_num: %X\n", cmd.AvailNum())
-				str += fmt.Sprintf(indent+"avails_expected: %X\n", cmd.AvailsExpected())
+				str += indentPrintf("unique_program_id: %t\n", cmd.UniqueProgramId())
+				str += indentPrintf("avail_num: 0x%X\n", cmd.AvailNum())
+				str += indentPrintf("avails_expected: 0x%X\n", cmd.AvailsExpected())
 			}
 		}
 	}
 
 	if cmd, ok := s.commandInfo.(TimeSignalCommand); ok {
-		str += fmt.Sprintf(indent+"time_specified_flag: %t\n", cmd.HasPTS())
+		str += indentPrintf("time_specified_flag: %t\n", cmd.HasPTS())
 		if cmd.HasPTS() {
-			str += fmt.Sprintf(indent+"pts_time: %X\n", cmd.PTS())
+			str += indentPrintf("pts_time: 0x%X\n", cmd.PTS())
 		}
 	}
+	indent(-1)
 
-	str += fmt.Sprintf("descriptor_count: %d\n", len(s.descriptors))
-
+	str += indentPrintf("descriptor_count: %d\n", len(s.Descriptors()))
 	for _, desc := range s.descriptors {
-		str += fmt.Sprintf("descriptor:\n")
-		str += fmt.Sprintf(indent+"segmentation_event_id: %X\n", desc.EventID())
-		str += fmt.Sprintf(indent+"segmentation_event_cancel_indicator: %t\n", desc.IsEventCanceled())
+		str += indentPrintf("descriptor:\n")
+
+		indent(1)
+		if desc.IsIn() {
+			indentPrintf("<--- IN Segmentation Descriptor")
+		}
+		if desc.IsOut() {
+			indentPrintf("---> OUT Segmentation Descriptor")
+		}
+		str += indentPrintf("segmentation_event_id: 0x%X\n", desc.EventID())
+		str += indentPrintf("segmentation_event_cancel_indicator: %t\n", desc.IsEventCanceled())
 		if !desc.IsEventCanceled() {
-			str += fmt.Sprintf(indent+"program_segmentation_flag: %t\n", desc.HasProgramSegmentation())
-			str += fmt.Sprintf(indent+"segmentation_duration_flag: %t\n", desc.HasDuration())
-			str += fmt.Sprintf(indent+"delivery_not_restricted_flag: %t\n", desc.IsDeliveryNotRestricted())
+			str += indentPrintf("program_segmentation_flag: %t\n", desc.HasProgramSegmentation())
+			str += indentPrintf("segmentation_duration_flag: %t\n", desc.HasDuration())
+			str += indentPrintf("delivery_not_restricted_flag: %t\n", desc.IsDeliveryNotRestricted())
 			if !desc.IsDeliveryNotRestricted() {
-				str += fmt.Sprintf(indent+"web_delivery_allowed_flag: %t\n", desc.IsWebDeliveryAllowed())
-				str += fmt.Sprintf(indent+"no_regional_blackout_flag: %t\n", desc.HasNoRegionalBlackout())
-				str += fmt.Sprintf(indent+"archive_allowed_flag: %t\n", desc.IsArchiveAllowed())
-				str += fmt.Sprintf(indent+"device_restrictions: %X\n", desc.DeviceRestrictions())
+				str += indentPrintf("web_delivery_allowed_flag: %t\n", desc.IsWebDeliveryAllowed())
+				str += indentPrintf("no_regional_blackout_flag: %t\n", desc.HasNoRegionalBlackout())
+				str += indentPrintf("archive_allowed_flag: %t\n", desc.IsArchiveAllowed())
+				str += indentPrintf("device_restrictions: %s\n", DeviceRestrictionsNames[desc.DeviceRestrictions()])
 			}
 			if !desc.HasProgramSegmentation() {
-				str += fmt.Sprintf(indent+"component_count: %X\n", len(desc.Components()))
+				str += indentPrintf("component_count: 0x%X\n", len(desc.Components()))
 				for _, comp := range desc.Components() {
-					str += fmt.Sprintf(indent + "component:\n")
-					str += fmt.Sprintf(indent+indent+"component_tag: %X\n", comp.ComponentTag())
-					str += fmt.Sprintf(indent+indent+"pts_offset: %X\n", comp.PTSOffset())
+					str += indentPrintf("component:\n")
+					indent(1)
+					str += indentPrintf("component_tag: 0x%X\n", comp.ComponentTag())
+					str += indentPrintf("pts_offset: 0x%X\n", comp.PTSOffset())
+					indent(-1)
 				}
 			}
 			if desc.HasDuration() {
-				str += fmt.Sprintf(indent+"segmentation_duration: %X\n", desc.Duration())
+				str += indentPrintf("segmentation_duration: 0x%X\n", desc.Duration())
 			}
-			str += fmt.Sprintf(indent+"segmentation_upid_type: %X\n", desc.UPIDType())
+			str += indentPrintf("segmentation_upid_type: %s\n", SegUPIDTypeNames[desc.UPIDType()])
 			if desc.UPIDType() != SegUPIDMID {
-				str += fmt.Sprintf(indent+"segmentation_upid: %X\n", desc.UPID())
+				str += indentPrintf("segmentation_upid: %s\n", string(desc.UPID()))
 			} else {
-				str += fmt.Sprintf(indent + "segmentation_mid: \n")
+				str += indentPrintf("segmentation_mid: \n")
+				indent(1)
 				for _, upid := range desc.MID() {
-					str += fmt.Sprintf(indent + "upid:\n")
-					str += fmt.Sprintf(indent+indent+"segmentation_mid_upid_type: %X\n", upid.UPIDType())
-					str += fmt.Sprintf(indent+indent+"segmentation_mid_upid: %X\n", upid.UPID())
+					str += indentPrintf("upid:\n")
+					indent(1)
+					str += indentPrintf("segmentation_mid_upid_type: %s\n", SegUPIDTypeNames[upid.UPIDType()])
+					str += indentPrintf("segmentation_mid_upid: %s\n", string(upid.UPID()))
+					indent(-1)
 				}
+				indent(-1)
 			}
-			str += fmt.Sprintf(indent+"segmentation_type_id: %X\n", desc.TypeID())
-			str += fmt.Sprintf(indent+"segment_num: %X\n", desc.SegmentNumber())
-			str += fmt.Sprintf(indent+"segments_expected: %X\n", desc.SegmentsExpected())
+			str += indentPrintf("segmentation_type_id: %s\n", SegDescTypeNames[desc.TypeID()])
+			str += indentPrintf("segment_num: 0x%X\n", desc.SegmentNumber())
+			str += indentPrintf("segments_expected: 0x%X\n", desc.SegmentsExpected())
 			if desc.HasSubSegments() {
-				str += fmt.Sprintf(indent+"sub_segment_num: %X\n", desc.SubSegmentNumber())
-				str += fmt.Sprintf(indent+"sub_segments_expected: %X\n", desc.SubSegmentsExpected())
+				str += indentPrintf("sub_segment_num: 0x%X\n", desc.SubSegmentNumber())
+				str += indentPrintf("sub_segments_expected: 0x%X\n", desc.SubSegmentsExpected())
 			}
 		}
+		indent(-1)
 	}
 
-	str += fmt.Sprintf("alignment_stuffing_byte_count: %d\n", s.alignmentStuffing)
-	str += fmt.Sprintf("CRC_32: %X", s.data[len(s.data)-4:])
-	//str += fmt.Sprintf("Data: %X", s.data)
+	str += indentPrintf("alignment_stuffing_byte_count: %d\n", s.alignmentStuffing)
+	str += indentPrintf("CRC_32: 0x%X", s.data[len(s.data)-4:])
 
 	return str
 }

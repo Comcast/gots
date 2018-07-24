@@ -137,7 +137,7 @@ var SegDescTypeNames = map[SegDescType]string{
 	SegDescUnscheduledEventStart:         "SegDescUnscheduledEventStart",
 	SegDescUnscheduledEventEnd:           "SegDescUnscheduledEventEnd",
 	SegDescNetworkStart:                  "SegDescNetworkStart",
-	SegDescNetworkEnd:                    "SegDescNetworkE",
+	SegDescNetworkEnd:                    "SegDescNetworkEnd",
 }
 
 // SegUPIDType is the Segmentation UPID Types - Only type that really needs to be checked is
@@ -163,35 +163,53 @@ const (
 	SegUPIDURN                     = 0x0f
 )
 
+var SegUPIDTypeNames = map[SegUPIDType]string{
+	SegUPIDNotUsed:     "SegUPIDNotUsed",
+	SegUPIDUserDefined: "SegUPIDUserDefined",
+	SegUPIDISCI:        "SegUPIDISCI",
+	SegUPIDAdID:        "SegUPIDAdID",
+	SegUPIDUMID:        "SegUPIDUMID",
+	SegUPIDISAN:        "SegUPIDISAN",
+	SegUPIDVISAN:       "SegUPIDVISAN",
+	SegUPIDTID:         "SegUPIDTID",
+	SegUPIDTI:          "SegUPIDTI",
+	SegUPIDADI:         "SegUPIDADI",
+	SegUPIDEIDR:        "SegUPIDEIDR",
+	SegUPIDATSCID:      "SegUPIDATSCID",
+	SegUPIDMPU:         "SegUPIDMPU",
+	SegUPIDMID:         "SegUPIDMID",
+	SegUPADSINFO:       "SegUPADSINFO",
+	SegUPIDURN:         "SegUPIDURN",
+}
+
 // SCTE35 represent operations available on a SCTE35 message.
 type SCTE35 interface {
 	// HasPTS returns true if there is a pts time.
 	HasPTS() bool
-	// SetHasPTS sets determines if this SCTE35 message has a PTS
+	// SetHasPTS sets if this SCTE35 message has a PTS.
 	SetHasPTS(flag bool)
 	// PTS returns the PTS time of the signal if it exists. Includes adjustment.
 	PTS() gots.PTS
 	// SetPTS sets the PTS time of the signal's command. There will be no PTS adjustment using this function.
 	// If HasPTS is false, then it will have no effect until it is set to true. Also this command has no
-	// effect with a null Splice Command
+	// effect with a null splice command.
 	SetPTS(pts gots.PTS)
 	// AdjustPTS will modify the pts adjustment field. The disired PTS value
-	// after adjustment should be passed, The adjustment value will be calculated.
+	// after adjustment should be passed, The adjustment value will be calculated
+	// during the call to Data().
 	SetAdjustPTS(pts gots.PTS)
 	// Tier returns which authorization tier this message was assigned to.
-	// The tier value of 0XFFF is the default and will ignored. When using tiers,
-	// The SCTE35 message must fit entirely into the ts payload without being split up.
+	// The tier value of 0XFFF is the default and will ignored. When using tier values,
+	// the SCTE35 message must fit entirely into the ts payload without being split up.
 	Tier() uint16
 	// SetTier sets which authorization tier this message was assigned to.
 	// The tier value of 0XFFF is the default and will ignored. When using tiers,
-	// The SCTE35 message must fit entirely into the ts payload without being split up.
+	// the SCTE35 message must fit entirely into the ts payload without being split up.
 	SetTier(tier uint16)
 	// Command returns the signal's splice command.
 	Command() SpliceCommandType
-	// SetCommand sets the the signal's splice command.
-	SetCommand(cmdType SpliceCommandType)
 	// CommandInfo returns an object describing fields of the signal's splice
-	// command structure
+	// command structure.
 	CommandInfo() SpliceCommand
 	// SetCommandInfo sets the object describing fields of the signal's splice
 	// command structure
@@ -200,7 +218,7 @@ type SCTE35 interface {
 	// by descriptor weight (least important signals first)
 	Descriptors() []SegmentationDescriptor
 	// SetDescriptors sets a slice of the signals SegmentationDescriptors they
-	// will be sorted by descriptor weight (least important signals first) TODO
+	// will be sorted by descriptor weight (least important signals first)
 	SetDescriptors(descriptors []SegmentationDescriptor)
 	// AlignmentStuffing returns how many stuffing bytes will be added to the SCTE35
 	// message at the end.
@@ -208,32 +226,35 @@ type SCTE35 interface {
 	// SetAlignmentStuffing sets how many stuffing bytes will be added to the SCTE35
 	// message at the end.
 	SetAlignmentStuffing(alignmentStuffing int)
-	// Data returns the raw data bytes of the scte signal
+	// Data returns the raw data bytes of the scte signal.
 	Data() []byte
 	// String returns a string representation of the SCTE35 message.
 	// String function is for debugging and testing.
 	String() string
 }
 
+// SpliceCommand represent operations available on all SpliceCommands.
 type SpliceCommand interface {
-	// CommandType returns the signal's splice command type value
+	// CommandType returns the signal's splice command type value.
 	CommandType() SpliceCommandType
-	// HasPTS returns true if there is a pts time on the command
+	// HasPTS returns true if there is a pts time on the command.
 	HasPTS() bool
 	// PTS returns the PTS time of the command, not including adjustment.
 	PTS() gots.PTS
-	// SetHasPTS sets the flag that indicates if there is a pts time on the command
+	// SetHasPTS sets the flag that indicates if there is a pts time on the command.
 	SetHasPTS(value bool)
-	// SetPTS sets the PTS
+	// SetPTS sets the PTS.
 	SetPTS(value gots.PTS)
-	// returns the bytes of this splice command
+	// returns the bytes of this splice command.
 	Data() []byte
 }
 
+// TimeSignalCommand is a type of SpliceCommand.
 type TimeSignalCommand interface {
 	SpliceCommand
 }
 
+// Component is an interfac for components, a structure in SpliceInsertCommand.
 type Component interface {
 	// ComponentTag returns the tag of the component.
 	ComponentTag() byte
@@ -249,6 +270,7 @@ type Component interface {
 	SetPTS(value gots.PTS)
 }
 
+// ComponentOffset is a structure in SegmentationDescriptor.
 type ComponentOffset interface {
 	// ComponentTag returns the tag of the component.
 	ComponentTag() byte
@@ -260,6 +282,7 @@ type ComponentOffset interface {
 	SetPTSOffset(value gots.PTS)
 }
 
+// SpliceInsertCommand is a type of SpliceCommand.
 type SpliceInsertCommand interface {
 	SpliceCommand
 	// EventID returns the event id

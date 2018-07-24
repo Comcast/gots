@@ -28,10 +28,33 @@ import (
 	"github.com/Comcast/gots"
 )
 
+// SetUPIDType will set the type of the UPID
+func (u *upidSt) SetUPIDType(value SegUPIDType) {
+	u.upidType = value
+}
+
+// UPID set the actual UPID
+func (u *upidSt) SetUPID(value []byte) {
+	u.upid = value
+}
+
+// SetComponentTag sets the component tag, which is used for the identification of the component.
+func (c *componentOffset) SetComponentTag(value byte) {
+	c.componentTag = value
+}
+
+// SetPTS sets the PTS offset of the component.
+func (c *componentOffset) SetPTSOffset(value gots.PTS) {
+	c.ptsOffset = value
+}
+
+// CreateSegmentationDescriptor creates and returns a default
+// SegmentationDescriptor.
 func CreateSegmentationDescriptor() SegmentationDescriptor {
 	return &segmentationDescriptor{}
 }
 
+// Data returns the raw data bytes of the SegmentationDescriptor
 func (d *segmentationDescriptor) Data() []byte {
 	var data, eventData []byte
 	data = make([]byte, 11)
@@ -95,9 +118,9 @@ func (d *segmentationDescriptor) Data() []byte {
 			UpidData = append(UpidData, d.Upid...)
 		} else {
 			for i := range d.mid {
-				UpidData = append(UpidData, byte(d.mid[i].UpidType))
+				UpidData = append(UpidData, byte(d.mid[i].upidType))
 				UpidData = append(UpidData, byte(d.mid[i].upidLen))
-				UpidData = append(UpidData, d.mid[i].Upid...)
+				UpidData = append(UpidData, d.mid[i].upid...)
 			}
 		}
 		UpidData[1] = byte(len(UpidData) - 2)
@@ -120,10 +143,12 @@ func (d *segmentationDescriptor) Data() []byte {
 	return data
 }
 
+// SetEventID sets the event id
 func (d *segmentationDescriptor) SetEventID(value uint32) {
 	d.eventID = value
 }
 
+// SetTypeID sets the type id
 func (d *segmentationDescriptor) SetTypeID(value SegDescType) {
 	d.typeID = value
 	if d.typeID == 0x34 || d.typeID == 0x36 {
@@ -133,18 +158,22 @@ func (d *segmentationDescriptor) SetTypeID(value SegDescType) {
 	}
 }
 
+// SetIsEventCanceled sets the the event cancel indicator
 func (d *segmentationDescriptor) SetIsEventCanceled(value bool) {
 	d.eventCancelIndicator = value
 }
 
+// SetHasDuration determines if a duration is present in the descriptor
 func (d *segmentationDescriptor) SetHasDuration(value bool) {
 	d.hasDuration = value
 }
 
+// SetDuration sets the duration of the descriptor
 func (d *segmentationDescriptor) SetDuration(value gots.PTS) {
 	d.duration = value
 }
 
+// SetUPIDType sets the type of upid, only works if UPIDType is not SegUPIDMID
 func (d *segmentationDescriptor) SetUPIDType(value SegUPIDType) {
 	d.UpidType = value
 	// only one can be set at a time
@@ -158,6 +187,7 @@ func (d *segmentationDescriptor) SetUPIDType(value SegUPIDType) {
 	}
 }
 
+// SetUPID sets the upid of the descriptor
 func (d *segmentationDescriptor) SetUPID(value []byte) {
 	// Check if this data can be set
 	if d.UpidType == SegUPIDMID {
@@ -166,58 +196,57 @@ func (d *segmentationDescriptor) SetUPID(value []byte) {
 	d.Upid = value
 }
 
+// SetSegmentNumber sets the segment number for this descriptor.
 func (d *segmentationDescriptor) SetSegmentNumber(value uint8) {
 	d.segNum = value
 }
 
+// SetSegmentsExpected sets the number of expected segments for this descriptor.
 func (d *segmentationDescriptor) SetSegmentsExpected(value uint8) {
 	d.segsExpected = value
 }
 
+// SetSubSegmentNumber sets the sub-segment number for this descriptor.
 func (d *segmentationDescriptor) SetSubSegmentNumber(value uint8) {
 	d.subSegNum = value
 }
 
+// SetSubSegmentsExpected sets the number of expected sub-segments for this descriptor.
 func (d *segmentationDescriptor) SetSubSegmentsExpected(value uint8) {
 	d.subSegsExpected = value
 }
 
+// SetHasProgramSegmentation if the descriptor has program segmentation
 func (d *segmentationDescriptor) SetHasProgramSegmentation(value bool) {
 	d.programSegmentationFlag = value
 }
 
+// SetIsDeliveryNotRestricted sets a flag that determines if the delivery is not restricted
 func (d *segmentationDescriptor) SetIsDeliveryNotRestricted(value bool) {
 	d.deliveryNotRestricted = value
 }
 
+// SetIsWebDeliveryAllowed sets a flag that determines if web delivery is allowed, this field has no meaning if delivery is not restricted.
 func (d *segmentationDescriptor) SetIsWebDeliveryAllowed(value bool) {
 	d.webDeliveryAllowedFlag = value
 }
 
+// SetIsArchiveAllowed sets a flag that determines if there are restrictions to storing/recording this segment, this field has no meaning if delivery is not restricted.
 func (d *segmentationDescriptor) SetIsArchiveAllowed(value bool) {
 	d.archiveAllowedFlag = value
 }
 
+// SetHasNoRegionalBlackout sets a flag that determines if there is no regional blackout, this field has no meaning if delivery is not restricted.
 func (d *segmentationDescriptor) SetHasNoRegionalBlackout(value bool) {
 	d.noRegionalBlackoutFlag = value
 }
 
+// SetDeviceRestrictions sets which device group the segment is restriced to, this field has no meaning if delivery is not restricted.
 func (d *segmentationDescriptor) SetDeviceRestrictions(value DeviceRestrictions) {
 	d.deviceRestrictions = value
 }
 
-func (d *segmentationDescriptor) MID() []UPID {
-	// Check if this data should exist.
-	if d.UpidType != SegUPIDMID {
-		return nil
-	}
-	mid := make([]UPID, len(d.mid))
-	for i := range d.mid {
-		mid[i] = &d.mid[i]
-	}
-	return mid
-}
-
+// SetMID sets multiple UPIDs, only works if UPIDType is SegUPIDMID
 func (d *segmentationDescriptor) SetMID(value []UPID) {
 	// Check if this data can be set
 	if d.UpidType != SegUPIDMID {
@@ -225,20 +254,13 @@ func (d *segmentationDescriptor) SetMID(value []UPID) {
 	}
 	d.mid = make([]upidSt, len(value))
 	for i := range value {
-		d.mid[i].UpidType = value[i].UPIDType()
-		d.mid[i].Upid = value[i].UPID()
-		d.mid[i].upidLen = len(d.mid[i].Upid)
+		d.mid[i].upidType = value[i].UPIDType()
+		d.mid[i].upid = value[i].UPID()
+		d.mid[i].upidLen = len(d.mid[i].upid)
 	}
 }
 
-func (d *segmentationDescriptor) Components() []ComponentOffset {
-	components := make([]ComponentOffset, len(d.components))
-	for i := range d.components {
-		components[i] = &d.components[i]
-	}
-	return components
-}
-
+// Components will set components' offsets
 func (d *segmentationDescriptor) SetComponents(value []ComponentOffset) {
 	d.components = make([]componentOffset, len(value))
 	for i := range value {
