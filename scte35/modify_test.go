@@ -51,15 +51,15 @@ var testScteCreate3 = []byte{
 }
 
 var testScteCreate4 = []byte{
-	0x00, 0xFC, 0x30, 0x55, 0x00, 0x00, 0x00, 0x02, 0xDD, 0x20, 0x00, 0xFF, 0xF0, 0x05, 0x06, 0xFE,
-	0x00, 0x08, 0x95, 0x44, 0x00, 0x3F, 0x02, 0x3D, 0x43, 0x55, 0x45, 0x49, 0x00, 0x00, 0x00, 0x02,
+	0x00, 0xFC, 0x30, 0x53, 0x00, 0x00, 0x00, 0x02, 0xDD, 0x20, 0x00, 0xFF, 0xF0, 0x05, 0x06, 0xFE,
+	0x00, 0x08, 0x95, 0x44, 0x00, 0x3D, 0x02, 0x3B, 0x43, 0x55, 0x45, 0x49, 0x00, 0x00, 0x00, 0x02,
 	0x7F, 0x1F, 0x02, 0x01, 0xFE, 0x00, 0x2D, 0xD2, 0x00, 0x02, 0xFE, 0x00, 0x00, 0x01, 0xE8, 0x09,
 	0x1F, 0x53, 0x49, 0x47, 0x4E, 0x41, 0x4C, 0x3A, 0x59, 0x38, 0x6F, 0x30, 0x44, 0x33, 0x7A, 0x70,
 	0x54, 0x78, 0x53, 0x30, 0x4C, 0x54, 0x31, 0x65, 0x77, 0x2B, 0x77, 0x75, 0x69, 0x77, 0x3D, 0x3D,
-	0x36, 0x00, 0x00, 0x00, 0x00, 0x9E, 0x6C, 0x8A, 0x01,
+	0x36, 0x00, 0x00, 0x56, 0x50, 0xE1, 0xED,
 }
 
-func TestDistributorPoStart(t *testing.T) {
+func TestDistributorPoStartCreateEncode(t *testing.T) {
 	target := testScteCreate4
 	scte := CreateSCTE35()
 	scte.SetAdjustPTS(0xB7264)
@@ -108,7 +108,7 @@ func TestDistributorPoStart(t *testing.T) {
 	}
 }
 
-func TestDistributorPoStartData(t *testing.T) {
+func TestDistributorPoStartDecodeEncode(t *testing.T) {
 	target := testScteCreate4
 	scte, err := NewSCTE35(target)
 	if err != nil {
@@ -122,7 +122,7 @@ func TestDistributorPoStartData(t *testing.T) {
 	}
 }
 
-func TestProgramStartData(t *testing.T) {
+func TestProgramStartDecodeEncode(t *testing.T) {
 	target := testScteCreate4
 	scte, err := NewSCTE35(target)
 	if err != nil {
@@ -136,7 +136,7 @@ func TestProgramStartData(t *testing.T) {
 	}
 }
 
-func TestNetworkEndCreate(t *testing.T) {
+func TestNetworkEndCreateEncode(t *testing.T) {
 	target := testScteCreate3
 	scte := CreateSCTE35()
 	scte.SetAdjustPTS(0x59CF4)
@@ -168,7 +168,7 @@ func TestNetworkEndCreate(t *testing.T) {
 	}
 }
 
-func TestNetworkEndCreateData(t *testing.T) {
+func TestNetworkEndDecodeEncode(t *testing.T) {
 	target := testScteCreate3
 	scte, err := NewSCTE35(target)
 	if err != nil {
@@ -182,7 +182,7 @@ func TestNetworkEndCreateData(t *testing.T) {
 	}
 }
 
-func TestUnscheduledEventStartCreate(t *testing.T) {
+func TestUnscheduledEventStartCreateEncode(t *testing.T) {
 	target := testScteCreate2
 	scte := CreateSCTE35()
 	scte.SetTier(0x0)
@@ -214,7 +214,7 @@ func TestUnscheduledEventStartCreate(t *testing.T) {
 	}
 }
 
-func TestUnscheduledEventStartCreateData(t *testing.T) {
+func TestUnscheduledEventStartDecodeEncode(t *testing.T) {
 	target := testScteCreate2
 	scte, err := NewSCTE35(target)
 	if err != nil {
@@ -228,7 +228,7 @@ func TestUnscheduledEventStartCreateData(t *testing.T) {
 	}
 }
 
-func TestSCPCreate(t *testing.T) {
+func TestSCPCreateEncode(t *testing.T) {
 	target := csp
 	scte := CreateSCTE35()
 	scte.SetTier(0xFFF)
@@ -255,7 +255,7 @@ func TestSCPCreate(t *testing.T) {
 	}
 }
 
-func TestSCPCreateData(t *testing.T) {
+func TestSCPDecodeEncode(t *testing.T) {
 	target := csp
 	scte, err := NewSCTE35(target)
 	if err != nil {
@@ -269,7 +269,7 @@ func TestSCPCreateData(t *testing.T) {
 	}
 }
 
-func TestScteCreate(t *testing.T) {
+func TestScteCreateEncode(t *testing.T) {
 	target := testScteCreate
 	scte := CreateSCTE35()
 	scte.SetTier(0xFFF)
@@ -304,7 +304,7 @@ func TestScteCreate(t *testing.T) {
 	}
 }
 
-func TestScteCreateData(t *testing.T) {
+func TestScteDecodeEncode(t *testing.T) {
 	target := testScteCreate
 	scte, err := NewSCTE35(target)
 	if err != nil {
@@ -318,7 +318,7 @@ func TestScteCreateData(t *testing.T) {
 	}
 }
 
-func TestCreateVss(t *testing.T) {
+func TestVssCreateEncode(t *testing.T) {
 	target := vss
 	scte := CreateSCTE35()
 	scte.SetTier(0xFFF)
@@ -384,7 +384,7 @@ func TestCreateVss(t *testing.T) {
 	}
 }
 
-func TestVSSData(t *testing.T) {
+func TestVSSDecodeEncode(t *testing.T) {
 	target := vss
 	scte, _ := NewSCTE35(target)
 	scte.(*scte35).generateData()

@@ -112,10 +112,10 @@ func (d *segmentationDescriptor) Data() []byte {
 			eventData = append(eventData, durationBytes...)
 		}
 		UpidData := make([]byte, 2)
-		UpidData[0] = byte(d.UpidType)
+		UpidData[0] = byte(d.upidType)
 
-		if len(d.Upid) > 0 {
-			UpidData = append(UpidData, d.Upid...)
+		if len(d.upid) > 0 {
+			UpidData = append(UpidData, d.upid...)
 		} else {
 			for i := range d.mid {
 				UpidData = append(UpidData, byte(d.mid[i].upidType))
@@ -131,7 +131,7 @@ func (d *segmentationDescriptor) Data() []byte {
 		segmentBytes[0] = byte(d.typeID)
 		segmentBytes[1] = byte(d.segNum)
 		segmentBytes[2] = byte(d.segsExpected)
-		if (d.typeID == 0x34) || (d.typeID == 0x36) {
+		if ((d.typeID == 0x34) || (d.typeID == 0x36)) && d.hasSubSegments {
 			segmentBytes = append(segmentBytes, d.subSegNum, d.subSegsExpected)
 		}
 		eventData = append(eventData, segmentBytes...)
@@ -151,9 +151,7 @@ func (d *segmentationDescriptor) SetEventID(value uint32) {
 // SetTypeID sets the type id
 func (d *segmentationDescriptor) SetTypeID(value SegDescType) {
 	d.typeID = value
-	if d.typeID == 0x34 || d.typeID == 0x36 {
-		d.hasSubSegments = true
-	} else {
+	if d.typeID != 0x34 && d.typeID != 0x36 {
 		d.hasSubSegments = false
 	}
 }
@@ -170,18 +168,18 @@ func (d *segmentationDescriptor) SetHasDuration(value bool) {
 
 // SetDuration sets the duration of the descriptor
 func (d *segmentationDescriptor) SetDuration(value gots.PTS) {
-	d.duration = value
+	d.duration = value & 0xFFFFFFFFFF // keep 40 bits, truncate the rest.
 }
 
 // SetUPIDType sets the type of upid, only works if UPIDType is not SegUPIDMID
 func (d *segmentationDescriptor) SetUPIDType(value SegUPIDType) {
-	d.UpidType = value
+	d.upidType = value
 	// only one can be set at a time
-	if d.UpidType == SegUPIDMID {
-		d.Upid = []byte{}
-	} else if d.UpidType == SegUPIDNotUsed {
+	if d.upidType == SegUPIDMID {
+		d.upid = []byte{}
+	} else if d.upidType == SegUPIDNotUsed {
 		d.mid = []upidSt{}
-		d.Upid = []byte{}
+		d.upid = []byte{}
 	} else {
 		d.mid = []upidSt{}
 	}
@@ -190,10 +188,10 @@ func (d *segmentationDescriptor) SetUPIDType(value SegUPIDType) {
 // SetUPID sets the upid of the descriptor
 func (d *segmentationDescriptor) SetUPID(value []byte) {
 	// Check if this data can be set
-	if d.UpidType == SegUPIDMID {
+	if d.upidType == SegUPIDMID {
 		return
 	}
-	d.Upid = value
+	d.upid = value
 }
 
 // SetSegmentNumber sets the segment number for this descriptor.
@@ -249,7 +247,7 @@ func (d *segmentationDescriptor) SetDeviceRestrictions(value DeviceRestrictions)
 // SetMID sets multiple UPIDs, only works if UPIDType is SegUPIDMID
 func (d *segmentationDescriptor) SetMID(value []UPID) {
 	// Check if this data can be set
-	if d.UpidType != SegUPIDMID {
+	if d.upidType != SegUPIDMID {
 		return
 	}
 	d.mid = make([]upidSt, len(value))
@@ -267,4 +265,9 @@ func (d *segmentationDescriptor) SetComponents(value []ComponentOffset) {
 		d.components[i].componentTag = value[i].ComponentTag()
 		d.components[i].ptsOffset = value[i].PTSOffset()
 	}
+}
+
+// SetHasSubSegments sets the field that determines if this segmentation descriptor has sub subsegments.
+func (d *segmentationDescriptor) SetHasSubSegments(value bool) {
+	d.hasSubSegments = value
 }

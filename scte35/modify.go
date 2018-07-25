@@ -82,7 +82,7 @@ func (s *scte35) generateData() {
 	const staticFieldsLength = 13
 	const crcLength = int(psi.CrcLen)
 
-	sectionLength := staticFieldsLength + spliceCommandLength + descriptorLoopLength + crcLength + s.alignmentStuffing
+	sectionLength := staticFieldsLength + spliceCommandLength + descriptorLoopLength + crcLength + int(s.alignmentStuffing)
 	s.tableHeader.SectionLength = uint16(sectionLength)
 
 	tableHeaderBytes := s.tableHeader.Bytes()
@@ -102,7 +102,7 @@ func (s *scte35) generateData() {
 		section[1] = 0x80 // 1000 0000
 	}
 	section[0] = s.protocolVersion                      // 1111 1111
-	section[1] = (s.encryptionAlgorithm & 0x3F) << 1    // 0111 1110
+	section[1] |= (s.encryptionAlgorithm & 0x3F) << 1   // 0111 1110
 	section[1] |= byte(ptsAdj>>32) & 0x01               // 0000 0001
 	section[2] = byte(ptsAdj >> 24)                     // 1111 1111
 	section[3] = byte(ptsAdj >> 16)                     // 1111 1111
@@ -134,7 +134,7 @@ func (s *scte35) SetHasPTS(flag bool) {
 // HasPTS returns true if there is a pts time.
 func (s *scte35) SetPTS(pts gots.PTS) {
 	s.pts = pts
-	s.commandInfo.SetPTS(s.pts)
+	s.commandInfo.SetPTS(s.pts & 0x01ffffffff) // truncate to fit in 33 bits
 	// pts adjustment will be zero since the difference between adjusted and command pts is zero
 	s.updateBytes = true
 }
@@ -165,7 +165,7 @@ func (s *scte35) SetDescriptors(descriptors []SegmentationDescriptor) {
 
 // SetAlignmentStuffing sets how many stuffing bytes will be added to the SCTE35
 // message at the end.
-func (s *scte35) SetAlignmentStuffing(alignmentStuffing int) {
+func (s *scte35) SetAlignmentStuffing(alignmentStuffing uint) {
 	s.alignmentStuffing = alignmentStuffing
 	s.updateBytes = true
 }
@@ -174,6 +174,6 @@ func (s *scte35) SetAlignmentStuffing(alignmentStuffing int) {
 // The tier value of 0XFFF is the default and will ignored. When using tiers,
 // the SCTE35 message must fit entirely into the ts payload without being split up.
 func (s *scte35) SetTier(tier uint16) {
-	s.tier = tier
+	s.tier = tier & 0xFFF
 	s.updateBytes = true
 }

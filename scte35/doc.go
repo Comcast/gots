@@ -201,10 +201,12 @@ type SCTE35 interface {
 	// Tier returns which authorization tier this message was assigned to.
 	// The tier value of 0XFFF is the default and will ignored. When using tier values,
 	// the SCTE35 message must fit entirely into the ts payload without being split up.
+	// The tier is a 12 bit unsigned integer.
 	Tier() uint16
 	// SetTier sets which authorization tier this message was assigned to.
 	// The tier value of 0XFFF is the default and will ignored. When using tiers,
 	// the SCTE35 message must fit entirely into the ts payload without being split up.
+	// The tier is a 12 bit unsigned integer.
 	SetTier(tier uint16)
 	// Command returns the signal's splice command.
 	Command() SpliceCommandType
@@ -218,14 +220,14 @@ type SCTE35 interface {
 	// by descriptor weight (least important signals first)
 	Descriptors() []SegmentationDescriptor
 	// SetDescriptors sets a slice of the signals SegmentationDescriptors they
-	// will be sorted by descriptor weight (least important signals first)
+	// should be sorted by descriptor weight (least important signals first)
 	SetDescriptors(descriptors []SegmentationDescriptor)
 	// AlignmentStuffing returns how many stuffing bytes will be added to the SCTE35
 	// message at the end.
-	AlignmentStuffing() int
+	AlignmentStuffing() uint
 	// SetAlignmentStuffing sets how many stuffing bytes will be added to the SCTE35
 	// message at the end.
-	SetAlignmentStuffing(alignmentStuffing int)
+	SetAlignmentStuffing(alignmentStuffing uint)
 	// Data returns the raw data bytes of the scte signal.
 	Data() []byte
 	// String returns a string representation of the SCTE35 message.
@@ -419,6 +421,8 @@ type SegmentationDescriptor interface {
 	SetSegmentsExpected(value uint8)
 	// HasSubSegments returns true if this segmentation descriptor has subsegment fields.
 	HasSubSegments() bool
+	// SetHasSubSegments sets the field that determines if this segmentation descriptor has sub subsegments.
+	SetHasSubSegments(bool)
 	// SubSegmentNumber returns the sub-segment number for this descriptor.
 	SubSegmentNumber() uint8
 	// SetSubSegmentNumber sets the sub-segment number for this descriptor.

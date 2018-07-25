@@ -59,7 +59,7 @@ func (c *component) SetHasPTS(value bool) {
 
 // SetPTS sets the PTS of the component.
 func (c *component) SetPTS(value gots.PTS) {
-	c.pts = value
+	c.pts = value & 0x01ffffffff
 }
 
 // returns the bytes of this splice command.
@@ -105,7 +105,7 @@ func (c *timeSignal) SetHasPTS(value bool) {
 
 // SetPTS sets the PTS.
 func (c *timeSignal) SetPTS(value gots.PTS) {
-	c.pts = value
+	c.pts = value & 0x01ffffffff
 }
 
 // returns the bytes of this splice command.
@@ -206,7 +206,7 @@ func (c *spliceInsert) SetHasPTS(value bool) {
 
 // SetPTS sets the PTS.
 func (c *spliceInsert) SetPTS(value gots.PTS) {
-	c.pts = value
+	c.pts = value & 0x01ffffffff
 }
 
 // SetHasDuration sets the duration flag

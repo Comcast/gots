@@ -52,7 +52,7 @@ type scte35 struct {
 	commandInfo         SpliceCommand
 	descriptors         []SegmentationDescriptor
 	crc32               uint32
-	alignmentStuffing   int
+	alignmentStuffing   uint
 
 	updateBytes bool // if set, the data will be updated on the next function call to get data
 	data        []byte
@@ -99,7 +99,7 @@ func (s *scte35) parseTable(data []byte) error {
 		if err := buf.UnreadByte(); err != nil {
 			return err
 		}
-		s.encryptionAlgorithm = (readByte() << 1) & 0x7E // 0111 1110
+		s.encryptionAlgorithm = (readByte() >> 1) & 0x3F // 0111 1110
 
 		// unread this byte, because it contains the top bit of our pts offset
 		err := buf.UnreadByte()
@@ -171,7 +171,7 @@ func (s *scte35) parseTable(data []byte) error {
 	// remove the pointer field and associated data off the top so we only get the
 	// table data
 	s.data = data[psi.PointerField(data)+1:]
-	s.updateBytes = false // do not update on next call of Data()
+	s.updateBytes = false // do not update data on next call of Data()
 	return nil
 }
 
@@ -211,7 +211,7 @@ func (s *scte35) Tier() uint16 {
 
 // AlignmentStuffing returns how many stuffing bytes will be added to the SCTE35
 // message at the end.
-func (s *scte35) AlignmentStuffing() int {
+func (s *scte35) AlignmentStuffing() uint {
 	return s.alignmentStuffing
 }
 
@@ -266,7 +266,7 @@ func (s *scte35) String() string {
 	str += indentPrintf("encryption_algorithm: 0x%X\n", s.encryptionAlgorithm)
 
 	str += indentPrintf("has_pts: %t\n", s.HasPTS())
-	str += indentPrintf("adjusted_pts: 0x%X\n", s.PTS())
+	str += indentPrintf("adjusted_pts: %d\n", s.PTS())
 	str += indentPrintf("cw_index: 0x%X\n", s.cwIndex)
 	str += indentPrintf("tier: 0x%X\n", s.tier)
 	str += indentPrintf("splice_command_type: %s\n", SpliceCommandTypeNames[s.commandType])
@@ -281,26 +281,26 @@ func (s *scte35) String() string {
 			str += indentPrintf("splice_immediate_flag: %t\n", cmd.SpliceImmediate())
 			str += indentPrintf("splice_time_has_pts: %t\n", cmd.HasPTS())
 			if cmd.HasPTS() {
-				str += indentPrintf("splice_time_pts: 0x%X\n", cmd.PTS())
+				str += indentPrintf("splice_time_pts: %d\n", cmd.PTS())
 			}
-			str += indentPrintf("component_count: 0x%X\n", len(cmd.Components()))
+			str += indentPrintf("component_count: %d\n", len(cmd.Components()))
 			for _, comp := range cmd.Components() {
 				str += indentPrintf("component:\n")
 				indent(1)
 				str += indentPrintf("component_tag: 0x%X\n", comp.ComponentTag())
 				str += indentPrintf("component_has_pts: %t\n", comp.HasPTS())
 				if comp.HasPTS() {
-					str += indentPrintf("component_tag: 0x%X\n", cmd.PTS())
+					str += indentPrintf("component_pts: %d\n", cmd.PTS())
 				}
 				indent(-1)
 
 				if cmd.HasDuration() {
 					str += indentPrintf("auto_return: %t\n", cmd.IsAutoReturn())
-					str += indentPrintf("duration: 0x%X\n", cmd.Duration())
+					str += indentPrintf("duration: %d\n", cmd.Duration())
 				}
 				str += indentPrintf("unique_program_id: %t\n", cmd.UniqueProgramId())
-				str += indentPrintf("avail_num: 0x%X\n", cmd.AvailNum())
-				str += indentPrintf("avails_expected: 0x%X\n", cmd.AvailsExpected())
+				str += indentPrintf("avail_num: %d\n", cmd.AvailNum())
+				str += indentPrintf("avails_expected: %d\n", cmd.AvailsExpected())
 			}
 		}
 	}
@@ -308,7 +308,7 @@ func (s *scte35) String() string {
 	if cmd, ok := s.commandInfo.(TimeSignalCommand); ok {
 		str += indentPrintf("time_specified_flag: %t\n", cmd.HasPTS())
 		if cmd.HasPTS() {
-			str += indentPrintf("pts_time: 0x%X\n", cmd.PTS())
+			str += indentPrintf("pts_time: %d\n", cmd.PTS())
 		}
 	}
 	indent(-1)
@@ -337,17 +337,17 @@ func (s *scte35) String() string {
 				str += indentPrintf("device_restrictions: %s\n", DeviceRestrictionsNames[desc.DeviceRestrictions()])
 			}
 			if !desc.HasProgramSegmentation() {
-				str += indentPrintf("component_count: 0x%X\n", len(desc.Components()))
+				str += indentPrintf("component_count: %d\n", len(desc.Components()))
 				for _, comp := range desc.Components() {
 					str += indentPrintf("component:\n")
 					indent(1)
 					str += indentPrintf("component_tag: 0x%X\n", comp.ComponentTag())
-					str += indentPrintf("pts_offset: 0x%X\n", comp.PTSOffset())
+					str += indentPrintf("pts_offset: %d\n", comp.PTSOffset())
 					indent(-1)
 				}
 			}
 			if desc.HasDuration() {
-				str += indentPrintf("segmentation_duration: 0x%X\n", desc.Duration())
+				str += indentPrintf("segmentation_duration: %d\n", desc.Duration())
 			}
 			str += indentPrintf("segmentation_upid_type: %s\n", SegUPIDTypeNames[desc.UPIDType()])
 			if desc.UPIDType() != SegUPIDMID {

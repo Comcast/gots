@@ -104,8 +104,8 @@ type segmentationDescriptor struct {
 	eventID               uint32
 	hasDuration           bool
 	duration              gots.PTS
-	UpidType              SegUPIDType
-	Upid                  []byte
+	upidType              SegUPIDType
+	upid                  []byte
 	mid                   []upidSt //A MID can contains `n` UPID uids in it.
 	segNum                uint8
 	segsExpected          uint8
@@ -224,14 +224,14 @@ func (d *segmentationDescriptor) parseDescriptor(data []byte) error {
 			d.duration = uint40(buf.Next(5))
 		}
 		// Upid unneeded now...
-		d.UpidType = SegUPIDType(readByte())
+		d.upidType = SegUPIDType(readByte())
 		segUpidLen := int(readByte())
 		d.mid = []upidSt{}
 		// This is a Multiple PID, consisting of `n` UPID's
-		if d.UpidType == SegUPIDMID {
+		if d.upidType == SegUPIDMID {
 			// SCTE35 signal will either have an UPID or a MID
 			// When we have a MID, UPID value in struct will be 0.
-			d.Upid = []byte{}
+			d.upid = []byte{}
 			// Iterate over the whole MID len(segUpidLen) to get all `n` UPIDs
 			// segUpidLen is in bytes.
 			for segUpidLen != 0 {
@@ -250,7 +250,7 @@ func (d *segmentationDescriptor) parseDescriptor(data []byte) error {
 			if buf.Len() < segUpidLen+3 {
 				return gots.ErrInvalidSCTE35Length
 			}
-			d.Upid = buf.Next(segUpidLen)
+			d.upid = buf.Next(segUpidLen)
 		}
 		d.typeID = SegDescType(readByte())
 		d.segNum = readByte()
@@ -342,16 +342,16 @@ func (d *segmentationDescriptor) Duration() gots.PTS {
 
 // UPIDType returns the type of the upid
 func (d *segmentationDescriptor) UPIDType() SegUPIDType {
-	return d.UpidType
+	return d.upidType
 }
 
 // UPID returns the upid of the descriptor, if the UPIDType is not SegUPIDMID
 func (d *segmentationDescriptor) UPID() []byte {
 	// Check if this data should exist
-	if d.UpidType == SegUPIDMID {
+	if d.upidType == SegUPIDMID {
 		return []byte{}
 	}
-	return d.Upid
+	return d.upid
 }
 
 // StreamSwitchSignalID returns the signalID of streamswitch signal if
@@ -526,7 +526,7 @@ func (d *segmentationDescriptor) DeviceRestrictions() DeviceRestrictions {
 // MID returns multiple UPIDs, if UPIDType is SegUPIDMID
 func (d *segmentationDescriptor) MID() []UPID {
 	// Check if this data should exist.
-	if d.UpidType != SegUPIDMID {
+	if d.upidType != SegUPIDMID {
 		return nil
 	}
 	mid := make([]UPID, len(d.mid))
