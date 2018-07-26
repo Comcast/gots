@@ -112,11 +112,6 @@ func (p PTS) Add(x PTS) PTS {
 	return PTS(result)
 }
 
-// Subtract subtracts the two PTS times and returns a new PTS
-func (p PTS) Subtract(x PTS) PTS {
-	return p.Add(-x)
-}
-
 // ExtractTime extracts a PTS time
 func ExtractTime(bytes []byte) uint64 {
 	var a, b, c, d, e uint64

@@ -59,6 +59,21 @@ func CreateSCTE35() SCTE35 {
 	return scte35
 }
 
+// Subtract subtracts the two PTS times and returns a new PTS
+// This is different from the durationFrom function since the
+// order of operands matters. It will always subtract final
+// minus initial. If the result is negative then it will add
+// MaxPtsTicks to produce a positive number
+// (in this case it assumes rollover happened).
+// used for calculating pts adjustment.
+func subtractPTS(final gots.PTS, initial gots.PTS) gots.PTS {
+	if final >= initial {
+		return final - initial
+	} else {
+		return gots.MaxPtsTicks - (initial - final)
+	}
+}
+
 // generateData will generate the raw data bytes of the scte signal.
 func (s *scte35) generateData() {
 	// splice command generate bytes
@@ -96,7 +111,7 @@ func (s *scte35) generateData() {
 	spliceDescriptor := spliceCommand[spliceCommandLength:]
 	crc := data[len(data)-crcLength:]
 
-	ptsAdj := s.pts.Subtract(s.commandInfo.PTS())
+	ptsAdj := subtractPTS(s.pts, s.commandInfo.PTS())
 
 	if s.encryptedPacket {
 		section[1] = 0x80 // 1000 0000
