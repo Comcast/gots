@@ -256,7 +256,7 @@ type TimeSignalCommand interface {
 	SpliceCommand
 }
 
-// Component is an interfac for components, a structure in SpliceInsertCommand.
+// Component is an interface for components, a structure in SpliceInsertCommand.
 type Component interface {
 	// ComponentTag returns the tag of the component.
 	ComponentTag() byte
@@ -272,7 +272,7 @@ type Component interface {
 	SetPTS(value gots.PTS)
 }
 
-// ComponentOffset is a structure in SegmentationDescriptor.
+// ComponentOffset is an interface for componentOffset, a structure in SegmentationDescriptor.
 type ComponentOffset interface {
 	// ComponentTag returns the tag of the component.
 	ComponentTag() byte

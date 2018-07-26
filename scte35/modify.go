@@ -41,9 +41,8 @@ func CreateSCTE35() SCTE35 {
 			cwIndex:             0,     // undefined, without encryption
 			tier:                0xFFF, // ignore tier value
 
-			spliceCommandLength: 0,             // null command has no length
-			commandType:         SpliceNull,    // null command type by default
-			commandInfo:         &spliceNull{}, // info pooints to null command
+			commandType: SpliceNull,    // null command type by default
+			commandInfo: &spliceNull{}, // info pooints to null command
 
 			descriptors: []SegmentationDescriptor{}, // empty slice of descriptors
 
@@ -100,7 +99,7 @@ func (s *scte35) generateData() {
 	sectionLength := staticFieldsLength + spliceCommandLength + descriptorLoopLength + crcLength + int(s.alignmentStuffing)
 	s.tableHeader.SectionLength = uint16(sectionLength)
 
-	tableHeaderBytes := s.tableHeader.Bytes()
+	tableHeaderBytes := s.tableHeader.Data()
 	tableHeaderLength := len(tableHeaderBytes)
 
 	// slices that point to the starting position of their names
@@ -172,7 +171,7 @@ func (s *scte35) SetCommandInfo(commandInfo SpliceCommand) {
 }
 
 // SetDescriptors sets a slice of the signals SegmentationDescriptors they
-// will be sorted by descriptor weight (least important signals first) TODO
+// should be sorted by descriptor weight (least important signals first)
 func (s *scte35) SetDescriptors(descriptors []SegmentationDescriptor) {
 	s.descriptors = descriptors
 	s.updateBytes = true

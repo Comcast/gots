@@ -473,7 +473,7 @@ func (d *segmentationDescriptor) Equal(c SegmentationDescriptor) bool {
 	return true
 }
 
-// SetHasProgramSegmentation if the descriptor has program segmentation
+// HasProgramSegmentation returns if the descriptor has program segmentation
 func (d *segmentationDescriptor) HasProgramSegmentation() bool {
 	return d.programSegmentationFlag
 }

@@ -83,7 +83,7 @@ func TableHeaderFromBytes(data []byte) TableHeader {
 }
 
 // Data returns the byte representation of the PSI struct.
-func (th TableHeader) Bytes() []byte {
+func (th TableHeader) Data() []byte {
 	data := make([]byte, 3)
 
 	data[0] = th.TableID
