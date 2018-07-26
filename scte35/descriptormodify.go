@@ -167,7 +167,7 @@ func (d *segmentationDescriptor) SetHasDuration(value bool) {
 }
 
 // SetDuration sets the duration of the descriptor, 40 bit unsigned integer, the rest of the bits will be truncated.
-func (d *segmentationDescriptor) SetDuration(value uint64) {
+func (d *segmentationDescriptor) SetDuration(value gots.PTS) {
 	d.duration = value & 0xFFFFFFFFFF // keep 40 bits, truncate the rest.
 }
 

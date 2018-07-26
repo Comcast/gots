@@ -103,7 +103,7 @@ type segmentationDescriptor struct {
 	typeID                SegDescType
 	eventID               uint32
 	hasDuration           bool
-	duration              uint64
+	duration              gots.PTS
 	upidType              SegUPIDType
 	upid                  []byte
 	mid                   []upidSt //A MID can contains `n` UPID uids in it.
@@ -221,12 +221,7 @@ func (d *segmentationDescriptor) parseDescriptor(data []byte) error {
 			if buf.Len() < 10 {
 				return gots.ErrInvalidSCTE35Length
 			}
-			durationBytes := buf.Next(5)
-			d.duration |= uint64(durationBytes[0]) << 32
-			d.duration |= uint64(durationBytes[1]) << 24
-			d.duration |= uint64(durationBytes[2]) << 16
-			d.duration |= uint64(durationBytes[3]) << 8
-			d.duration |= uint64(durationBytes[4])
+			d.duration = uint40(buf.Next(5))
 		}
 		// Upid unneeded now...
 		d.upidType = SegUPIDType(readByte())
@@ -341,7 +336,7 @@ func (d *segmentationDescriptor) HasDuration() bool {
 }
 
 // Duration returns the duration of the descriptor, 40 bit unsigned integer.
-func (d *segmentationDescriptor) Duration() uint64 {
+func (d *segmentationDescriptor) Duration() gots.PTS {
 	return d.duration
 }
 

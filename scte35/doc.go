@@ -368,9 +368,9 @@ type SegmentationDescriptor interface {
 	// SetHasDuration determines if a duration is present in the descriptor
 	SetHasDuration(value bool)
 	// Duration returns the duration of the descriptor, 40 bit unsigned integer.
-	Duration() uint64
+	Duration() gots.PTS
 	// SetDuration sets the duration of the descriptor, 40 bit unsigned integer. extra bits will be truncated.
-	SetDuration(value uint64)
+	SetDuration(value gots.PTS)
 	// IsDeliveryNotRestricted returns if the delivery is not restricted
 	IsDeliveryNotRestricted() bool
 	// SetIsDeliveryNotRestricted sets a flag that determines if the delivery is not restricted
