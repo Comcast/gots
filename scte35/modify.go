@@ -74,7 +74,7 @@ func subtractPTS(final gots.PTS, initial gots.PTS) gots.PTS {
 }
 
 // generateData will generate the raw data bytes of the scte signal.
-func (s *scte35) generateData() {
+func (s *scte35) UpdateData() {
 	// splice command generate bytes
 	spliceCommandBytes := s.commandInfo.Data()
 	// spliceCommandLength can be set as 0xFFF (undefined), but calculate it anyways

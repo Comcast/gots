@@ -218,7 +218,7 @@ func (s *scte35) AlignmentStuffing() uint {
 // Data returns the raw data bytes of the scte signal
 func (s *scte35) Data() []byte {
 	if s.updateBytes {
-		s.generateData()
+		s.UpdateData()
 	}
 	return s.data
 }
@@ -255,7 +255,7 @@ func (s *scte35) String() string {
 	}
 
 	str := ""
-	s.generateData()
+	s.UpdateData()
 	str += indentPrintf("table_id: 0x%X\n", s.tableHeader.TableID)
 	str += indentPrintf("section_syntax_indicator: %t\n", s.tableHeader.SectionSyntaxIndicator)
 	str += indentPrintf("private_indicator: %t\n", s.tableHeader.PrivateIndicator)

@@ -228,6 +228,8 @@ type SCTE35 interface {
 	// SetAlignmentStuffing sets how many stuffing bytes will be added to the SCTE35
 	// message at the end.
 	SetAlignmentStuffing(alignmentStuffing uint)
+	// Update data will make sure that the next call to Data() will regenerate the bytes.
+	UpdateData()
 	// Data returns the raw data bytes of the scte signal.
 	Data() []byte
 	// String returns a string representation of the SCTE35 message.

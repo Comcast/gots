@@ -137,7 +137,7 @@ func TestDistributorPoStartDecodeEncode(t *testing.T) {
 	if err != nil {
 		t.Error(err.Error())
 	}
-	scte.(*scte35).generateData()
+	scte.UpdateData()
 	generated := append(psi.NewPointerField(0), scte.Data()...)
 
 	if !bytes.Equal(target, generated) {
@@ -151,7 +151,7 @@ func TestProgramStartDecodeEncode(t *testing.T) {
 	if err != nil {
 		t.Error(err.Error())
 	}
-	scte.(*scte35).generateData()
+	scte.UpdateData()
 	generated := append(psi.NewPointerField(0), scte.Data()...)
 
 	if !bytes.Equal(target, generated) {
@@ -197,7 +197,7 @@ func TestNetworkEndDecodeEncode(t *testing.T) {
 	if err != nil {
 		t.Error(err.Error())
 	}
-	scte.(*scte35).generateData()
+	scte.UpdateData()
 	generated := append(psi.NewPointerField(0), scte.Data()...)
 
 	if !bytes.Equal(target, generated) {
@@ -243,7 +243,7 @@ func TestUnscheduledEventStartDecodeEncode(t *testing.T) {
 	if err != nil {
 		t.Error(err.Error())
 	}
-	scte.(*scte35).generateData()
+	scte.UpdateData()
 	generated := append(psi.NewPointerField(0), scte.Data()...)
 
 	if !bytes.Equal(target, generated) {
@@ -284,7 +284,7 @@ func TestSCPDecodeEncode(t *testing.T) {
 	if err != nil {
 		t.Error(err.Error())
 	}
-	scte.(*scte35).generateData()
+	scte.UpdateData()
 	generated := append(psi.NewPointerField(0), scte.Data()...)
 
 	if !bytes.Equal(target, generated) {
@@ -333,7 +333,7 @@ func TestScteDecodeEncode(t *testing.T) {
 	if err != nil {
 		t.Error(err.Error())
 	}
-	scte.(*scte35).generateData()
+	scte.UpdateData()
 	generated := append(psi.NewPointerField(0), scte.Data()...)
 
 	if !bytes.Equal(target, generated) {
@@ -410,7 +410,7 @@ func TestVssCreateEncode(t *testing.T) {
 func TestVSSDecodeEncode(t *testing.T) {
 	target := vss
 	scte, _ := NewSCTE35(target)
-	scte.(*scte35).generateData()
+	scte.UpdateData()
 	generated := append(psi.NewPointerField(0), scte.Data()...)
 
 	if !bytes.Equal(target, generated) {
