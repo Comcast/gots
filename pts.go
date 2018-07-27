@@ -89,28 +89,27 @@ func (p PTS) RolledOver(other PTS) bool {
 	return false
 }
 
-// abs is Absolute value. returns magnitude of input.
-func abs(a int64) int64 {
-	if a >= 0 {
-		return a
-	}
-	return -a
-}
-
 // DurationFrom returns the difference between the two pts times.
 // One possible distance has rollover and wraps around the number line,
-// the other one does not wrap around the number line.
-// This function will assume the smallest difference is the correct one.
+// the other one does not wrap around the number line and doesn't have rollover.
+// DurationFrom will assume the smallest difference is the correct one.
 // This number is always positive.
+// This function will only be accurate if the difference between the two
+// PTS values is less than MaxPtsTicks/2 (2^32 = 4294967296 = 0x100000000)
 func (p PTS) DurationFrom(from PTS) PTS {
+	var difference PTS
 	if p == PtsPositiveInfinity || p == PtsNegativeInfinity || from == PtsPositiveInfinity || from == PtsNegativeInfinity {
 		return PtsPositiveInfinity
 	}
-	difference := abs(int64(p) - int64(from))
+	if p > from {
+		difference = p - from
+	} else {
+		difference = from - p
+	}
 	if difference >= MaxPtsTicks/2 {
 		difference = MaxPtsTicks - difference
 	}
-	return PTS(difference)
+	return difference
 }
 
 // Add adds the two PTS times together and returns a new PTS
