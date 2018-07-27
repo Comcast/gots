@@ -46,7 +46,6 @@ func CreateSCTE35() SCTE35 {
 
 			descriptors: []SegmentationDescriptor{}, // empty slice of descriptors
 
-			updateBytes: true, // update the bytes on the next call to Data()
 		}
 	scte35.tableHeader =
 		psi.TableHeader{
@@ -74,7 +73,7 @@ func subtractPTS(final gots.PTS, initial gots.PTS) gots.PTS {
 }
 
 // generateData will generate the raw data bytes of the scte signal.
-func (s *scte35) UpdateData() {
+func (s *scte35) UpdateData() []byte {
 	// splice command generate bytes
 	spliceCommandBytes := s.commandInfo.Data()
 	// spliceCommandLength can be set as 0xFFF (undefined), but calculate it anyways
@@ -136,13 +135,12 @@ func (s *scte35) UpdateData() {
 	crcBytes := gots.ComputeCRC(tableHeader[:len(data)-crcLength])
 	copy(crc, crcBytes)
 	s.data = data
-	s.updateBytes = false
+	return data
 }
 
 // SetHasPTS sets if this SCTE35 message has a PTS.
 func (s *scte35) SetHasPTS(flag bool) {
 	s.commandInfo.SetHasPTS(true)
-	s.updateBytes = true
 }
 
 // HasPTS returns true if there is a pts time.
@@ -150,7 +148,6 @@ func (s *scte35) SetPTS(pts gots.PTS) {
 	s.pts = pts
 	s.commandInfo.SetPTS(s.pts & 0x01ffffffff) // truncate to fit in 33 bits
 	// pts adjustment will be zero since the difference between adjusted and command pts is zero
-	s.updateBytes = true
 }
 
 // AdjustPTS will modify the pts adjustment field. The disired PTS value
@@ -159,14 +156,12 @@ func (s *scte35) SetPTS(pts gots.PTS) {
 func (s *scte35) SetAdjustPTS(pts gots.PTS) {
 	// adjustment will be done by the function that generates the bytes
 	s.pts = pts
-	s.updateBytes = true
 }
 
 // CommandInfo returns an object describing fields of the signal's splice
 // command structure.
 func (s *scte35) SetCommandInfo(commandInfo SpliceCommand) {
 	s.commandInfo = commandInfo
-	s.updateBytes = true
 	s.commandType = s.commandInfo.CommandType()
 }
 
@@ -174,14 +169,12 @@ func (s *scte35) SetCommandInfo(commandInfo SpliceCommand) {
 // should be sorted by descriptor weight (least important signals first)
 func (s *scte35) SetDescriptors(descriptors []SegmentationDescriptor) {
 	s.descriptors = descriptors
-	s.updateBytes = true
 }
 
 // SetAlignmentStuffing sets how many stuffing bytes will be added to the SCTE35
 // message at the end.
 func (s *scte35) SetAlignmentStuffing(alignmentStuffing uint) {
 	s.alignmentStuffing = alignmentStuffing
-	s.updateBytes = true
 }
 
 // SetTier sets which authorization tier this message was assigned to.
@@ -189,5 +182,4 @@ func (s *scte35) SetAlignmentStuffing(alignmentStuffing uint) {
 // the SCTE35 message must fit entirely into the ts payload without being split up.
 func (s *scte35) SetTier(tier uint16) {
 	s.tier = tier & 0xFFF
-	s.updateBytes = true
 }

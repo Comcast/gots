@@ -54,8 +54,7 @@ type scte35 struct {
 	crc32               uint32
 	alignmentStuffing   uint
 
-	updateBytes bool // if set, the data will be updated on the next function call to get data
-	data        []byte
+	data []byte
 
 	// because there is no support for descriptors other than segmentation descriptors,
 	// the bytes need to be stored so information is not lost.
@@ -171,7 +170,6 @@ func (s *scte35) parseTable(data []byte) error {
 	// remove the pointer field and associated data off the top so we only get the
 	// table data
 	s.data = data[psi.PointerField(data)+1:]
-	s.updateBytes = false // do not update data on next call of Data()
 	return nil
 }
 
@@ -217,9 +215,6 @@ func (s *scte35) AlignmentStuffing() uint {
 
 // Data returns the raw data bytes of the scte signal
 func (s *scte35) Data() []byte {
-	if s.updateBytes {
-		s.UpdateData()
-	}
 	return s.data
 }
 

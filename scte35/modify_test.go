@@ -76,7 +76,7 @@ func TestPTSAdjustmentWithRollover(t *testing.T) {
 	cmd.SetHasPTS(true)
 	cmd.SetPTS(initialPTS)
 	scte.SetCommandInfo(cmd)
-	generated := scte.Data()
+	generated := scte.UpdateData()
 	if !bytes.Equal(target, generated) {
 		t.Errorf("Generated packet data does not match expected data\n   Target: %X\nGenerated: %X\n", target, generated)
 	}
@@ -124,7 +124,7 @@ func TestDistributorPoStartCreateEncode(t *testing.T) {
 
 	scte.SetDescriptors([]SegmentationDescriptor{descriptor})
 
-	generated := append(psi.NewPointerField(0), scte.Data()...)
+	generated := append(psi.NewPointerField(0), scte.UpdateData()...)
 
 	if !bytes.Equal(target, generated) {
 		t.Errorf("Generated packet data does not match expected data\n   Target: %X\nGenerated: %X\n", target, generated)
@@ -184,7 +184,7 @@ func TestNetworkEndCreateEncode(t *testing.T) {
 
 	scte.SetDescriptors([]SegmentationDescriptor{descriptor})
 
-	generated := append(psi.NewPointerField(0), scte.Data()...)
+	generated := append(psi.NewPointerField(0), scte.UpdateData()...)
 
 	if !bytes.Equal(target, generated) {
 		t.Errorf("Generated packet data does not match expected data\n   Target: %X\nGenerated: %X\n", target, generated)
@@ -230,7 +230,7 @@ func TestUnscheduledEventStartCreateEncode(t *testing.T) {
 
 	scte.SetDescriptors([]SegmentationDescriptor{descriptor})
 
-	generated := append(psi.NewPointerField(0), scte.Data()...)
+	generated := append(psi.NewPointerField(0), scte.UpdateData()...)
 
 	if !bytes.Equal(target, generated) {
 		t.Errorf("Generated packet data does not match expected data\n   Target: %X\nGenerated: %X\n", target, generated)
@@ -271,7 +271,7 @@ func TestSCPCreateEncode(t *testing.T) {
 
 	scte.SetDescriptors([]SegmentationDescriptor{descriptor})
 
-	generated := append(psi.NewPointerField(0), scte.Data()...)
+	generated := append(psi.NewPointerField(0), scte.UpdateData()...)
 
 	if !bytes.Equal(target, generated) {
 		t.Errorf("Generated packet data does not match expected data\n   Target: %X\nGenerated: %X\n", target, generated)
@@ -320,7 +320,7 @@ func TestScteCreateEncode(t *testing.T) {
 
 	scte.SetDescriptors([]SegmentationDescriptor{descriptor})
 
-	generated := append(psi.NewPointerField(0), scte.Data()...)
+	generated := append(psi.NewPointerField(0), scte.UpdateData()...)
 
 	if !bytes.Equal(target, generated) {
 		t.Errorf("Generated packet data does not match expected data\n   Target: %X\nGenerated: %X\n", target, generated)
@@ -400,7 +400,7 @@ func TestVssCreateEncode(t *testing.T) {
 
 	scte.SetDescriptors(descriptors)
 
-	generated := append(psi.NewPointerField(0), scte.Data()...)
+	generated := append(psi.NewPointerField(0), scte.UpdateData()...)
 
 	if !bytes.Equal(target, generated) {
 		t.Errorf("Generated packet data does not match expected data\n   Target: %X\nGenerated: %X\n", target, generated)
