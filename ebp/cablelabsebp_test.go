@@ -82,3 +82,28 @@ func TestParseCableLabsEBP(t *testing.T) {
 		t.Errorf("readCableLabsEbp() returned not null EBP on invalid EBP")
 	}
 }
+
+func TestCableLabsEBP(t *testing.T) {
+	expected := CableLabsEBPBytes
+	ebp := CreateCableLabsEbp()
+	ebp.SetFragmentFlag(true)
+	ebp.SetConcealmentFlag(true)
+	ebp.SetExtensionFlag(true)
+	ebp.ExtensionFlags = 0x80 // TODO
+	ebp.SetSapFlag(true)
+	ebp.SetSap(0x02)
+	ebp.SetGroupingFlag(true)
+	ebp.Grouping = []byte{0xFF, 0x7F}
+	ebp.SetTimeFlag(true)
+	ebp.SetEBPTime(time.Unix(0, 1396964696553818999).UTC())
+	ebp.PartitionFlags = 0x03
+	ebp.ReservedBytes = []byte{0x04, 0x05}
+
+	generated := ebp.Data()
+	if !bytes.Equal(generated, expected) {
+		t.Errorf("Data() does not produce expected raw data\nExpected: %X\n     Got: %X",
+			expected,
+			generated,
+		)
+	}
+}
