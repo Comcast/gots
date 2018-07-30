@@ -86,7 +86,7 @@ func TestReadEncoderBoundaryPoint(t *testing.T) {
 
 func TestExtractUtcTime(t *testing.T) {
 	s := uint32(0xD6EE7BD8)
-	f := uint32(0x8DC714FB)
+	f := uint32(0x8DC714FC)
 	got := extractUtcTime(s, f)
 	want := time.Unix(0, 1396964696553818999).UTC()
 	if want != got {
