@@ -86,12 +86,27 @@ func TestReadEncoderBoundaryPoint(t *testing.T) {
 
 func TestExtractUtcTime(t *testing.T) {
 	s := uint32(0xD6EE7BD8)
-	f := uint32(0x8DC714FC)
+	f := uint32(0x8DC714FB)
 	got := extractUtcTime(s, f)
 	want := time.Unix(0, 1396964696553818999).UTC()
 	if want != got {
 		t.Errorf("TestUtcTime(), want=%v, got=%v, nanos=%d", want, got, got.UnixNano())
 	}
+}
+
+func TestInsertUtcTime(t *testing.T) {
+	s := uint32(0xD6EE7BD8)
+	f := uint32(0x8DC714FC)
+	want := time.Unix(0, 1396964696553818999).UTC()
+	var s1, f1 uint32
+	insertUtcTime(want, &s1, &f1)
+	if s != s1 {
+		t.Errorf("secondsInserted=%d, secondsExpected=%d\n", s1, s)
+	}
+	if f != f1 {
+		t.Errorf("fractionInserted=%d, fractionExpected=%d\n", f1, f)
+	}
+
 }
 
 // TODO TestUtcTimeAfter2036
