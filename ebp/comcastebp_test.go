@@ -90,3 +90,27 @@ func TestParseComcastEBP(t *testing.T) {
 		t.Errorf("readComcastEbp() returned not null EBP on invalid EBP")
 	}
 }
+
+func TestCreateComcastEBP(t *testing.T) {
+	expected := ComcastEBPBytes
+	ebp := CreateComcastEBP()
+	ebp.SetFragmentFlag(true)
+	ebp.SetDiscontinuityFlag(true)
+	ebp.SetExtensionFlag(true)
+	ebp.ExtensionFlags = 0x01
+	ebp.SetSapFlag(true)
+	ebp.SetSap(0x02)
+	ebp.SetGroupingFlag(true)
+	ebp.Grouping = 0x03
+	ebp.SetTimeFlag(true)
+	ebp.SetEBPTime(time.Unix(0, 1396964696553818999).UTC())
+	ebp.ReservedBytes = []byte{0x04, 0x05}
+
+	generated := ebp.Data()
+	if !bytes.Equal(generated, expected) {
+		t.Errorf("Data() does not produce expected raw data\nExpected: %X\n     Got: %X",
+			expected,
+			generated,
+		)
+	}
+}
