@@ -58,7 +58,7 @@ func extractUtcTime(seconds uint32, fraction uint32) time.Time {
 	nanos := uint64(seconds) * 1e9
 	nanos += (uint64(fraction) * 1e9) >> 32
 
-	if seconds&0x80000000 > 0 { // if MSB set
+	if seconds&0x80000000 != 0 { // if MSB set
 		// If bit 0 is set, the UTC time is in the range 1968-2036 and UTC
 		// time is reckoned from 0h 0m 0s UTC on 1 January 1900.
 		return time.Date(1900, 1, 1, 0, 0, 0, 0, time.UTC).Add(time.Duration(nanos))
@@ -67,4 +67,18 @@ func extractUtcTime(seconds uint32, fraction uint32) time.Time {
 	// time is reckoned from 6h 28m 16s UTC on 7 February 2036.
 	return time.Date(2036, 2, 7, 6, 28, 16, 0, time.UTC).Add(time.Duration(nanos))
 
+}
+
+func insertUtcTime(t time.Time, seconds *uint32, fraction *uint32) {
+	var startingTime time.Time
+	if t.Before(time.Date(2036, 2, 7, 6, 28, 16, 0, time.UTC)) { // greater than or equal to
+		startingTime = time.Date(1900, 1, 1, 0, 0, 0, 0, time.UTC)
+	} else {
+		startingTime = time.Date(2036, 2, 7, 6, 28, 16, 0, time.UTC)
+	}
+	nanos := t.Sub(startingTime).Nanoseconds()
+	*seconds = uint32(nanos / 1e9)
+	nanos %= 1e9
+	nanos += 1
+	*fraction = uint32(nanos << 32 / 1e9)
 }
