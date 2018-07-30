@@ -233,38 +233,31 @@ func (ebp *comcastEbp) Data() []byte {
 		return data.Bytes()
 	}
 
-	ebp.DataFieldLength = 0
-
 	binary.Write(data, ebpEncoding, ebp.DataFlags)
-	ebp.DataFieldLength += uint8(1)
+
 	if ebp.ExtensionFlag() {
 		binary.Write(data, ebpEncoding, ebp.ExtensionFlags)
-		ebp.DataFieldLength += uint8(1)
 	}
 
 	if ebp.SapFlag() {
 		binary.Write(data, ebpEncoding, ebp.SapType)
-		ebp.DataFieldLength += uint8(1)
 	}
 
 	if ebp.GroupingFlag() {
 		binary.Write(data, ebpEncoding, ebp.Grouping)
-		ebp.DataFieldLength += uint8(1)
 	}
 
 	if ebp.TimeFlag() {
 		binary.Write(data, ebpEncoding, ebp.TimeSeconds)
 		binary.Write(data, ebpEncoding, ebp.TimeFraction)
-		ebp.DataFieldLength += uint8(8)
 	}
 
 	binary.Write(data, ebpEncoding, ebp.ReservedBytes)
-	ebp.DataFieldLength += uint8(len(ebp.ReservedBytes))
 
-	dataBytes := data.Bytes()
+	ebp.DataFieldLength = uint8(data.Len())
 
-	binary.Write(requiredFields, ebpEncoding, byte(len(dataBytes)))
-	binary.Write(requiredFields, ebpEncoding, dataBytes)
+	binary.Write(requiredFields, ebpEncoding, ebp.DataFieldLength)
+	binary.Write(requiredFields, ebpEncoding, data.Bytes())
 
 	return requiredFields.Bytes()
 }
