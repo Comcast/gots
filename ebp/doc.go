@@ -37,12 +37,20 @@ const (
 // EncoderBoundaryPoint represents shared operations available on an all EBPs.
 type EncoderBoundaryPoint interface {
 	SegmentFlag() bool
+	SetSegmentFlag(bool)
 	FragmentFlag() bool
+	SetFragmentFlag(bool)
 	TimeFlag() bool
-	EBPTime() time.Time            // time set in the EBP
+	SetTimeFlag(bool)
+	EBPTime() time.Time // time set in the EBP
+	SetEBPTime(time.Time)
 	EBPSuccessReadTime() time.Time // time the EBP was successfully read
 	SapFlag() bool
+	SetSapFlag(bool)
 	Sap() byte
+	SetSap(byte)
 	ExtensionFlag() bool
+	SetExtensionFlag(bool)
 	EBPType() byte
+	Data() []byte
 }
