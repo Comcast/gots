@@ -28,13 +28,25 @@ import (
 	"github.com/Comcast/gots"
 )
 
-// valid returns any errors that prevent the packet from being valid.
+// NewPacket creates a new packet with a Null ID, sync byte, and with the adaptation field control set to payload only.
+// This function is error free.
+func NewAdaptationField() AdaptationField {
+	p := NewPacket()
+	p.SetAdaptationFieldControl(AdaptationFieldFlag)
+	af, _ := p.AdaptationField()
+	return af
+}
+
+// valid returns any errors that prevent the AdaptationField from being valid.
 func (af AdaptationField) valid() error {
 	if len(af) != PacketSize {
 		return gots.ErrInvalidPacketLength
 	}
 	if hasAF, _ := Packet(af).HasAdaptationField(); !hasAF {
 		return gots.ErrNoAdaptationField
+	}
+	if af[4] == 0 {
+		return gots.ErrAdaptationFieldZeroLength
 	}
 	return nil
 }
@@ -219,24 +231,18 @@ func (af AdaptationField) stuffAF() {
 // start is the start of the field being manipulated (smallest index)
 // delta is how much shifting needs to be done.
 // this function must be called before the field is marked as present.
-func (af AdaptationField) resizeAF(start int, delta int) {
+func (af AdaptationField) resizeAF(start int, delta int) error {
 	if delta > 0 { // shifting for growing
 		end := af.stuffingStart()
 		startRight := start + delta
 		endRight := af.stuffingStart() + delta
+		if af.stuffingEnd() < endRight {
+			// cannot grow in size, payload will be corrupted.
+			return gots.ErrAdaptationFieldCannotGrow
+		}
 		src := af[start:end]
 		dst := af[startRight:endRight]
 		copy(dst, src)
-		if af.stuffingEnd() < endRight {
-			// erase payload, it is corrupt anyways
-			for i := endRight; i < len(af); i++ {
-				af[i] = 0xFF // packet is stuffed until the very end.
-			}
-			// payload must be at least one byte in size.
-			// this will remind the user of the library
-			// that the payload was destroyed
-			af.setLength(183)
-		}
 	}
 	if delta < 0 {
 		startRight := start - delta
@@ -249,6 +255,7 @@ func (af AdaptationField) resizeAF(start int, delta int) {
 			af[i] = 0xFF // fill in the gap with stuffing
 		}
 	}
+	return nil
 }
 
 // Length returns the length of the adaptation field
@@ -317,7 +324,10 @@ func (af AdaptationField) SetHasPCR(value bool) error {
 		return err
 	}
 	delta := 6 * af.bitDelta(5, 0x10, value)
-	af.resizeAF(pcrStart, delta)
+	err := af.resizeAF(pcrStart, delta)
+	if err != nil {
+		return err
+	}
 	af.setBit(5, 0x10, value)
 	return nil
 }
@@ -362,7 +372,10 @@ func (af AdaptationField) SetHasOPCR(value bool) error {
 		return err
 	}
 	delta := 6 * af.bitDelta(5, 0x08, value)
-	af.resizeAF(af.opcrStart(), delta)
+	err := af.resizeAF(af.opcrStart(), delta)
+	if err != nil {
+		return err
+	}
 	af.setBit(5, 0x08, value)
 	return nil
 }
@@ -407,7 +420,10 @@ func (af AdaptationField) SetHasSplicingPoint(value bool) error {
 		return err
 	}
 	delta := 1 * af.bitDelta(5, 0x04, value)
-	af.resizeAF(af.spliceCountdownStart(), delta)
+	err := af.resizeAF(af.spliceCountdownStart(), delta)
+	if err != nil {
+		return err
+	}
 	af.setBit(5, 0x04, value)
 	return nil
 }
@@ -452,7 +468,10 @@ func (af AdaptationField) SetHasTransportPrivateData(value bool) error {
 		return err
 	}
 	delta := 1 * af.bitDelta(5, 0x02, value)
-	af.resizeAF(af.transportPrivateDataStart(), delta)
+	err := af.resizeAF(af.transportPrivateDataStart(), delta)
+	if err != nil {
+		return err
+	}
 	af[af.transportPrivateDataStart()] = 0 // zero length by default
 	af.setBit(5, 0x02, value)
 	return nil
@@ -478,7 +497,10 @@ func (af AdaptationField) SetTransportPrivateData(data []byte) error {
 	delta := len(data) - (af.transportPrivateDataLength() - 1)
 	start := af.transportPrivateDataStart() + 1
 	end := start + len(data)
-	af.resizeAF(start, delta)
+	err := af.resizeAF(start, delta)
+	if err != nil {
+		return err
+	}
 	copy(af[start:end], data)
 	af[start-1] = byte(len(data))
 	return nil
@@ -497,7 +519,10 @@ func (af AdaptationField) SetHasAdaptationFieldExtension(value bool) error {
 		return err
 	}
 	delta := 1 * af.bitDelta(5, 0x01, value)
-	af.resizeAF(af.adaptationExtensionStart(), delta)
+	err := af.resizeAF(af.adaptationExtensionStart(), delta)
+	if err != nil {
+		return err
+	}
 	af[af.adaptationExtensionStart()] = 0
 	af.setBit(5, 0x01, value)
 	return nil
@@ -523,7 +548,10 @@ func (af AdaptationField) SetAdaptationFieldExtension(data []byte) error {
 	delta := len(data) - (af.adaptationExtensionLength() - 1)
 	start := af.adaptationExtensionStart() + 1
 	end := start + len(data)
-	af.resizeAF(start, delta)
+	err := af.resizeAF(start, delta)
+	if err != nil {
+		return err
+	}
 	copy(af[start:end], data)
 	af[start-1] = byte(len(data))
 	return nil

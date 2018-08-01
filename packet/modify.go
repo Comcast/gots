@@ -25,7 +25,7 @@ SOFTWARE.
 package packet
 
 import (
-	"fmt"
+	"bytes"
 	"github.com/Comcast/gots"
 )
 
@@ -132,10 +132,30 @@ func (p Packet) SetAdaptationFieldControl(value AdaptationFieldControlOptions) e
 	if err := p.valid(); err != nil {
 		return err
 	}
+	hasAFBefore, _ := p.HasAdaptationField()
 	p[3] = p[3]&^byte(0x30) | byte(value)<<4
-	if b, _ := p.HasAdaptationField(); b {
+	hasAFAfter, _ := p.HasAdaptationField()
+	// if it didnt have an AF but now has one. Init the AF
+	if !hasAFBefore && hasAFAfter {
 		initAdaptationField(p)
 	}
+
+	if value == PayloadAndAdaptationFieldFlag {
+		af, err := p.AdaptationField()
+		if err != nil {
+			return err
+		}
+		if p[4] == 183 {
+			if af.stuffingStart() < PacketSize {
+				p[4] = 182
+				af.stuffAF()
+			} else {
+				return gots.ErrAdaptationFieldTooLarge
+			}
+		}
+
+	}
+
 	return nil
 }
 
@@ -191,10 +211,10 @@ func (p Packet) ZeroContinuityCounter() error {
 // The effect is the same as modulus by 16.
 func (p Packet) IncContinuityCounter() error {
 	cc, err := p.ContinuityCounter()
-	cc += 1
 	if err != nil {
 		return err
 	}
+	cc += 1
 	return p.SetContinuityCounter(cc)
 }
 
@@ -221,41 +241,114 @@ func (p Packet) AdaptationField() (AdaptationField, error) {
 	if hasAF {
 		return parseAdaptationField(p), nil
 	}
-	return nil, nil
+	return nil, gots.ErrNoAdaptationField
 }
 
-// Payload returns a slice to a copy of the payload bytes in the packet.
-// TODO: write tests
-func (p Packet) Payload(packet Packet) ([]byte, error) {
+// SetAdaptationField copies the AdaptationField into a packet.
+// If the packet does not have an adaptation field then an error is returned
+// AdaptationField must fit in the same size as the existing adaptation field
+// and its stuffing bytes.
+func (p Packet) SetAdaptationField(af AdaptationField) error {
+	hasAF, err := p.HasAdaptationField()
+	if err != nil {
+		return err
+	}
+	if !hasAF {
+		return gots.ErrNoAdaptationField
+	}
+	oldAF, _ := p.AdaptationField()
+	if oldAF.stuffingEnd() < af.stuffingStart() {
+		return gots.ErrAdaptationFieldTooLarge
+	}
+	copy(oldAF[5:oldAF.stuffingEnd()], af[5:af.stuffingStart()]) // Copy without length.
+	oldAF.stuffAF()
+	return nil
+}
+
+func (p Packet) payloadStart() int {
 	offset := 4 // packet header bytes
 	if hasAF, err := p.HasAdaptationField(); err == nil && hasAF {
 		offset += 1 + int(p[4])
 	}
+	return offset
+}
+
+// stuffingStart returns where the stuffing begins, this is also the first byte where the payload can begin.
+// if there is no payload then it is stuffed untill the very end
+func (p Packet) stuffingStart() int {
+	af, err := p.AdaptationField()
+	if err != nil {
+		return 4
+	}
+	if p[4] == 0 {
+		return 5
+	}
+	return af.stuffingStart()
+}
+
+func (p Packet) freeSpace() int {
+	return PacketSize - p.stuffingStart()
+}
+
+// Payload returns a slice to a copy of the payload bytes in the packet.
+func (p Packet) Payload() ([]byte, error) {
+	if err := p.valid(); err != nil {
+		return nil, err
+	}
+	if afc, err := p.AdaptationFieldControl(); err == nil {
+		if afc == AdaptationFieldFlag {
+			return nil, gots.ErrNoPayload
+		}
+	} else {
+		return nil, err
+	}
+	offset := p.payloadStart()
 	payload := make([]byte, PacketSize-offset)
 	copy(payload, p[offset:])
 	return payload, nil
 }
 
-// Equal returns true if the bytes of the two packets are equal
-// func (p Packet) Equals(r Packet) bool {
-// 	return bytes.Equal(p, r)
-// }
+// SetPayload sets the payload of the packet. If the payload cannot fit in the
+// packet an integer will be returned that is the number of bytes that were
+// able to fit in the packet.
+func (p Packet) SetPayload(data []byte) (int, error) {
+	if err := p.valid(); err != nil {
+		return 0, err
+	}
+	if afc, err := p.AdaptationFieldControl(); err == nil {
+		if afc == AdaptationFieldFlag {
+			return 0, gots.ErrNoPayload
+		}
+	} else {
+		return 0, err
+	}
+	freeSpace := p.freeSpace()
+	if freeSpace > len(data) {
+		p.SetAdaptationFieldControl(PayloadAndAdaptationFieldFlag)
+		af, _ := p.AdaptationField()
 
-// CheckErrors checks the packet for errors
-func (p Packet) sizeErrors() error {
-	if len(p) != PacketSize {
-		return gots.ErrInvalidPacketLength
+		af.setLength(PacketSize - (len(data) + 4 + 1)) // header length + adaptation field length
+		af.stuffAF()
+	} else {
+		af, _ := p.AdaptationField()
+		if af != nil {
+			af.setLength(PacketSize - (freeSpace + 4 + 1)) // header length + adaptation field length
+		}
 	}
-	if p.syncByte() != SyncByte {
-		return gots.ErrBadSyncByte
-	}
-	return nil
+
+	offset := p.payloadStart()
+	return copy(p[offset:], data), nil
+}
+
+// Equal returns true if the bytes of the two packets are equal
+func (p Packet) Equals(r Packet) bool {
+	return bytes.Equal(p, r)
 }
 
 // CheckErrors checks the packet for errors
 func (p Packet) CheckErrors() error {
-	if len(p) != PacketSize {
-		return gots.ErrInvalidPacketLength
+	if err := p.valid(); err != nil {
+		return err
 	}
 	if p.syncByte() != SyncByte {
 		return gots.ErrBadSyncByte
@@ -274,7 +367,7 @@ func (p Packet) syncByte() byte {
 	return p[0]
 }
 
-// invalid returns true if the length of the packet slice is
+// valid returns an error if the length of the packet slice is
 // anything but PacketSize (188)
 func (p Packet) valid() error {
 	if len(p) != PacketSize {
@@ -303,11 +396,4 @@ func (p Packet) getBit(index int, mask byte) (bool, error) {
 		return false, err
 	}
 	return p[index]&mask != 0, nil
-}
-
-func (p Packet) String() string {
-	if p.valid() != nil {
-		return "Null"
-	}
-	return fmt.Sprintf("%X", []byte(p))
 }

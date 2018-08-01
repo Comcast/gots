@@ -290,13 +290,14 @@ func TestSetAdaptationFieldControl(t *testing.T) {
 		t.Errorf("crafted packet:\n%X \ndoes not match expected packet:\n%X\nSetting the Adaptation Field Control to PayloadFlag has failed.", generated, target)
 	}
 
-	target = createPacketEmptyAdaptationField(t, "471FFF30")
+	target = createPacketEmptyAdaptationField(t, "471FFF30B6")
 	generated.SetAdaptationFieldControl(PayloadAndAdaptationFieldFlag)
 	if !Equal(generated, target) {
 		t.Errorf("crafted packet:\n%X \ndoes not match expected packet:\n%X\nSetting the Adaptation Field Control to PayloadAndAdaptationFieldFlag has failed.", generated, target)
 	}
 
 	target = createPacketEmptyAdaptationField(t, "471FFF20")
+	generated.SetAdaptationFieldControl(PayloadFlag)
 	generated.SetAdaptationFieldControl(AdaptationFieldFlag)
 	if !Equal(generated, target) {
 		t.Errorf("crafted packet:\n%X \ndoes not match expected packet:\n%X\nSetting the Adaptation Field Control to AdaptationFieldFlag has failed.", generated, target)
@@ -453,7 +454,7 @@ func TestHasPayload(t *testing.T) {
 	}
 }
 
-func TestHeaderComboBasic(t *testing.T) {
+func TestHeaderBasic(t *testing.T) {
 	target := createPacketEmptyPayload(t, "47EFA098")
 	generated := NewPacket()
 
@@ -588,6 +589,82 @@ func TestNilSlicePacket(t *testing.T) {
 	if _, err := generated.AdaptationFieldControl(); err != gots.ErrInvalidPacketLength {
 		t.Errorf("incorrect error returned. error: %s", err.Error())
 		return
+	}
+}
+
+func TestSetPayload(t *testing.T) {
+	target, _ := hex.DecodeString(
+		"471FFF305302469999999999999999999999999999999999" +
+			"999999999999999999999999999999999999999999999999" +
+			"999999999999999999999999999999999999999999999999" +
+			"9999999999FFFFFFFFFFFFFFFFFFFFFF7777777777777777" +
+			"777777777777777777777777777777777777777777777777" +
+			"777777777777777777777777777777777777777777777777" +
+			"777777777777777777777777777777777777777777777777" +
+			"7777777777777777777777777777777777777777")
+	payload := []byte{}
+	tpd := []byte{}
+	for i := 0; i < 188; i++ {
+		payload = append(payload, 0x77)
+	}
+	for i := 0; i < 188; i++ {
+		tpd = append(tpd, 0x99)
+	}
+
+	copyAF := NewAdaptationField()
+	err := copyAF.SetHasTransportPrivateData(true)
+	if err != nil {
+		t.Error(err.Error())
+		return
+	}
+	err = copyAF.SetTransportPrivateData(tpd[:70])
+	if err != nil {
+		t.Error(err.Error())
+		return
+	}
+	p := NewPacket()
+	err = p.SetAdaptationFieldControl(AdaptationFieldFlag)
+	if err != nil {
+		t.Error(err.Error())
+		return
+	}
+	err = p.SetAdaptationFieldControl(PayloadAndAdaptationFieldFlag)
+	if err != nil {
+		t.Error(err.Error())
+		return
+	}
+	af, _ := p.AdaptationField()
+	err = af.SetHasTransportPrivateData(true)
+	if err != nil {
+		t.Error(err.Error())
+		return
+	}
+	err = af.SetTransportPrivateData(tpd[:100])
+	if err != nil {
+		t.Error(err.Error())
+		return
+	}
+	_, err = p.SetPayload(payload[:70])
+	if err != nil {
+		t.Error(err.Error())
+		return
+	}
+	err = p.SetAdaptationField(copyAF)
+	if err != nil {
+		t.Error(err.Error())
+		return
+	}
+	_, err = p.SetPayload(payload[:100])
+	if err != nil {
+		t.Error(err.Error())
+		return
+	}
+	if !Equal(target, p) {
+		t.Errorf("crafted packet:\n%X \ndoes not match expected packet:\n%X\nSetting the payload failed.", p, target)
+	}
+	payloadInPacket, _ := p.Payload()
+	if !Equal(payload[:100], payloadInPacket) {
+		t.Errorf("payload in packet is incorrect.")
 	}
 }
 

@@ -59,7 +59,7 @@ func TestAdaptationField(t *testing.T) {
 	p := createPacketEmptyPayload(t, "470000300102")
 	a, err := p.AdaptationField()
 	if err != nil {
-		t.Errorf("error getting adaptation field")
+		t.Errorf("error getting adaptation field: %s", err.Error())
 	}
 	if a == nil {
 		t.Errorf("no adaptation field was returned")
@@ -67,8 +67,8 @@ func TestAdaptationField(t *testing.T) {
 
 	p = createPacketEmptyPayload(t, "470000100002")
 	a, err = p.AdaptationField()
-	if err != nil {
-		t.Errorf("error getting adaptation field")
+	if err == nil {
+		t.Error("no error was returned in trying to access a nonexistent adaptation field.")
 	}
 	if a != nil {
 		t.Errorf("adaptation field does not exist but something was returned.")
@@ -76,7 +76,7 @@ func TestAdaptationField(t *testing.T) {
 }
 
 func TestAll(t *testing.T) {
-	generated, a := generatePacketAF(t, "0100")
+	generated, a := generatePacketAF(t, "B700")
 	target, _ := generatePacketAF(t, "B710000000007E01")
 	a.SetHasPCR(true)
 	a.SetPCR(1)

@@ -43,6 +43,12 @@ var (
 	ErrNoPayload = errors.New("packet does not contain payload")
 	// ErrNoAdaptationField is returned if the adaptation field cannot be accessed or does not exist.
 	ErrNoAdaptationField = errors.New("packet does not contain an adaptation field")
+	// ErrAdaptationFieldTooLarge is returned if the adaptation field is too large to be put in a packet.
+	ErrAdaptationFieldTooLarge = errors.New("adaptation field is too large and cannot shrink")
+	// ErrAdaptationFieldCannotGrow is returned if the adaptation field will overwrite the payload if it grows.
+	ErrAdaptationFieldCannotGrow = errors.New("adaptation field cannot cannot grow beyond its allocated length")
+	// ErrAdaptationFieldZeroLength is returned if the adaptation field is empty and only used for stuffing.
+	ErrAdaptationFieldZeroLength = errors.New("adaptation field is empty")
 	// ErrNoPrivateTransportData is returned when an attempt is made to access private transport data when none exists
 	ErrNoPrivateTransportData = errors.New("adaptation field has no private transport data")
 	// ErrNoSplicePoint is returned when an attempt to access a splice countdown and no splice point exists
