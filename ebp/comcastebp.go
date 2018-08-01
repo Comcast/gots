@@ -44,6 +44,7 @@ type comcastEbp struct {
 	SuccessReadTime time.Time
 }
 
+// CreateComcastEBP returns a new comcastEbp with default values.
 func CreateComcastEBP() comcastEbp {
 	return comcastEbp{
 		DataFieldTag:    ComcastEbpTag,
@@ -51,100 +52,121 @@ func CreateComcastEBP() comcastEbp {
 	}
 }
 
+// EBPtype returns the type (what is the format) of the EBP.
 func (ebp *comcastEbp) EBPType() byte {
 	return ebp.DataFieldTag
 }
 
+// FragmentFlag returns true if the fragment flag is set.
 func (ebp *comcastEbp) FragmentFlag() bool {
 	return ebp.DataFieldLength != 0 && ebp.DataFlags&0x80 != 0
 }
 
+// SetFragmentFlag sets the fragment flag.
 func (ebp *comcastEbp) SetFragmentFlag(value bool) {
 	if ebp.DataFieldLength != 0 && value {
 		ebp.DataFlags |= 0x80
 	}
 }
 
+// SegmentFlag returns true if the segment flag is set.
 func (ebp *comcastEbp) SegmentFlag() bool {
 	return ebp.DataFieldLength != 0 && ebp.DataFlags&0x40 != 0
 }
 
+// SetSegmentFlag sets the segment flag.
 func (ebp *comcastEbp) SetSegmentFlag(value bool) {
 	if ebp.DataFieldLength != 0 && value {
 		ebp.DataFlags |= 0x40
 	}
 }
 
+// SapFlag returns true if the sap flag is set.
 func (ebp *comcastEbp) SapFlag() bool {
 	return ebp.DataFieldLength != 0 && ebp.DataFlags&0x20 != 0
 }
 
+// SetSapFlag sets the sap flag.
 func (ebp *comcastEbp) SetSapFlag(value bool) {
 	if ebp.DataFieldLength != 0 && value {
 		ebp.DataFlags |= 0x20
 	}
 }
 
+// GroupingFlag returns true if the grouping flag is set.
 func (ebp *comcastEbp) GroupingFlag() bool {
 	return ebp.DataFieldLength != 0 && ebp.DataFlags&0x10 != 0
 }
 
+// SetGroupingFlag sets the grouping flag.
 func (ebp *comcastEbp) SetGroupingFlag(value bool) {
 	if ebp.DataFieldLength != 0 && value {
 		ebp.DataFlags |= 0x10
 	}
 }
 
+// TimeFlag returns true if the time flag is set.
 func (ebp *comcastEbp) TimeFlag() bool {
 	return ebp.DataFieldLength != 0 && ebp.DataFlags&0x08 != 0
 }
 
+// SetTimeFlag sets the time flag
 func (ebp *comcastEbp) SetTimeFlag(value bool) {
 	if ebp.DataFieldLength != 0 && value {
 		ebp.DataFlags |= 0x08
 	}
 }
 
+// DiscontinuityFlag returns true if the discontinuity flag is set.
 func (ebp *comcastEbp) DiscontinuityFlag() bool {
 	return ebp.DataFieldLength != 0 && ebp.DataFlags&0x04 != 0
 }
 
+// SetDiscontinuityFlag sets the discontinuity flag.
 func (ebp *comcastEbp) SetDiscontinuityFlag(value bool) {
 	if ebp.DataFieldLength != 0 && value {
 		ebp.DataFlags |= 0x04
 	}
 }
 
+// ExtensionFlag returns true if the extension flag is set.
 func (ebp *comcastEbp) ExtensionFlag() bool {
 	return ebp.DataFieldLength != 0 && ebp.DataFlags&0x01 != 0
 }
 
+// SetExtensionFlag sets the extension flag.
 func (ebp *comcastEbp) SetExtensionFlag(value bool) {
 	if ebp.DataFieldLength != 0 && value {
 		ebp.DataFlags |= 0x01
 	}
 }
 
+// EBPTime returns the EBP time as a UTC time.
 func (ebp *comcastEbp) EBPTime() time.Time {
 	return extractUtcTime(ebp.TimeSeconds, ebp.TimeFraction)
 }
 
+// SetEBPTime sets the time of the EBP. Takes UTC time as an input.
 func (ebp *comcastEbp) SetEBPTime(t time.Time) {
 	ebp.TimeSeconds, ebp.TimeFraction = insertUtcTime(t)
 }
 
+// Sap returns the sap of the EBP.
 func (ebp *comcastEbp) Sap() byte {
 	return ebp.SapType
 }
 
+// SetSap sets the sap of the EBP.
 func (ebp *comcastEbp) SetSap(sapType byte) {
 	ebp.SapType = sapType
 }
 
-func (ebp *comcastEbp) isEmpty() bool {
+// IsEmpty returns if the EBP is empty (zero length)
+func (ebp *comcastEbp) IsEmpty() bool {
 	return ebp.DataFieldLength == 0
 }
 
+// SetIsEmpty sets if the EBP is empty (zero length)
 func (ebp *comcastEbp) SetIsEmpty(value bool) {
 	if value {
 		ebp.DataFieldLength = 0
@@ -153,7 +175,7 @@ func (ebp *comcastEbp) SetIsEmpty(value bool) {
 	}
 }
 
-// Defines when the EBP was read successfully
+// EBPSuccessReadTime defines when the EBP was read successfully.
 func (ebp *comcastEbp) EBPSuccessReadTime() time.Time {
 	return ebp.SuccessReadTime
 }

@@ -36,22 +36,46 @@ const (
 
 // EncoderBoundaryPoint represents shared operations available on an all EBPs.
 type EncoderBoundaryPoint interface {
+	// SegmentFlag returns true if the segment flag is set.
 	SegmentFlag() bool
+	// SetSegmentFlag sets the segment flag.
 	SetSegmentFlag(bool)
+	// FragmentFlag returns true if the fragment flag is set.
 	FragmentFlag() bool
+	// SetFragmentFlag sets the fragment flag.
 	SetFragmentFlag(bool)
+	// TimeFlag returns true if the time flag is set.
 	TimeFlag() bool
+	// SetTimeFlag sets the time flag
 	SetTimeFlag(bool)
+	// GroupingFlag returns true if the grouping flag is set.
 	GroupingFlag() bool
-	EBPTime() time.Time // time set in the EBP
+	// SetGroupingFlag sets the grouping flag.
+	SetGroupingFlag(bool)
+	// EBPTime returns the EBP time as a UTC time.
+	EBPTime() time.Time
+	// SetEBPTime sets the time of the EBP. Takes UTC time as an input.
 	SetEBPTime(time.Time)
-	EBPSuccessReadTime() time.Time // time the EBP was successfully read
+	// EBPSuccessReadTime defines when the EBP was read successfully.
+	EBPSuccessReadTime() time.Time
+	// SapFlag returns true if the sap flag is set.
 	SapFlag() bool
+	// SetSapFlag sets the sap flag.
 	SetSapFlag(bool)
+	// Sap returns the sap of the EBP.
 	Sap() byte
+	// SetSap sets the sap of the EBP.
 	SetSap(byte)
+	// ExtensionFlag returns true if the extension flag is set.
 	ExtensionFlag() bool
+	// SetExtensionFlag sets the extension flag.
 	SetExtensionFlag(bool)
+	// EBPtype returns the type (what is the format) of the EBP.
 	EBPType() byte
+	// IsEmpty returns if the EBP is empty (zero length)
+	IsEmpty() bool
+	// SetIsEmpty sets if the EBP is empty (zero length)
+	SetIsEmpty(bool)
+	// Data will return the raw bytes of the EBP
 	Data() []byte
 }
