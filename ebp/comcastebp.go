@@ -130,7 +130,7 @@ func (ebp *comcastEbp) EBPTime() time.Time {
 }
 
 func (ebp *comcastEbp) SetEBPTime(t time.Time) {
-	insertUtcTime(t, &ebp.TimeSeconds, &ebp.TimeFraction)
+	ebp.TimeSeconds, ebp.TimeFraction = insertUtcTime(t)
 }
 
 func (ebp *comcastEbp) Sap() byte {

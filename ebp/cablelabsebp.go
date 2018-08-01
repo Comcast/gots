@@ -98,21 +98,6 @@ func (ebp *cableLabsEbp) SetGroupingFlag(value bool) {
 	}
 }
 
-func (ebp *cableLabsEbp) GroupingIDs() []uint8 {
-	return ebp.Grouping
-}
-
-func (ebp *cableLabsEbp) SetGroupingIDs(values []uint8) {
-	ebp.Grouping = make([]uint8, len(values))
-	for i := range ebp.Grouping {
-		ebp.Grouping[i] = values[i]
-		ebp.Grouping[i] |= 0x80
-		if i == len(ebp.Grouping)-1 {
-			ebp.Grouping[i] &= 0x7F // last index does not have this flag set
-		}
-	}
-}
-
 func (ebp *cableLabsEbp) TimeFlag() bool {
 	return ebp.DataFlags&0x08 != 0
 }
@@ -148,7 +133,7 @@ func (ebp *cableLabsEbp) EBPTime() time.Time {
 }
 
 func (ebp *cableLabsEbp) SetEBPTime(t time.Time) {
-	insertUtcTime(t, &ebp.TimeSeconds, &ebp.TimeFraction)
+	ebp.TimeSeconds, ebp.TimeFraction = insertUtcTime(t)
 }
 
 func (ebp *cableLabsEbp) Sap() byte {
@@ -161,6 +146,12 @@ func (ebp *cableLabsEbp) SetSap(sapType byte) {
 
 func (ebp *cableLabsEbp) PartitionFlag() bool {
 	return ebp.ExtensionFlag() && ebp.ExtensionFlags&0x80 != 0
+}
+
+func (ebp *cableLabsEbp) SetPartitionFlag(value bool) {
+	if ebp.ExtensionFlag() && value {
+		ebp.ExtensionFlags |= 0x80
+	}
 }
 
 // Defines when the EBP was read successfully
@@ -272,6 +263,10 @@ func (ebp *cableLabsEbp) Data() []byte {
 
 	if ebp.GroupingFlag() {
 		for i := range ebp.Grouping {
+			ebp.Grouping[i] |= 0x80 // set flag because this is not the last ID
+			if i == len(ebp.Grouping)-1 {
+				ebp.Grouping[i] &= 0x7F // last index does not have this flag set
+			}
 			binary.Write(data, ebpEncoding, ebp.Grouping[i])
 		}
 	}

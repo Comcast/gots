@@ -99,7 +99,7 @@ func TestCreateComcastEBP(t *testing.T) {
 	ebp.SetExtensionFlag(true)
 	ebp.ExtensionFlags = 0x01
 	ebp.SetSapFlag(true)
-	ebp.SetSap(0x02)
+	ebp.SapType = 0x02
 	ebp.SetGroupingFlag(true)
 	ebp.Grouping = 0x03
 	ebp.SetTimeFlag(true)

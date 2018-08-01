@@ -89,11 +89,11 @@ func TestCableLabsEBP(t *testing.T) {
 	ebp.SetFragmentFlag(true)
 	ebp.SetConcealmentFlag(true)
 	ebp.SetExtensionFlag(true)
-	ebp.ExtensionFlags = 0x80 // TODO
+	ebp.SetPartitionFlag(true)
 	ebp.SetSapFlag(true)
-	ebp.SetSap(0x02)
+	ebp.SapType = 0x02
 	ebp.SetGroupingFlag(true)
-	ebp.Grouping = []byte{0xFF, 0x7F}
+	ebp.Grouping = []byte{0x7F, 0xFF} // wrong on purpose, will be corrected to 0xFF, 0x7F
 	ebp.SetTimeFlag(true)
 	ebp.SetEBPTime(time.Unix(0, 1396964696553818999).UTC())
 	ebp.PartitionFlags = 0x03

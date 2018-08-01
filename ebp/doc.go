@@ -42,6 +42,7 @@ type EncoderBoundaryPoint interface {
 	SetFragmentFlag(bool)
 	TimeFlag() bool
 	SetTimeFlag(bool)
+	GroupingFlag() bool
 	EBPTime() time.Time // time set in the EBP
 	SetEBPTime(time.Time)
 	EBPSuccessReadTime() time.Time // time the EBP was successfully read
