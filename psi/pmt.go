@@ -192,7 +192,7 @@ func (p *pmt) String() string {
 }
 
 // FilterPMTPacketsToPids filters the PMT contents of the provided packet to the PIDs provided and returns a new packet. For example: if the provided PMT has PIDs 101, 102, and 103 and the provides PIDs are 101 and 102, the new PMT will have only descriptors for PID 101 and 102. The descriptor for PID 103 will be stripped from the new PMT packet.
-func FilterPMTPacketsToPids(packets []packet.Packet, pids []uint16) []packet.Packet {
+func FilterPMTPacketsToPids(packets []*packet.Packet, pids []uint16) []*packet.Packet {
 	// make sure we have packets
 	if len(packets) == 0 {
 		return nil
@@ -255,7 +255,7 @@ func FilterPMTPacketsToPids(packets []packet.Packet, pids []uint16) []packet.Pac
 	// Recalculate the CRC
 	fPMT = append(fPMT, gots.ComputeCRC(fPMT[pointerField:])...)
 
-	var filteredPMTPackets []packet.Packet
+	var filteredPMTPackets []*packet.Packet
 	for _, pkt := range packets {
 		var pktBuf bytes.Buffer
 		header, err := packet.Header(pkt)
@@ -276,8 +276,7 @@ func FilterPMTPacketsToPids(packets []packet.Packet, pids []uint16) []packet.Pac
 			// all done
 			break
 		}
-		padPacket(&pktBuf)
-		filteredPMTPackets = append(filteredPMTPackets, pktBuf.Bytes())
+		filteredPMTPackets = append(filteredPMTPackets, padPacket(&pktBuf))
 	}
 	return filteredPMTPackets
 }
@@ -286,7 +285,7 @@ func FilterPMTPacketsToPids(packets []packet.Packet, pids []uint16) []packet.Pac
 // defined by the PAT provided. Returns ErrNilPAT if pat
 // is nil, or any error encountered in parsing the PID
 // of pkt.
-func IsPMT(pkt packet.Packet, pat PAT) (bool, error) {
+func IsPMT(pkt *packet.Packet, pat PAT) (bool, error) {
 	if pat == nil {
 		return false, gots.ErrNilPAT
 	}
@@ -314,10 +313,12 @@ func safeSlice(byteArray []byte, start, end int) []byte {
 	return byteArray[start:len(byteArray)]
 }
 
-func padPacket(pkt *bytes.Buffer) {
-	for i := pkt.Len(); i < packet.PacketSize; i++ {
-		pkt.WriteByte(255)
+func padPacket(buf *bytes.Buffer) *packet.Packet {
+	var pkt packet.Packet
+	for i := copy(pkt[:], buf.Bytes()); i < packet.PacketSize; i++ {
+		pkt[i] = 0xff
 	}
+	return &pkt
 }
 
 func pidIn(pids []uint16, target uint16) bool {
@@ -335,25 +336,25 @@ func pidIn(pids []uint16, target uint16) bool {
 // It returns a new PMT object parsed from the packet(s), if found, and
 // otherwise returns an error.
 func ReadPMT(r io.Reader, pid uint16) (PMT, error) {
-	pkt := make(packet.Packet, packet.PacketSize)
+	var pkt packet.Packet
 	pmtAcc := packet.NewAccumulator(PmtAccumulatorDoneFunc)
 	done := false
 	var pmt PMT
 	for !done {
-		if _, err := io.ReadFull(r, pkt); err != nil {
+		if _, err := io.ReadFull(r, pkt[:]); err != nil {
 			if err == io.EOF || err == io.ErrUnexpectedEOF {
 				return nil, gots.ErrPMTNotFound
 			}
 			return nil, err
 		}
-		currPid, err := packet.Pid(pkt)
+		currPid, err := packet.Pid(&pkt)
 		if err != nil {
 			return nil, err
 		}
 		if currPid != pid {
 			continue
 		}
-		done, err = pmtAcc.Add(pkt)
+		done, err = pmtAcc.Add(pkt[:])
 		if err != nil {
 			return nil, err
 		}
