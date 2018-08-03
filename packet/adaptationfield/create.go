@@ -4,18 +4,17 @@ import "github.com/Comcast/gots/packet"
 
 func SetPrivateData(pkt *packet.Packet, af []byte) {
 	offset := 6
-	if HasPCR(*pkt) {
+	if HasPCR(pkt) {
 		offset += 6
 	}
-	if HasOPCR(*pkt) {
+	if HasOPCR(pkt) {
 		offset += 6
 	}
-	if HasSplicingPoint(*pkt) {
+	if HasSplicingPoint(pkt) {
 		offset++
 	}
-	(*pkt)[offset] = byte(0x04) // data length
+	pkt[offset] = byte(0x04) // data length
 	offset++
-	for i, b := range af {
-		(*pkt)[offset+i] = b
-	}
+	// FIXME(kortschak): Handle len(af) != 4.
+	copy(pkt[offset:offset+4], af)
 }
