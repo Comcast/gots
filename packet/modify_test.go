@@ -25,13 +25,13 @@ SOFTWARE.
 package packet
 
 import (
+	"bytes"
 	"encoding/hex"
-	"github.com/Comcast/gots"
 	"testing"
 )
 
 const (
-	testPacket = "4700001" +
+	testPacket = "47000010" +
 		"000000000000000000000000000000000000000000000000" +
 		"000000000000000000000000000000000000000000000000" +
 		"000000000000000000000000000000000000000000000000" +
@@ -39,13 +39,23 @@ const (
 		"000000000000000000000000000000000000000000000000" +
 		"000000000000000000000000000000000000000000000000" +
 		"000000000000000000000000000000000000000000000000" +
-		"000000000000000000000000000000000"
+		"00000000000000000000000000000000"
+
+	testPacket2 = "471FFF30" +
+		"530246999999999999999999999999999999999999999999" +
+		"999999999999999999999999999999999999999999999999" +
+		"999999999999999999999999999999999999999999999999" +
+		"99FFFFFFFFFFFFFFFFFFFFFF777777777777777777777777" +
+		"777777777777777777777777777777777777777777777777" +
+		"777777777777777777777777777777777777777777777777" +
+		"777777777777777777777777777777777777777777777777" +
+		"77777777777777777777777777777777"
 )
 
 func createPacketEmptyPayload(t *testing.T, header string) (p Packet) {
 	headerBytes, _ := hex.DecodeString(header)
 	bodyBytes := make([]byte, 188-len(headerBytes))
-	packetBytes := Packet(append(headerBytes, bodyBytes...))
+	packetBytes := append(headerBytes, bodyBytes...)
 
 	p, err := FromBytes(packetBytes)
 	if err != nil {
@@ -63,7 +73,7 @@ func createPacketEmptyAdaptationField(t *testing.T, header string) (p Packet) {
 		AFBytes[i] = 0xFF
 	}
 	AFBytes = AFBytes[len(headerBytes):188]
-	packetBytes := Packet(append(headerBytes, AFBytes...))
+	packetBytes := append(headerBytes, AFBytes...)
 
 	p, err := FromBytes(packetBytes)
 	if err != nil {
@@ -96,7 +106,7 @@ func TestNewPacket(t *testing.T) {
 	if err := generated.CheckErrors(); err != nil {
 		t.Error("Default packet has errors.")
 	}
-	if !Equal(generated, target) {
+	if !Equal(&generated, &target) {
 		t.Errorf("crafted packet:\n%X \ndoes not match expected packet:\n%X\nCreating a new packet failed.", generated, target)
 	}
 }
@@ -105,31 +115,21 @@ func TestSetTransportErrorIndicator(t *testing.T) {
 	generated := NewPacket()
 
 	target := createPacketEmptyPayload(t, "479FFF10")
-	err := generated.SetTransportErrorIndicator(true)
-	if err != nil {
-		t.Errorf("Failed to set Transport Error indicator: %s", err.Error())
-	}
-	if !Equal(generated, target) {
+	generated.SetTransportErrorIndicator(true)
+	if !Equal(&generated, &target) {
 		t.Errorf("crafted packet:\n%X \ndoes not match expected packet:\n%X\nSetting the transport error indicator to true has failed.", generated, target)
 	}
 
 	target = createPacketEmptyPayload(t, "471FFF10")
-	err = generated.SetTransportErrorIndicator(false)
-	if err != nil {
-		t.Errorf("Failed to set Transport Error indicator: %s", err.Error())
-	}
-	if !Equal(generated, target) {
+	generated.SetTransportErrorIndicator(false)
+	if !Equal(&generated, &target) {
 		t.Errorf("crafted packet:\n%X \ndoes not match expected packet:\n%X\nSetting the transport error indicator to false has failed.", generated, target)
 	}
 }
 
 func TestTransportErrorIndicator(t *testing.T) {
 	pkt := createPacketEmptyPayload(t, "479FFF10")
-	tei, err := pkt.TransportErrorIndicator()
-	if err != nil {
-		t.Error("Failed to read TransportErrorIndicator flag.")
-		return
-	}
+	tei := pkt.TransportErrorIndicator()
 	if tei != true {
 		t.Error("TransportErrorIndicator does not match expected.")
 	}
@@ -140,24 +140,20 @@ func TestSetPayloadUnitStartIndicator(t *testing.T) {
 
 	target := createPacketEmptyPayload(t, "475FFF10")
 	generated.SetPayloadUnitStartIndicator(true)
-	if !Equal(generated, target) {
+	if !Equal(&generated, &target) {
 		t.Errorf("crafted packet:\n%X \ndoes not match expected packet:\n%X\nSetting the PUSI to true has failed.", generated, target)
 	}
 
 	target = createPacketEmptyPayload(t, "471FFF10")
 	generated.SetPayloadUnitStartIndicator(false)
-	if !Equal(generated, target) {
+	if !Equal(&generated, &target) {
 		t.Errorf("crafted packet:\n%X \ndoes not match expected packet:\n%X\nSetting the PUSI to false has failed.", generated, target)
 	}
 }
 
 func TestPayloadUnitStartIndicator(t *testing.T) {
 	pkt := createPacketEmptyPayload(t, "475FFF10")
-	pusi, err := pkt.PayloadUnitStartIndicator()
-	if err != nil {
-		t.Error("Failed to read PayloadUnitStartIndicator flag.")
-		return
-	}
+	pusi := pkt.PayloadUnitStartIndicator()
 	if pusi != true {
 		t.Error("PayloadUnitStartIndicator does not match expected.")
 	}
@@ -168,24 +164,20 @@ func TestSetTP(t *testing.T) {
 
 	target := createPacketEmptyPayload(t, "473FFF10")
 	generated.SetTransportPriority(true)
-	if !Equal(generated, target) {
+	if !Equal(&generated, &target) {
 		t.Errorf("crafted packet:\n%X \ndoes not match expected packet:\n%X\nSetting the transport priority to true has failed.", generated, target)
 	}
 
 	target = createPacketEmptyPayload(t, "471FFF10")
 	generated.SetTransportPriority(false)
-	if !Equal(generated, target) {
+	if !Equal(&generated, &target) {
 		t.Errorf("crafted packet:\n%X \ndoes not match expected packet:\n%X\nSetting the transport priority to false has failed.", generated, target)
 	}
 }
 
 func TestTP(t *testing.T) {
 	pkt := createPacketEmptyPayload(t, "473FFF10")
-	tp, err := pkt.TransportPriority()
-	if err != nil {
-		t.Error("Failed to read TransportPriority flag.")
-		return
-	}
+	tp := pkt.TransportPriority()
 	if tp != true {
 		t.Error("TransportPriority does not match expected.")
 	}
@@ -196,7 +188,7 @@ func TestSetPID(t *testing.T) {
 
 	target := createPacketEmptyPayload(t, "47f76A10")
 	generated.SetPID(0x176A)
-	if !Equal(generated, target) {
+	if !Equal(&generated, &target) {
 		t.Errorf("crafted packet:\n%X \ndoes not match expected packet:\n%X\nSetting the PID to 0x176A has failed.", generated, target)
 	}
 
@@ -204,24 +196,20 @@ func TestSetPID(t *testing.T) {
 
 	target = createPacketEmptyPayload(t, "47000010")
 	generated.SetPID(0x0000)
-	if !Equal(generated, target) {
+	if !Equal(&generated, &target) {
 		t.Errorf("crafted packet:\n%X \ndoes not match expected packet:\n%X\nSetting the PID to 0x0000 has failed.", generated, target)
 	}
 
 	target = createPacketEmptyPayload(t, "471fec10")
 	generated.SetPID(0x1fec)
-	if !Equal(generated, target) {
+	if !Equal(&generated, &target) {
 		t.Errorf("crafted packet:\n%X \ndoes not match expected packet:\n%X\nSetting the PID to 0x1fec has failed.", generated, target)
 	}
 }
 
 func TestPID(t *testing.T) {
 	pkt := createPacketEmptyPayload(t, "47344410")
-	pid, err := pkt.PID()
-	if err != nil {
-		t.Error("failed to read PID")
-		return
-	}
+	pid := pkt.PID()
 	if pid != 0x1444 {
 		t.Errorf("reads different PID than expected. expected: %d", 0x1444)
 	}
@@ -232,50 +220,38 @@ func TestSetTransportScramblingControl(t *testing.T) {
 
 	target := createPacketEmptyPayload(t, "471FFFD0")
 	generated.SetTransportScramblingControl(ScrambleOddKeyFlag)
-	if !Equal(generated, target) {
+	if !Equal(&generated, &target) {
 		t.Errorf("crafted packet:\n%X \ndoes not match expected packet:\n%X\nSetting the Transport Scrambling Control to ScrambleOddKeyFlag has failed.", generated, target)
 	}
 
 	target = createPacketEmptyPayload(t, "471FFF90")
 	generated.SetTransportScramblingControl(ScrambleEvenKeyFlag)
-	if !Equal(generated, target) {
+	if !Equal(&generated, &target) {
 		t.Errorf("crafted packet:\n%X \ndoes not match expected packet:\n%X\nSetting the Transport Scrambling Control to ScrambleEvenKeyFlag has failed.", generated, target)
 	}
 
 	target = createPacketEmptyPayload(t, "471FFF10")
 	generated.SetTransportScramblingControl(NoScrambleFlag)
-	if !Equal(generated, target) {
+	if !Equal(&generated, &target) {
 		t.Errorf("crafted packet:\n%X \ndoes not match expected packet:\n%X\nSetting the Transport Scrambling Control to NoScrambleFlag has failed.", generated, target)
 	}
 }
 
 func TestTransportScramblingControl(t *testing.T) {
 	pkt := createPacketEmptyPayload(t, "471FFF90")
-	tsc, err := pkt.TransportScramblingControl()
-	if err != nil {
-		t.Error("failed to read transport scrambling control")
-		return
-	}
+	tsc := pkt.TransportScramblingControl()
 	if tsc != ScrambleEvenKeyFlag {
 		t.Errorf("reads different transport scrambling control than expected. expected: ScrambleEvenKeyFlag")
 	}
 
 	pkt = createPacketEmptyPayload(t, "471FFFD0")
-	tsc, err = pkt.TransportScramblingControl()
-	if err != nil {
-		t.Error("failed to read transport scrambling control")
-		return
-	}
+	tsc = pkt.TransportScramblingControl()
 	if tsc != ScrambleOddKeyFlag {
 		t.Errorf("reads different transport scrambling control than expected. expected: ScrambleOddKeyFlag")
 	}
 
 	pkt = createPacketEmptyPayload(t, "471FFF10")
-	tsc, err = pkt.TransportScramblingControl()
-	if err != nil {
-		t.Error("failed to read transport scrambling control")
-		return
-	}
+	tsc = pkt.TransportScramblingControl()
 	if tsc != NoScrambleFlag {
 		t.Errorf("reads different transport scrambling control than expected. expected: NoScrambleFlag")
 	}
@@ -286,49 +262,37 @@ func TestSetAdaptationFieldControl(t *testing.T) {
 
 	target := createPacketEmptyPayload(t, "471FFF10")
 	generated.SetAdaptationFieldControl(PayloadFlag)
-	if !Equal(generated, target) {
+	if !Equal(&generated, &target) {
 		t.Errorf("crafted packet:\n%X \ndoes not match expected packet:\n%X\nSetting the Adaptation Field Control to PayloadFlag has failed.", generated, target)
 	}
 
 	target = createPacketEmptyAdaptationField(t, "471FFF30B6")
 	generated.SetAdaptationFieldControl(PayloadAndAdaptationFieldFlag)
-	if !Equal(generated, target) {
+	if !Equal(&generated, &target) {
 		t.Errorf("crafted packet:\n%X \ndoes not match expected packet:\n%X\nSetting the Adaptation Field Control to PayloadAndAdaptationFieldFlag has failed.", generated, target)
 	}
 
 	target = createPacketEmptyAdaptationField(t, "471FFF20")
 	generated.SetAdaptationFieldControl(PayloadFlag)
 	generated.SetAdaptationFieldControl(AdaptationFieldFlag)
-	if !Equal(generated, target) {
+	if !Equal(&generated, &target) {
 		t.Errorf("crafted packet:\n%X \ndoes not match expected packet:\n%X\nSetting the Adaptation Field Control to AdaptationFieldFlag has failed.", generated, target)
 	}
 }
 
 func TestAdaptationFieldControl(t *testing.T) {
 	pkt := createPacketEmptyPayload(t, "471FFF9000")
-	asc, err := pkt.AdaptationFieldControl()
-	if err != nil {
-		t.Error("failed to read adaptation field control")
-		return
-	}
+	asc := pkt.AdaptationFieldControl()
 	if asc != PayloadFlag {
 		t.Errorf("reads different adaptation field control than expected. expected: PayloadFlag")
 	}
 	pkt = createPacketEmptyAdaptationField(t, "471FFFB001")
-	asc, err = pkt.AdaptationFieldControl()
-	if err != nil {
-		t.Error("failed to read adaptation field control")
-		return
-	}
+	asc = pkt.AdaptationFieldControl()
 	if asc != PayloadAndAdaptationFieldFlag {
 		t.Errorf("reads different adaptation field control than expected. expected: PayloadAndAdaptationFieldFlag")
 	}
 	pkt = createPacketEmptyAdaptationField(t, "471FFFA001")
-	asc, err = pkt.AdaptationFieldControl()
-	if err != nil {
-		t.Error("failed to read adaptation field control")
-		return
-	}
+	asc = pkt.AdaptationFieldControl()
 	if asc != AdaptationFieldFlag {
 		t.Errorf("reads different adaptation field control than expected. expected: AdaptationFieldFlag")
 	}
@@ -340,18 +304,14 @@ func TestSetContinuityCounter(t *testing.T) {
 
 	generated.SetContinuityCounter(15)
 
-	if !Equal(generated, target) {
+	if !Equal(&generated, &target) {
 		t.Errorf("crafted packet:\n%X \ndoes not match expected packet:\n%X\nSetting the Continuity Counter to 15 has failed.", generated, target)
 	}
 }
 
 func TestContinuityCounterModify(t *testing.T) {
 	pkt := createPacketEmptyPayload(t, "471FFF19")
-	cc, err := pkt.ContinuityCounter()
-	if err != nil {
-		t.Error("failed to read continuity counter")
-		return
-	}
+	cc := pkt.ContinuityCounter()
 	if cc != 9 {
 		t.Errorf("Reads different continuity counter than expected. ecpected: 9")
 	}
@@ -365,18 +325,14 @@ func TestIncContinuityCounter(t *testing.T) {
 	generated.IncContinuityCounter()     // cc = 15
 	generated.IncContinuityCounter()     // cc = 0, overflow
 
-	if !Equal(generated, target) {
+	if !Equal(&generated, &target) {
 		t.Errorf("crafted packet:\n%X \ndoes not match expected packet:\n%X\nContinuity Counter did not rollover as expected.", generated, target)
 	}
 }
 
 func TestIsPAT(t *testing.T) {
 	pkt := createPacketEmptyPayload(t, "47000010")
-	isPAT, err := pkt.IsPAT()
-	if err != nil {
-		t.Error("failed to read if packet is a PAT")
-		return
-	}
+	isPAT := pkt.IsPAT()
 	if !isPAT {
 		t.Errorf("packet should be a PAT")
 	}
@@ -384,11 +340,7 @@ func TestIsPAT(t *testing.T) {
 
 func TestIsNull(t *testing.T) {
 	pkt := createPacketEmptyPayload(t, "471FFF10")
-	isNull, err := pkt.IsNull()
-	if err != nil {
-		t.Error("failed to read if packet is null")
-		return
-	}
+	isNull := pkt.IsNull()
 	if !isNull {
 		t.Errorf("packet should be Null")
 	}
@@ -396,29 +348,17 @@ func TestIsNull(t *testing.T) {
 
 func TestHasAdaptationField(t *testing.T) {
 	pkt := createPacketEmptyPayload(t, "471FFF100100")
-	hasAF, err := pkt.HasAdaptationField()
-	if err != nil {
-		t.Errorf("could not run has adaptation field. error: %s", err.Error())
-		return
-	}
+	hasAF := pkt.HasAdaptationField()
 	if hasAF {
 		t.Errorf("Packet should not have Adaptation Field (AdaptationFieldControl = 01).")
 	}
 	pkt = createPacketEmptyPayload(t, "471FFF200100")
-	hasAF, err = pkt.HasAdaptationField()
-	if err != nil {
-		t.Errorf("could not run has adaptation field. error: %s", err.Error())
-		return
-	}
+	hasAF = pkt.HasAdaptationField()
 	if !hasAF {
 		t.Errorf("Packet should have Adaptation Field (AdaptationFieldControl = 10).")
 	}
 	pkt = createPacketEmptyPayload(t, "471FFF300100")
-	hasAF, err = pkt.HasAdaptationField()
-	if err != nil {
-		t.Errorf("could not run has adaptation field. error: %s", err.Error())
-		return
-	}
+	hasAF = pkt.HasAdaptationField()
 	if !hasAF {
 		t.Errorf("Packet should have Adaptation Field (AdaptationFieldControl = 11).")
 	}
@@ -426,29 +366,17 @@ func TestHasAdaptationField(t *testing.T) {
 
 func TestHasPayload(t *testing.T) {
 	pkt := createPacketEmptyPayload(t, "471FFF10")
-	hasPayload, err := pkt.HasPayload()
-	if err != nil {
-		t.Errorf("could not run has payload. error: %s", err.Error())
-		return
-	}
+	hasPayload := pkt.HasPayload()
 	if !hasPayload {
 		t.Errorf("Packet should have Payload (AdaptationFieldControl = 01).")
 	}
 	pkt = createPacketEmptyPayload(t, "471FFF20")
-	hasPayload, err = pkt.HasPayload()
-	if err != nil {
-		t.Errorf("could not run has payload. error: %s", err.Error())
-		return
-	}
+	hasPayload = pkt.HasPayload()
 	if hasPayload {
 		t.Errorf("Packet should not have Payload (AdaptationFieldControl = 10).")
 	}
 	pkt = createPacketEmptyPayload(t, "471FFF30")
-	hasPayload, err = pkt.HasPayload()
-	if err != nil {
-		t.Errorf("could not run has payload. error: %s", err.Error())
-		return
-	}
+	hasPayload = pkt.HasPayload()
 	if !hasPayload {
 		t.Errorf("Packet should have Payload (AdaptationFieldControl = 11).")
 	}
@@ -458,150 +386,45 @@ func TestHeaderBasic(t *testing.T) {
 	target := createPacketEmptyPayload(t, "47EFA098")
 	generated := NewPacket()
 
-	if err := generated.SetContinuityCounter(7); err != nil {
-		t.Errorf("failed to set field in packet. error: %s", err.Error())
-		return
-	}
-	if err := generated.IncContinuityCounter(); err != nil {
-		t.Errorf("failed to set field in packet. error: %s", err.Error())
-		return
-	}
-	if err := generated.SetPID(4000); err != nil {
-		t.Errorf("failed to set field in packet. error: %s", err.Error())
-		return
-	}
-	if err := generated.SetTransportErrorIndicator(true); err != nil {
-		t.Errorf("failed to set field in packet. error: %s", err.Error())
-		return
-	}
-	if err := generated.SetPayloadUnitStartIndicator(true); err != nil {
-		t.Errorf("failed to set field in packet. error: %s", err.Error())
-		return
-	}
-	if err := generated.SetTransportPriority(true); err != nil {
-		t.Errorf("failed to set field in packet. error: %s", err.Error())
-		return
-	}
-	if err := generated.SetAdaptationFieldControl(PayloadFlag); err != nil {
-		t.Errorf("failed to set field in packet. error: %s", err.Error())
-		return
-	}
-	if err := generated.SetTransportScramblingControl(ScrambleEvenKeyFlag); err != nil {
-		t.Errorf("failed to set field in packet. error: %s", err.Error())
-		return
-	}
+	generated.SetContinuityCounter(7)
+	generated.IncContinuityCounter()
+	generated.SetPID(4000)
+	generated.SetTransportErrorIndicator(true)
+	generated.SetPayloadUnitStartIndicator(true)
+	generated.SetTransportPriority(true)
+	generated.SetAdaptationFieldControl(PayloadFlag)
+	generated.SetTransportScramblingControl(ScrambleEvenKeyFlag)
 
-	if !Equal(generated, target) {
+	if !Equal(&generated, &target) {
 		t.Errorf("crafted packet:\n%X \ndoes not match expected packet:\n%X\nFields did not set successfully", generated, target)
 	}
 
-	cc, err := generated.ContinuityCounter()
-	if err != nil {
-		t.Errorf("failed to read field in packet. error: %s", err)
-		return
-	}
-	pid, err := generated.PID()
-	if err != nil {
-		t.Errorf("failed to read field in packet. error: %s", err)
-		return
-	}
-	tei, err := generated.TransportErrorIndicator()
-	if err != nil {
-		t.Errorf("failed to read field in packet. error: %s", err)
-		return
-	}
-	pusi, err := generated.PayloadUnitStartIndicator()
-	if err != nil {
-		t.Errorf("failed to read field in packet. error: %s", err)
-		return
-	}
-	tp, err := generated.TransportPriority()
-	if err != nil {
-		t.Errorf("failed to read field in packet. error: %s", err)
-		return
-	}
-	afc, err := generated.AdaptationFieldControl()
-	if err != nil {
-		t.Errorf("failed to read field in packet. error: %s", err)
-		return
-	}
-	tsc, err := generated.TransportScramblingControl()
-	if err != nil {
-		t.Errorf("failed to read field in packet. error: %s", err)
-		return
-	}
-
-	if cc != 8 {
+	if generated.ContinuityCounter() != 8 {
 		t.Errorf("Reads different ContinuityCounter than expected.")
 	}
-	if pid != 4000 {
+	if generated.PID() != 4000 {
 		t.Errorf("Reads different PID than expected.")
 	}
-	if tei != true {
+	if generated.TransportErrorIndicator() != true {
 		t.Errorf("Reads different TransportErrorIndicator than expected.")
 	}
-	if pusi != true {
+	if generated.PayloadUnitStartIndicator() != true {
 		t.Errorf("Reads different PayloadUnitStartIndicator than expected.")
 	}
-	if tp != true {
+	if generated.TransportPriority() != true {
 		t.Errorf("Reads different TP than expected.")
 	}
-	if afc != PayloadFlag {
+	if generated.AdaptationFieldControl() != PayloadFlag {
 		t.Errorf("Reads different AdaptationFieldControl than expected.")
 	}
-	if tsc != ScrambleEvenKeyFlag {
+	if generated.TransportScramblingControl() != ScrambleEvenKeyFlag {
 		t.Errorf("Reads different TransportScramblingControl than expected.")
 	}
 }
 
-func TestNilSlicePacket(t *testing.T) {
-	//target := createPacketEmptyPayload(t, "47EFA098")
-	generated := Packet(nil)
-
-	if err := generated.SetContinuityCounter(7); err != gots.ErrInvalidPacketLength {
-		t.Errorf("incorrect error returned. error: %s", err.Error())
-		return
-	}
-	if err := generated.SetPID(4000); err != gots.ErrInvalidPacketLength {
-		t.Errorf("incorrect error returned. error: %s", err.Error())
-		return
-	}
-	if err := generated.SetTransportErrorIndicator(true); err != gots.ErrInvalidPacketLength {
-		t.Errorf("incorrect error returned. error: %s", err.Error())
-		return
-	}
-	if err := generated.SetAdaptationFieldControl(PayloadFlag); err != gots.ErrInvalidPacketLength {
-		t.Errorf("incorrect error returned. error: %s", err.Error())
-		return
-	}
-	if _, err := generated.ContinuityCounter(); err != gots.ErrInvalidPacketLength {
-		t.Errorf("incorrect error returned. error: %s", err.Error())
-		return
-	}
-	if _, err := generated.PID(); err != gots.ErrInvalidPacketLength {
-		t.Errorf("incorrect error returned. error: %s", err.Error())
-		return
-	}
-	if _, err := generated.TransportErrorIndicator(); err != gots.ErrInvalidPacketLength {
-		t.Errorf("incorrect error returned. error: %s", err.Error())
-		return
-	}
-	if _, err := generated.AdaptationFieldControl(); err != gots.ErrInvalidPacketLength {
-		t.Errorf("incorrect error returned. error: %s", err.Error())
-		return
-	}
-}
-
 func TestSetPayload(t *testing.T) {
-	target, _ := hex.DecodeString(
-		"471FFF305302469999999999999999999999999999999999" +
-			"999999999999999999999999999999999999999999999999" +
-			"999999999999999999999999999999999999999999999999" +
-			"9999999999FFFFFFFFFFFFFFFFFFFFFF7777777777777777" +
-			"777777777777777777777777777777777777777777777777" +
-			"777777777777777777777777777777777777777777777777" +
-			"777777777777777777777777777777777777777777777777" +
-			"7777777777777777777777777777777777777777")
+	data, _ := hex.DecodeString(testPacket2)
+	target, _ := FromBytes(data)
 	payload := []byte{}
 	tpd := []byte{}
 	for i := 0; i < 188; i++ {
@@ -659,11 +482,11 @@ func TestSetPayload(t *testing.T) {
 		t.Error(err.Error())
 		return
 	}
-	if !Equal(target, p) {
+	if !Equal(&target, &p) {
 		t.Errorf("crafted packet:\n%X \ndoes not match expected packet:\n%X\nSetting the payload failed.", p, target)
 	}
 	payloadInPacket, _ := p.Payload()
-	if !Equal(payload[:100], payloadInPacket) {
+	if !bytes.Equal(payload[:100], payloadInPacket) {
 		t.Errorf("payload in packet is incorrect.")
 	}
 }
@@ -763,9 +586,9 @@ func BenchmarkOldStyleRead(b *testing.B) {
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		ContinuityCounter(pkt)
-		PayloadUnitStartIndicator(pkt)
-		ContainsPayload(pkt)
-		Pid(pkt)
+		ContinuityCounter(&pkt)
+		PayloadUnitStartIndicator(&pkt)
+		ContainsPayload(&pkt)
+		Pid(&pkt)
 	}
 }

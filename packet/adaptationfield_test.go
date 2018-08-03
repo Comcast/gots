@@ -28,7 +28,7 @@ import (
 	"testing"
 )
 
-func generatePacketAF(t *testing.T, AFString string) (Packet, AdaptationField) {
+func generatePacketAF(t *testing.T, AFString string) (*Packet, AdaptationField) {
 	p := createPacketEmptyAdaptationField(t, "47000030"+AFString)
 	a, err := p.AdaptationField()
 	if err != nil {
@@ -37,7 +37,7 @@ func generatePacketAF(t *testing.T, AFString string) (Packet, AdaptationField) {
 	if a == nil {
 		t.Errorf("adaptation field does not exist")
 	}
-	return p, a
+	return &p, a
 }
 
 func TestDiscontinuity(t *testing.T) {
@@ -75,10 +75,13 @@ func TestAdaptationField(t *testing.T) {
 	}
 }
 
-func TestAll(t *testing.T) {
+func TestAdaptationFieldFull(t *testing.T) {
 	generated, a := generatePacketAF(t, "B700")
 	target, _ := generatePacketAF(t, "B710000000007E01")
-	a.SetHasPCR(true)
+	err := a.SetHasPCR(true)
+	if err != nil {
+		t.Errorf("failed to set pcr flag. Error: %s", err.Error())
+	}
 	a.SetPCR(1)
 	if !Equal(generated, target) {
 		t.Errorf("crafted packet:\n%X \ndoes not match expected packet:\n%X\nSetting the PCR to 1 has failed.", generated, target)

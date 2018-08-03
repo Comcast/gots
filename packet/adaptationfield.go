@@ -37,12 +37,48 @@ func NewAdaptationField() AdaptationField {
 	return af
 }
 
+// setBit sets a bit in the adaptation field
+// index is the byte in the packet where the bit is located
+// mask is the bitmask that has that bit set to one and the rest of the bits set to zero
+// value is the value that the bit will be set to
+func (af AdaptationField) setBit(index int, mask byte, value bool) {
+	if value {
+		af[index] |= mask
+	} else {
+		af[index] &= ^mask
+	}
+}
+
+// getBit gets a bit in the adaptation field
+// index is the byte in the packet where the bit is located
+// mask is the bitmask that has that bit set to one and the rest of the bits set to zero
+// value is the value of that bit in the adaptation field
+func (af AdaptationField) getBit(index int, mask byte) bool {
+	return af[index]&mask != 0
+}
+
+// bitDelta returns the difference of a bit (boolean) and the bit that is
+// currently set in the adaptation field.
+// 1 is returned if the packet is changed from 0 to 1.
+// -1 is returned if the bit is changed from 1 to 0.
+// 0 is returned if the bit is unchanged.
+// this can be used to find if a field is growing or shrinking.
+func (af AdaptationField) bitDelta(index int, mask byte, value bool) int {
+	if value != af.getBit(index, mask) {
+		if value {
+			return 1 // growing
+		}
+		return -1 // shrinking
+	}
+	return 0 // same
+}
+
 // valid returns any errors that prevent the AdaptationField from being valid.
 func (af AdaptationField) valid() error {
 	if len(af) != PacketSize {
 		return gots.ErrInvalidPacketLength
 	}
-	if hasAF, _ := Packet(af).HasAdaptationField(); !hasAF {
+	if !af.getBit(3, 0x20) {
 		return gots.ErrNoAdaptationField
 	}
 	if af[4] == 0 {
@@ -53,8 +89,8 @@ func (af AdaptationField) valid() error {
 
 // initAdaptationField initializes the adaptation field to have all false flags
 // it will also occupy the remainder of the packet.
-func initAdaptationField(p Packet) {
-	af := AdaptationField(p)
+func initAdaptationField(p *Packet) {
+	af := AdaptationField(p[:])
 	af[4] = 183  // adaptation field will take up the rest of the packet by Default
 	af[5] = 0x00 // no flags are set by default
 	for i := 6; i < len(af); i++ {
@@ -64,8 +100,8 @@ func initAdaptationField(p Packet) {
 
 // parseAdaptationField parses the adaptation field that is present in a packet.
 // this function is only used by packet functions.
-func parseAdaptationField(p Packet) AdaptationField {
-	return AdaptationField(p)
+func parseAdaptationField(p *Packet) AdaptationField {
+	return AdaptationField(p[:])
 }
 
 // returns if the adaptation field has a PCR, this does not check for errors.
@@ -179,42 +215,6 @@ func (af AdaptationField) stuffingEnd() int {
 	return int(af[4]) + 5
 }
 
-// setBit sets a bit in the adaptation field
-// index is the byte in the packet where the bit is located
-// mask is the bitmask that has that bit set to one and the rest of the bits set to zero
-// value is the value that the bit will be set to
-func (af AdaptationField) setBit(index int, mask byte, value bool) {
-	if value {
-		af[index] |= mask
-	} else {
-		af[index] &= ^mask
-	}
-}
-
-// getBit gets a bit in the adaptation field
-// index is the byte in the packet where the bit is located
-// mask is the bitmask that has that bit set to one and the rest of the bits set to zero
-// value is the value of that bit in the adaptation field
-func (af AdaptationField) getBit(index int, mask byte) bool {
-	return af[index]&mask != 0
-}
-
-// bitDelta returns the difference of a bit (boolean) and the bit that is
-// currently set in the adaptation field.
-// 1 is returned if the packet is changed from 0 to 1.
-// -1 is returned if the bit is changed from 1 to 0.
-// 0 is returned if the bit is unchanged.
-// this can be used to find if a field is growing or shrinking.
-func (af AdaptationField) bitDelta(index int, mask byte, value bool) int {
-	if value != af.getBit(index, mask) {
-		if value {
-			return 1 // growing
-		}
-		return -1 // shrinking
-	}
-	return 0 // same
-}
-
 // setLength sets the length field of the adaptation field.
 func (af AdaptationField) setLength(length int) {
 	af[4] = byte(length)
@@ -260,8 +260,8 @@ func (af AdaptationField) resizeAF(start int, delta int) error {
 
 // Length returns the length of the adaptation field
 func (af AdaptationField) Length() (int, error) {
-	if err := af.valid(); err != nil {
-		return 0, err
+	if len(af) != PacketSize {
+		return 0, gots.ErrInvalidPacketLength
 	}
 	return int(af[4]), nil
 }
@@ -508,8 +508,15 @@ func (af AdaptationField) SetTransportPrivateData(data []byte) error {
 
 // TransportPrivateData returns the Transport Private Data from the adaptation field if possible.
 // if it is not possible an error is returned.
-func (af AdaptationField) TransportPrivateData() []byte {
-	return af[af.transportPrivateDataStart():af.adaptationExtensionStart()]
+func (af AdaptationField) TransportPrivateData() ([]byte, error) {
+	hasTPD, err := af.HasTransportPrivateData()
+	if err != nil {
+		return nil, err
+	}
+	if !hasTPD {
+		return nil, gots.ErrNoPrivateTransportData
+	}
+	return af[af.transportPrivateDataStart():af.adaptationExtensionStart()], nil
 }
 
 // SetHasAdaptationFieldExtension sets HasAdaptationFieldExtension
@@ -559,6 +566,13 @@ func (af AdaptationField) SetAdaptationFieldExtension(data []byte) error {
 
 // AdaptationFieldExtension returns the Adaptation Field Extension from the adaptation field if possible.
 // if it is not possible an error is returned.
-func (af AdaptationField) AdaptationFieldExtension() []byte {
-	return af[af.adaptationExtensionStart():af.stuffingStart()]
+func (af AdaptationField) AdaptationFieldExtension() ([]byte, error) {
+	hasAFC, err := af.HasAdaptationFieldExtension()
+	if err != nil {
+		return nil, err
+	}
+	if !hasAFC {
+		return nil, gots.ErrNoAdaptationFieldExtension
+	}
+	return af[af.adaptationExtensionStart():af.stuffingStart()], nil
 }
