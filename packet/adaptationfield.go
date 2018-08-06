@@ -64,13 +64,13 @@ func (af AdaptationField) getBit(index int, mask byte) bool {
 // 0 is returned if the bit is unchanged.
 // this can be used to find if a field is growing or shrinking.
 func (af AdaptationField) bitDelta(index int, mask byte, value bool) int {
-	if value != af.getBit(index, mask) {
-		if value {
-			return 1 // growing
-		}
-		return -1 // shrinking
+	if value == af.getBit(index, mask) {
+		return 0 // same
 	}
-	return 0 // same
+	if value {
+		return 1 // growing
+	}
+	return -1 // shrinking
 }
 
 // valid returns any errors that prevent the AdaptationField from being valid.
@@ -171,12 +171,12 @@ func (af AdaptationField) spliceCountdownStart() int {
 // transportPrivateDataLength returns the length of the transport private data,
 // if there is no transport private data then its length is zero.
 func (af AdaptationField) transportPrivateDataLength() int {
-	if af.hasTransportPrivateData() {
-		// cannot extend beyond adaptation field, number of bytes
-		// for field stored in transportPrivateDataLength
-		return 1 + int(af[af.transportPrivateDataStart()])
+	if !af.hasTransportPrivateData() {
+		return 0
 	}
-	return 0
+	// cannot extend beyond adaptation field, number of bytes
+	// for field stored in transportPrivateDataLength
+	return 1 + int(af[af.transportPrivateDataStart()])
 }
 
 // transportPrivateDataStart returns the start index of where the
@@ -188,10 +188,10 @@ func (af AdaptationField) transportPrivateDataStart() int {
 // adaptationExtensionLength returns the length of the adaptation field extension,
 // if there is no adaptation field extension then its length is zero
 func (af AdaptationField) adaptationExtensionLength() int {
-	if af.hasAdaptationFieldExtension() {
-		return 1 + int(af[af.adaptationExtensionStart()])
+	if !af.hasAdaptationFieldExtension() {
+		return 0
 	}
-	return 0
+	return 1 + int(af[af.adaptationExtensionStart()])
 }
 
 // adaptationExtensionStart returns the start index of where the
