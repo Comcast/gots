@@ -30,7 +30,7 @@ import (
 
 // NewPacket creates a new packet with a Null ID, sync byte, and with the adaptation field control set to payload only.
 // This function is error free.
-func NewAdaptationField() AdaptationField {
+func NewAdaptationField() *AdaptationField {
 	p := NewPacket()
 	p.SetAdaptationFieldControl(AdaptationFieldFlag)
 	af, _ := p.AdaptationField()
@@ -41,7 +41,7 @@ func NewAdaptationField() AdaptationField {
 // index is the byte in the packet where the bit is located
 // mask is the bitmask that has that bit set to one and the rest of the bits set to zero
 // value is the value that the bit will be set to
-func (af AdaptationField) setBit(index int, mask byte, value bool) {
+func (af *AdaptationField) setBit(index int, mask byte, value bool) {
 	if value {
 		af[index] |= mask
 	} else {
@@ -53,7 +53,7 @@ func (af AdaptationField) setBit(index int, mask byte, value bool) {
 // index is the byte in the packet where the bit is located
 // mask is the bitmask that has that bit set to one and the rest of the bits set to zero
 // value is the value of that bit in the adaptation field
-func (af AdaptationField) getBit(index int, mask byte) bool {
+func (af *AdaptationField) getBit(index int, mask byte) bool {
 	return af[index]&mask != 0
 }
 
@@ -63,7 +63,7 @@ func (af AdaptationField) getBit(index int, mask byte) bool {
 // -1 is returned if the bit is changed from 1 to 0.
 // 0 is returned if the bit is unchanged.
 // this can be used to find if a field is growing or shrinking.
-func (af AdaptationField) bitDelta(index int, mask byte, value bool) int {
+func (af *AdaptationField) bitDelta(index int, mask byte, value bool) int {
 	if value == af.getBit(index, mask) {
 		return 0 // same
 	}
@@ -74,10 +74,7 @@ func (af AdaptationField) bitDelta(index int, mask byte, value bool) int {
 }
 
 // valid returns any errors that prevent the AdaptationField from being valid.
-func (af AdaptationField) valid() error {
-	if len(af) != PacketSize {
-		return gots.ErrInvalidPacketLength
-	}
+func (af *AdaptationField) valid() error {
 	if !af.getBit(3, 0x20) {
 		return gots.ErrNoAdaptationField
 	}
@@ -90,7 +87,7 @@ func (af AdaptationField) valid() error {
 // initAdaptationField initializes the adaptation field to have all false flags
 // it will also occupy the remainder of the packet.
 func initAdaptationField(p *Packet) {
-	af := AdaptationField(p[:])
+	af := (*AdaptationField)(p)
 	af[4] = 183  // adaptation field will take up the rest of the packet by Default
 	af[5] = 0x00 // no flags are set by default
 	for i := 6; i < len(af); i++ {
@@ -98,39 +95,33 @@ func initAdaptationField(p *Packet) {
 	}
 }
 
-// parseAdaptationField parses the adaptation field that is present in a packet.
-// this function is only used by packet functions.
-func parseAdaptationField(p *Packet) AdaptationField {
-	return AdaptationField(p[:])
-}
-
 // returns if the adaptation field has a PCR, this does not check for errors.
-func (af AdaptationField) hasPCR() bool {
+func (af *AdaptationField) hasPCR() bool {
 	return af.getBit(5, 0x10)
 }
 
 // returns if the adaptation field has an OPCR, this does not check for errors.
-func (af AdaptationField) hasOPCR() bool {
+func (af *AdaptationField) hasOPCR() bool {
 	return af.getBit(5, 0x08)
 }
 
 // returns the adaptation field's Splicing Point flag, this does not check for errors.
-func (af AdaptationField) hasSplicingPoint() bool {
+func (af *AdaptationField) hasSplicingPoint() bool {
 	return af.getBit(5, 0x04)
 }
 
 // returns if the adaptation field has a Transport Private Data, this does not check for errors.
-func (af AdaptationField) hasTransportPrivateData() bool {
+func (af *AdaptationField) hasTransportPrivateData() bool {
 	return af.getBit(5, 0x02)
 }
 
 // returns if the adaptation field has an adaptation field extension, this does not check for errors.
-func (af AdaptationField) hasAdaptationFieldExtension() bool {
+func (af *AdaptationField) hasAdaptationFieldExtension() bool {
 	return af.getBit(5, 0x01)
 }
 
 // pcrLength returns the length of the PCR, if there is no PCR then its length is zero
-func (af AdaptationField) pcrLength() int {
+func (af *AdaptationField) pcrLength() int {
 	if af.hasPCR() {
 		return 6
 	}
@@ -140,7 +131,7 @@ func (af AdaptationField) pcrLength() int {
 const pcrStart = 6 // start of the pcr with respect to the start of the packet
 
 // opcrLength returns the length of the OPCR, if there is no OPCR then its length is zero
-func (af AdaptationField) opcrLength() int {
+func (af *AdaptationField) opcrLength() int {
 	if af.hasOPCR() {
 		return 6
 	}
@@ -149,13 +140,13 @@ func (af AdaptationField) opcrLength() int {
 
 // opcrStart returns the start index of where the OPCR field should
 // be with respect to the start of the packet.
-func (af AdaptationField) opcrStart() int {
+func (af *AdaptationField) opcrStart() int {
 	return pcrStart + af.pcrLength()
 }
 
 // spliceCountdownLength returns the length of the splice countdown,
 // if there is no splice countdown then its length is zero.
-func (af AdaptationField) spliceCountdownLength() int {
+func (af *AdaptationField) spliceCountdownLength() int {
 	if af.hasSplicingPoint() {
 		return 1
 	}
@@ -164,13 +155,13 @@ func (af AdaptationField) spliceCountdownLength() int {
 
 // spliceCountdownStart returns the start index of where the splice
 // countdown field should be with respect to the start of the packet.
-func (af AdaptationField) spliceCountdownStart() int {
+func (af *AdaptationField) spliceCountdownStart() int {
 	return pcrStart + af.pcrLength() + af.opcrLength()
 }
 
 // transportPrivateDataLength returns the length of the transport private data,
 // if there is no transport private data then its length is zero.
-func (af AdaptationField) transportPrivateDataLength() int {
+func (af *AdaptationField) transportPrivateDataLength() int {
 	if !af.hasTransportPrivateData() {
 		return 0
 	}
@@ -181,13 +172,13 @@ func (af AdaptationField) transportPrivateDataLength() int {
 
 // transportPrivateDataStart returns the start index of where the
 // transport private data should be with respect to the start of the packet.
-func (af AdaptationField) transportPrivateDataStart() int {
+func (af *AdaptationField) transportPrivateDataStart() int {
 	return pcrStart + af.pcrLength() + af.opcrLength() + af.spliceCountdownLength()
 }
 
 // adaptationExtensionLength returns the length of the adaptation field extension,
 // if there is no adaptation field extension then its length is zero
-func (af AdaptationField) adaptationExtensionLength() int {
+func (af *AdaptationField) adaptationExtensionLength() int {
 	if !af.hasAdaptationFieldExtension() {
 		return 0
 	}
@@ -196,14 +187,14 @@ func (af AdaptationField) adaptationExtensionLength() int {
 
 // adaptationExtensionStart returns the start index of where the
 // adaptation extension start should be with respect to the start of the packet.
-func (af AdaptationField) adaptationExtensionStart() int {
+func (af *AdaptationField) adaptationExtensionStart() int {
 	return pcrStart + af.pcrLength() + af.opcrLength() +
 		af.spliceCountdownLength() + af.transportPrivateDataLength()
 }
 
 // stuffingStart returns the start index of where the
 // stuffing bytes should be with respect to the start of the packet.
-func (af AdaptationField) stuffingStart() int {
+func (af *AdaptationField) stuffingStart() int {
 	return pcrStart +
 		af.pcrLength() + af.opcrLength() + af.spliceCountdownLength() +
 		af.transportPrivateDataLength() + af.adaptationExtensionLength()
@@ -211,17 +202,17 @@ func (af AdaptationField) stuffingStart() int {
 
 // stuffingEnd returns the index where the stuffing bytes end
 // (first index without stuffing bytes) with respect to the start of the packet.
-func (af AdaptationField) stuffingEnd() int {
+func (af *AdaptationField) stuffingEnd() int {
 	return int(af[4]) + 5
 }
 
 // setLength sets the length field of the adaptation field.
-func (af AdaptationField) setLength(length int) {
+func (af *AdaptationField) setLength(length int) {
 	af[4] = byte(length)
 }
 
 // stuffAF will ensure that the stuffing bytes are all 0xFF.
-func (af AdaptationField) stuffAF() {
+func (af *AdaptationField) stuffAF() {
 	for i := af.stuffingStart(); i < af.stuffingEnd(); i++ {
 		af[i] = 0xFF // stuffing byte must be 0xFF
 	}
@@ -231,7 +222,7 @@ func (af AdaptationField) stuffAF() {
 // start is the start of the field being manipulated (smallest index)
 // delta is how much shifting needs to be done.
 // this function must be called before the field is marked as present.
-func (af AdaptationField) resizeAF(start int, delta int) error {
+func (af *AdaptationField) resizeAF(start int, delta int) error {
 	if delta > 0 { // shifting for growing
 		end := af.stuffingStart()
 		startRight := start + delta
@@ -259,15 +250,12 @@ func (af AdaptationField) resizeAF(start int, delta int) error {
 }
 
 // Length returns the length of the adaptation field
-func (af AdaptationField) Length() (int, error) {
-	if len(af) != PacketSize {
-		return 0, gots.ErrInvalidPacketLength
-	}
-	return int(af[4]), nil
+func (af *AdaptationField) Length() int {
+	return int(af[4])
 }
 
 // SetDiscontinuity sets the Discontinuity field of the packet.
-func (af AdaptationField) SetDiscontinuity(value bool) error {
+func (af *AdaptationField) SetDiscontinuity(value bool) error {
 	if err := af.valid(); err != nil {
 		return err
 	}
@@ -276,7 +264,7 @@ func (af AdaptationField) SetDiscontinuity(value bool) error {
 }
 
 // Discontinuity returns the value of the discontinuity field in the packet.
-func (af AdaptationField) Discontinuity() (bool, error) {
+func (af *AdaptationField) Discontinuity() (bool, error) {
 	if err := af.valid(); err != nil {
 		return false, err
 	}
@@ -284,7 +272,7 @@ func (af AdaptationField) Discontinuity() (bool, error) {
 }
 
 // SetRandomAccess sets the value of the random access field in the packet.
-func (af AdaptationField) SetRandomAccess(value bool) error {
+func (af *AdaptationField) SetRandomAccess(value bool) error {
 	if err := af.valid(); err != nil {
 		return err
 	}
@@ -293,7 +281,7 @@ func (af AdaptationField) SetRandomAccess(value bool) error {
 }
 
 // RandomAccess returns the value of the random access field in the packet.
-func (af AdaptationField) RandomAccess() (bool, error) {
+func (af *AdaptationField) RandomAccess() (bool, error) {
 	if err := af.valid(); err != nil {
 		return false, err
 	}
@@ -301,7 +289,7 @@ func (af AdaptationField) RandomAccess() (bool, error) {
 }
 
 // SetElementaryStreamPriority sets the Elementary Stream Priority Flag.
-func (af AdaptationField) SetElementaryStreamPriority(value bool) error {
+func (af *AdaptationField) SetElementaryStreamPriority(value bool) error {
 	if err := af.valid(); err != nil {
 		return err
 	}
@@ -310,7 +298,7 @@ func (af AdaptationField) SetElementaryStreamPriority(value bool) error {
 }
 
 // ElementaryStreamPriority returns the Elementary Stream Priority Flag.
-func (af AdaptationField) ElementaryStreamPriority() (bool, error) {
+func (af *AdaptationField) ElementaryStreamPriority() (bool, error) {
 	if err := af.valid(); err != nil {
 		return false, err
 	}
@@ -319,7 +307,7 @@ func (af AdaptationField) ElementaryStreamPriority() (bool, error) {
 
 // SetHasPCR sets HasPCR
 // HasPCR determines if the packet has a PCR
-func (af AdaptationField) SetHasPCR(value bool) error {
+func (af *AdaptationField) SetHasPCR(value bool) error {
 	if err := af.valid(); err != nil {
 		return err
 	}
@@ -333,7 +321,7 @@ func (af AdaptationField) SetHasPCR(value bool) error {
 }
 
 // HasPCR returns if the packet has a PCR
-func (af AdaptationField) HasPCR() (bool, error) {
+func (af *AdaptationField) HasPCR() (bool, error) {
 	if err := af.valid(); err != nil {
 		return false, err
 	}
@@ -342,7 +330,7 @@ func (af AdaptationField) HasPCR() (bool, error) {
 
 // SetPCR sets the PCR of the adaptation field.
 // If impossible an error is returned.
-func (af AdaptationField) SetPCR(PCR uint64) error {
+func (af *AdaptationField) SetPCR(PCR uint64) error {
 	if err := af.valid(); err != nil {
 		return err
 	}
@@ -355,7 +343,7 @@ func (af AdaptationField) SetPCR(PCR uint64) error {
 
 // PCR returns the PCR from the adaptation field if possible.
 // if it is not possible an error is returned.
-func (af AdaptationField) PCR() (uint64, error) {
+func (af *AdaptationField) PCR() (uint64, error) {
 	if err := af.valid(); err != nil {
 		return 0, err
 	}
@@ -367,7 +355,7 @@ func (af AdaptationField) PCR() (uint64, error) {
 
 // SetHasOPCR sets HasOPCR
 // HasOPCR determines if the packet has a OPCR
-func (af AdaptationField) SetHasOPCR(value bool) error {
+func (af *AdaptationField) SetHasOPCR(value bool) error {
 	if err := af.valid(); err != nil {
 		return err
 	}
@@ -381,7 +369,7 @@ func (af AdaptationField) SetHasOPCR(value bool) error {
 }
 
 // HasOPCR returns if the packet has an OPCR
-func (af AdaptationField) HasOPCR() (bool, error) {
+func (af *AdaptationField) HasOPCR() (bool, error) {
 	if err := af.valid(); err != nil {
 		return false, err
 	}
@@ -390,7 +378,7 @@ func (af AdaptationField) HasOPCR() (bool, error) {
 
 // SetOPCR sets the OPCR of the adaptation field.
 // If impossible an error is returned.
-func (af AdaptationField) SetOPCR(PCR uint64) error {
+func (af *AdaptationField) SetOPCR(PCR uint64) error {
 	if err := af.valid(); err != nil {
 		return err
 	}
@@ -403,7 +391,7 @@ func (af AdaptationField) SetOPCR(PCR uint64) error {
 
 // OPCR returns the OPCR from the adaptation field if possible.
 // if it is not possible an error is returned.
-func (af AdaptationField) OPCR() (uint64, error) {
+func (af *AdaptationField) OPCR() (uint64, error) {
 	if err := af.valid(); err != nil {
 		return 0, err
 	}
@@ -415,7 +403,7 @@ func (af AdaptationField) OPCR() (uint64, error) {
 
 // SetHasSplicingPoint sets HasSplicingPoint
 // HasSplicingPoint determines if the packet has a Splice Countdown
-func (af AdaptationField) SetHasSplicingPoint(value bool) error {
+func (af *AdaptationField) SetHasSplicingPoint(value bool) error {
 	if err := af.valid(); err != nil {
 		return err
 	}
@@ -429,7 +417,7 @@ func (af AdaptationField) SetHasSplicingPoint(value bool) error {
 }
 
 // HasSplicingPoint returns if the packet has a Splice Countdown
-func (af AdaptationField) HasSplicingPoint() (bool, error) {
+func (af *AdaptationField) HasSplicingPoint() (bool, error) {
 	if err := af.valid(); err != nil {
 		return false, err
 	}
@@ -438,7 +426,7 @@ func (af AdaptationField) HasSplicingPoint() (bool, error) {
 
 // SetSpliceCountdown sets the Splice Countdown of the adaptation field.
 // If impossible an error is returned.
-func (af AdaptationField) SetSpliceCountdown(value byte) error {
+func (af *AdaptationField) SetSpliceCountdown(value byte) error {
 	if err := af.valid(); err != nil {
 		return err
 	}
@@ -451,7 +439,7 @@ func (af AdaptationField) SetSpliceCountdown(value byte) error {
 
 // SpliceCountdown returns the Splice Countdown from the adaptation field if possible.
 // if it is not possible an error is returned.
-func (af AdaptationField) SpliceCountdown() (int, error) {
+func (af *AdaptationField) SpliceCountdown() (int, error) {
 	if err := af.valid(); err != nil {
 		return 0, err
 	}
@@ -463,7 +451,7 @@ func (af AdaptationField) SpliceCountdown() (int, error) {
 
 // SetHasTransportPrivateData sets HasTransportPrivateData
 // HasTransportPrivateData determines if the packet has Transport Private Data
-func (af AdaptationField) SetHasTransportPrivateData(value bool) error {
+func (af *AdaptationField) SetHasTransportPrivateData(value bool) error {
 	if err := af.valid(); err != nil {
 		return err
 	}
@@ -478,7 +466,7 @@ func (af AdaptationField) SetHasTransportPrivateData(value bool) error {
 }
 
 // HasTransportPrivateData returns if the packet has an Transport Private Data
-func (af AdaptationField) HasTransportPrivateData() (bool, error) {
+func (af *AdaptationField) HasTransportPrivateData() (bool, error) {
 	if err := af.valid(); err != nil {
 		return false, err
 	}
@@ -487,7 +475,7 @@ func (af AdaptationField) HasTransportPrivateData() (bool, error) {
 
 // SetTransportPrivateData sets the Transport Private Data of the adaptation field.
 // If impossible an error is returned.
-func (af AdaptationField) SetTransportPrivateData(data []byte) error {
+func (af *AdaptationField) SetTransportPrivateData(data []byte) error {
 	if err := af.valid(); err != nil {
 		return err
 	}
@@ -508,7 +496,7 @@ func (af AdaptationField) SetTransportPrivateData(data []byte) error {
 
 // TransportPrivateData returns the Transport Private Data from the adaptation field if possible.
 // if it is not possible an error is returned.
-func (af AdaptationField) TransportPrivateData() ([]byte, error) {
+func (af *AdaptationField) TransportPrivateData() ([]byte, error) {
 	hasTPD, err := af.HasTransportPrivateData()
 	if err != nil {
 		return nil, err
@@ -521,7 +509,7 @@ func (af AdaptationField) TransportPrivateData() ([]byte, error) {
 
 // SetHasAdaptationFieldExtension sets HasAdaptationFieldExtension
 // HasAdaptationFieldExtension determines if the packet has an Adaptation Field Extension
-func (af AdaptationField) SetHasAdaptationFieldExtension(value bool) error {
+func (af *AdaptationField) SetHasAdaptationFieldExtension(value bool) error {
 	if err := af.valid(); err != nil {
 		return err
 	}
@@ -536,7 +524,7 @@ func (af AdaptationField) SetHasAdaptationFieldExtension(value bool) error {
 }
 
 // HasAdaptationFieldExtension returns if the packet has an Adaptation Field Extension
-func (af AdaptationField) HasAdaptationFieldExtension() (bool, error) {
+func (af *AdaptationField) HasAdaptationFieldExtension() (bool, error) {
 	if err := af.valid(); err != nil {
 		return false, err
 	}
@@ -545,7 +533,7 @@ func (af AdaptationField) HasAdaptationFieldExtension() (bool, error) {
 
 // SetAdaptationFieldExtension sets the Adaptation Field Extension of the adaptation field.
 // If impossible an error is returned.
-func (af AdaptationField) SetAdaptationFieldExtension(data []byte) error {
+func (af *AdaptationField) SetAdaptationFieldExtension(data []byte) error {
 	if err := af.valid(); err != nil {
 		return err
 	}
@@ -566,7 +554,7 @@ func (af AdaptationField) SetAdaptationFieldExtension(data []byte) error {
 
 // AdaptationFieldExtension returns the Adaptation Field Extension from the adaptation field if possible.
 // if it is not possible an error is returned.
-func (af AdaptationField) AdaptationFieldExtension() ([]byte, error) {
+func (af *AdaptationField) AdaptationFieldExtension() ([]byte, error) {
 	hasAFC, err := af.HasAdaptationFieldExtension()
 	if err != nil {
 		return nil, err

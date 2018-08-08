@@ -58,7 +58,7 @@ const (
 type Packet [PacketSize]byte
 
 // AdaptationField is an optional part of the packet.
-type AdaptationField []byte
+type AdaptationField Packet
 
 // Accumulator is used to gather multiple packets
 // and return their concatenated payloads.

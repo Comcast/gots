@@ -127,9 +127,9 @@ func (p *Packet) SetAdaptationFieldControl(value AdaptationFieldControlOptions) 
 
 	if value == PayloadAndAdaptationFieldFlag {
 		af, _ := p.AdaptationField()
-		if p[4] == 183 {
+		if af.Length() == 183 {
 			if af.stuffingStart() < PacketSize {
-				p[4] = 182
+				af.setLength(182)
 				af.stuffAF()
 			} else {
 				return gots.ErrAdaptationFieldTooLarge
@@ -199,10 +199,10 @@ func (p *Packet) IsPAT() bool {
 // AdaptationField returns the AdaptationField of the packet.
 // If the packet does not have an adaptation field then a nil
 // AdaptationField is returned.
-func (p *Packet) AdaptationField() (AdaptationField, error) {
+func (p *Packet) AdaptationField() (*AdaptationField, error) {
 	hasAF := p.HasAdaptationField()
 	if hasAF {
-		return parseAdaptationField(p), nil
+		return (*AdaptationField)(p), nil
 	}
 	return nil, gots.ErrNoAdaptationField
 }
@@ -211,9 +211,8 @@ func (p *Packet) AdaptationField() (AdaptationField, error) {
 // If the packet does not have an adaptation field then an error is returned
 // AdaptationField must fit in the same size as the existing adaptation field
 // and its stuffing bytes.
-func (p *Packet) SetAdaptationField(af AdaptationField) error {
-	hasAF := p.HasAdaptationField()
-	if !hasAF {
+func (p *Packet) SetAdaptationField(af *AdaptationField) error {
+	if !p.HasAdaptationField() {
 		return gots.ErrNoAdaptationField
 	}
 	oldAF, _ := p.AdaptationField()
@@ -226,21 +225,20 @@ func (p *Packet) SetAdaptationField(af AdaptationField) error {
 }
 
 func (p *Packet) payloadStart() int {
-	offset := 4 // packet header bytes
 	if p.HasAdaptationField() {
-		offset += 1 + int(p[4])
+		return 4 + 1 + (*AdaptationField)(p).Length()
 	}
-	return offset
+	return 4 // packet header bytes
 }
 
 // stuffingStart returns where the stuffing begins, this is also the first byte where the payload can begin.
-// if there is no payload then it is stuffed untill the very end
+// if there is no payload then it is stuffed until the very end
 func (p *Packet) stuffingStart() int {
 	af, err := p.AdaptationField()
 	if err != nil {
 		return 4
 	}
-	if p[4] == 0 {
+	if af.Length() == 0 {
 		return 5
 	}
 	return af.stuffingStart()

@@ -28,7 +28,7 @@ import (
 	"testing"
 )
 
-func generatePacketAF(t *testing.T, AFString string) (*Packet, AdaptationField) {
+func generatePacketAF(t *testing.T, AFString string) (*Packet, *AdaptationField) {
 	p := createPacketEmptyAdaptationField(t, "47000030"+AFString)
 	a, err := p.AdaptationField()
 	if err != nil {
