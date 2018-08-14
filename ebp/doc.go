@@ -34,6 +34,35 @@ const (
 	CableLabsFormatIdentifier = 0x45425030
 )
 
+// cableLabsEbp is an encoder boundary point
+type cableLabsEbp struct {
+	baseEbp
+	FormatIdentifier uint32
+	Grouping         []uint8
+	PartitionFlags   uint8
+}
+
+// cableLabsEbp is an encoder boundary point
+type comcastEbp struct {
+	baseEbp
+	Grouping uint8
+}
+
+// baseEbp the base struct that is embedded in every ebp in gots
+type baseEbp struct {
+	DataFieldTag    uint8
+	DataFieldLength uint8
+	DataFlags       uint8
+	ExtensionFlags  uint8
+	SapType         uint8
+
+	TimeSeconds  uint32
+	TimeFraction uint32
+
+	ReservedBytes   []uint8
+	SuccessReadTime time.Time
+}
+
 // EncoderBoundaryPoint represents shared operations available on an all EBPs.
 type EncoderBoundaryPoint interface {
 	// SegmentFlag returns true if the segment flag is set.

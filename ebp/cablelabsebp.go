@@ -31,26 +31,13 @@ import (
 	"time"
 )
 
-type cableLabsEbp struct {
-	DataFieldTag     uint8
-	DataFieldLength  uint8
-	FormatIdentifier uint32
-	DataFlags        uint8
-	ExtensionFlags   uint8
-	SapType          uint8
-	Grouping         []uint8
-	TimeSeconds      uint32
-	TimeFraction     uint32
-	PartitionFlags   uint8
-	ReservedBytes    []byte
-	SuccessReadTime  time.Time
-}
-
 // CreateCableLabsEbp returns a new cableLabsEbp with default values.
 func CreateCableLabsEbp() cableLabsEbp {
 	return cableLabsEbp{
-		DataFieldTag:     CableLabsEbpTag,
-		DataFieldLength:  1, // not empty by default
+		baseEbp: baseEbp{
+			DataFieldTag:    CableLabsEbpTag,
+			DataFieldLength: 1, // not empty by default
+		},
 		FormatIdentifier: CableLabsFormatIdentifier,
 	}
 }
@@ -58,66 +45,6 @@ func CreateCableLabsEbp() cableLabsEbp {
 // EBPtype returns the type (what is the format) of the EBP.
 func (ebp *cableLabsEbp) EBPType() byte {
 	return ebp.DataFieldTag
-}
-
-// FragmentFlag returns true if the fragment flag is set.
-func (ebp *cableLabsEbp) FragmentFlag() bool {
-	return ebp.DataFlags&0x80 != 0
-}
-
-// SetFragmentFlag sets the fragment flag.
-func (ebp *cableLabsEbp) SetFragmentFlag(value bool) {
-	if ebp.DataFieldLength != 0 && value {
-		ebp.DataFlags |= 0x80
-	}
-}
-
-// SegmentFlag returns true if the segment flag is set.
-func (ebp *cableLabsEbp) SegmentFlag() bool {
-	return ebp.DataFlags&0x40 != 0
-}
-
-// SetSegmentFlag sets the segment flag.
-func (ebp *cableLabsEbp) SetSegmentFlag(value bool) {
-	if ebp.DataFieldLength != 0 && value {
-		ebp.DataFlags |= 0x40
-	}
-}
-
-// SapFlag returns true if the sap flag is set.
-func (ebp *cableLabsEbp) SapFlag() bool {
-	return ebp.DataFlags&0x20 != 0
-}
-
-// SetSapFlag sets the sap flag.
-func (ebp *cableLabsEbp) SetSapFlag(value bool) {
-	if ebp.DataFieldLength != 0 && value {
-		ebp.DataFlags |= 0x20
-	}
-}
-
-// GroupingFlag returns true if the grouping flag is set.
-func (ebp *cableLabsEbp) GroupingFlag() bool {
-	return ebp.DataFlags&0x10 != 0
-}
-
-// SetGroupingFlag sets the grouping flag.
-func (ebp *cableLabsEbp) SetGroupingFlag(value bool) {
-	if ebp.DataFieldLength != 0 && value {
-		ebp.DataFlags |= 0x10
-	}
-}
-
-// TimeFlag returns true if the time flag is set.
-func (ebp *cableLabsEbp) TimeFlag() bool {
-	return ebp.DataFlags&0x08 != 0
-}
-
-// SetTimeFlag sets the time flag
-func (ebp *cableLabsEbp) SetTimeFlag(value bool) {
-	if ebp.DataFieldLength != 0 && value {
-		ebp.DataFlags |= 0x08
-	}
 }
 
 // ConcealmentFlag returns true if the concealment flag is set.
@@ -132,38 +59,6 @@ func (ebp *cableLabsEbp) SetConcealmentFlag(value bool) {
 	}
 }
 
-// ExtensionFlag returns true if the extension flag is set.
-func (ebp *cableLabsEbp) ExtensionFlag() bool {
-	return ebp.DataFlags&0x01 != 0
-}
-
-// SetExtensionFlag sets the extension flag.
-func (ebp *cableLabsEbp) SetExtensionFlag(value bool) {
-	if ebp.DataFieldLength != 0 && value {
-		ebp.DataFlags |= 0x01
-	}
-}
-
-// EBPTime returns the EBP time as a UTC time.
-func (ebp *cableLabsEbp) EBPTime() time.Time {
-	return extractUtcTime(ebp.TimeSeconds, ebp.TimeFraction)
-}
-
-// SetEBPTime sets the time of the EBP. Takes UTC time as an input.
-func (ebp *cableLabsEbp) SetEBPTime(t time.Time) {
-	ebp.TimeSeconds, ebp.TimeFraction = insertUtcTime(t)
-}
-
-// Sap returns the sap of the EBP.
-func (ebp *cableLabsEbp) Sap() byte {
-	return ebp.SapType
-}
-
-// SetSap sets the sap of the EBP.
-func (ebp *cableLabsEbp) SetSap(sapType byte) {
-	ebp.SapType = sapType
-}
-
 // SetPartitionFlag returns true if the partition flag.
 func (ebp *cableLabsEbp) PartitionFlag() bool {
 	return ebp.ExtensionFlag() && ebp.ExtensionFlags&0x80 != 0
@@ -176,27 +71,10 @@ func (ebp *cableLabsEbp) SetPartitionFlag(value bool) {
 	}
 }
 
-// IsEmpty returns if the EBP is empty (zero length)
-func (ebp *cableLabsEbp) IsEmpty() bool {
-	return ebp.DataFieldLength == 0
-}
-
-// SetIsEmpty sets if the EBP is empty (zero length)
-func (ebp *cableLabsEbp) SetIsEmpty(value bool) {
-	if value {
-		ebp.DataFieldLength = 0
-	} else {
-		ebp.DataFieldLength = 1
-	}
-}
-
-// Defines when the EBP was read successfully
-func (ebp *cableLabsEbp) EBPSuccessReadTime() time.Time {
-	return ebp.SuccessReadTime
-}
-
 func readCableLabsEbp(data io.Reader) (ebp *cableLabsEbp, err error) {
-	ebp = &cableLabsEbp{DataFieldTag: CableLabsEbpTag}
+	ebp = &cableLabsEbp{
+		baseEbp: baseEbp{DataFieldTag: CableLabsEbpTag},
+	}
 
 	if err = binary.Read(data, ebpEncoding, &ebp.DataFieldLength); err != nil {
 		return nil, err
