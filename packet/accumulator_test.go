@@ -38,7 +38,7 @@ func ExamplePacketAccumulator() {
 
 	secondPacket, _ := hex.DecodeString("47006411f0002b59bc22ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
 
-	packets := []Packet{firstPacket, secondPacket}
+	packets := [][]byte{firstPacket, secondPacket}
 	// Just a simple func to accumulate two packets
 	dFunc := func(b []byte) (bool, error) {
 		if len(b) <= PacketSize {
@@ -48,9 +48,11 @@ func ExamplePacketAccumulator() {
 	}
 
 	acc := NewAccumulator(dFunc)
-	done, err := acc.Add(packets[0])
-	for i := 1; !done; i++ {
-		done, err = acc.Add(packets[i])
+	for _, pkt := range packets {
+		done, err := acc.Add(pkt)
+		if done {
+			break
+		}
 		if err != nil {
 			fmt.Printf("%v\n", err)
 		}

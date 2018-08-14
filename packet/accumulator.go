@@ -30,48 +30,37 @@ import (
 	"github.com/Comcast/gots"
 )
 
-var (
-	emptyByteArray []byte
-)
-
-type doneFunc func([]byte) (bool, error)
-
 type accumulator struct {
-	f       doneFunc
-	packets []Packet
+	f       func([]byte) (bool, error)
+	packets []*Packet
 }
 
-// NewAccumulator creates a new packet accumulator
-// that is done when the provided doneFunc returns true.
-// PacketAccumulator is not thread safe
-func NewAccumulator(f doneFunc) Accumulator {
+// NewAccumulator creates a new packet accumulator that is done when
+// the provided function returns done as true.
+func NewAccumulator(f func(data []byte) (done bool, err error)) Accumulator {
 	return &accumulator{f: f}
 }
 
 // Add a packet to the accumulator. If the added packet completes
 // the accumulation, based on the provided doneFunc, true is returned.
 // Returns an error if the packet is not valid.
-func (a *accumulator) Add(pkt Packet) (bool, error) {
+func (a *accumulator) Add(pkt []byte) (bool, error) {
 	if badLen(pkt) {
 		return false, gots.ErrInvalidPacketLength
 	}
+	var pp Packet
+	copy(pp[:], pkt)
 	// technically we could get a packet without a payload.  Check this and
 	// return false if we get one
-	p, err := ContainsPayload(pkt)
-	if err != nil {
+	p, err := ContainsPayload(&pp)
+	if !p || err != nil {
 		return false, err
-	} else if !p {
-		return false, nil
 	}
-	if payloadUnitStartIndicator(pkt) {
-		a.packets = make([]Packet, 0)
-	} else if len(a.packets) == 0 {
+	if !payloadUnitStartIndicator(&pp) && len(a.packets) == 0 {
 		// First packet must have payload unit start indicator
 		return false, gots.ErrNoPayloadUnitStartIndicator
 	}
-	pktCopy := make(Packet, PacketSize)
-	copy(pktCopy, pkt)
-	a.packets = append(a.packets, pktCopy)
+	a.packets = append(a.packets, &pp)
 	b, err := a.Parse()
 	if err != nil {
 		return false, err
@@ -91,14 +80,14 @@ func (a *accumulator) Parse() ([]byte, error) {
 	for _, pkt := range a.packets {
 		pay, err := Payload(pkt)
 		if err != nil {
-			return emptyByteArray, err
+			return nil, err
 		}
 		buf.Write(pay)
 	}
 	return buf.Bytes(), nil
 }
 
-func (a *accumulator) Packets() []Packet {
+func (a *accumulator) Packets() []*Packet {
 	return a.packets
 }
 

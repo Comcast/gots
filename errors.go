@@ -27,14 +27,28 @@ package gots
 import "errors"
 
 var (
+	// ErrBadSyncByte is returned when the sync byte (first byte of packet) is not valid
+	ErrBadSyncByte = errors.New("sync byte is not valid")
 	// ErrUnrecognizedEbpType is returned if the EBP cannot be parsed
 	ErrUnrecognizedEbpType = errors.New("unrecognized EBP")
 	// ErrNoEBP is returned when an attempt is made to extract an EBP from a packet that does not contain one
 	ErrNoEBP = errors.New("packet does not contain EBP")
 	// ErrInvalidPacketLength denotes an packet length that is not packet.PacketSize bytes in length
 	ErrInvalidPacketLength = errors.New("invalid packet length")
+	// ErrInvalidTSCFlag is returned when the transport scrambling control bit is set to the bit reserved by the specification
+	ErrInvalidTSCFlag = errors.New("invalid transport scrambling control option.")
+	// ErrInvalidAFCFlag is returned when the adaptation field control bits dont have a payload or an adaptation field
+	ErrInvalidAFCFlag = errors.New("invalid packet length")
 	// ErrNoPayload denotes that the attempted operation is not valid on a packet with no payload
 	ErrNoPayload = errors.New("packet does not contain payload")
+	// ErrNoAdaptationField is returned if the adaptation field cannot be accessed or does not exist.
+	ErrNoAdaptationField = errors.New("packet does not contain an adaptation field")
+	// ErrAdaptationFieldTooLarge is returned if the adaptation field is too large to be put in a packet.
+	ErrAdaptationFieldTooLarge = errors.New("adaptation field is too large and cannot shrink")
+	// ErrAdaptationFieldCannotGrow is returned if the adaptation field will overwrite the payload if it grows.
+	ErrAdaptationFieldCannotGrow = errors.New("adaptation field cannot cannot grow beyond its allocated length")
+	// ErrAdaptationFieldZeroLength is returned if the adaptation field is empty and only used for stuffing.
+	ErrAdaptationFieldZeroLength = errors.New("adaptation field is empty")
 	// ErrNoPrivateTransportData is returned when an attempt is made to access private transport data when none exists
 	ErrNoPrivateTransportData = errors.New("adaptation field has no private transport data")
 	// ErrNoSplicePoint is returned when an attempt to access a splice countdown and no splice point exists
@@ -43,6 +57,9 @@ var (
 	ErrNoPCR = errors.New("adaptation field has no Program Clock Reference")
 	// ErrNoOPCR is returned when an attempt is made to access an adaptation field OPCR that does not exist
 	ErrNoOPCR = errors.New("adaptation field has no Original Program Clock Reference")
+	// ErrNoAdaptationFieldExtension is returned when an attempt is made to access adaptation field's
+	// Adaptation Field Extension when it does not exist
+	ErrNoAdaptationFieldExtension = errors.New("adaptation field has no Adaptation Field Extension")
 	// ErrPATNotFound is returned when expected PAT packet is not found when
 	// reading TS packets.
 	ErrPATNotFound = errors.New("No PAT was found while reading TS")
