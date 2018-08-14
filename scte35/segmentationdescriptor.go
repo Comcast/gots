@@ -32,13 +32,6 @@ import (
 	"github.com/Comcast/gots"
 )
 
-// This is the struct used for creating a Multiple UPID (MID)
-type upidSt struct {
-	upidType SegUPIDType
-	upidLen  int
-	upid     []byte
-}
-
 // CreateUPID will create a default UPID. (SegUPIDNotUsed)
 func CreateUPID() UPID {
 	return &upidSt{}
@@ -54,11 +47,6 @@ func (u *upidSt) UPID() []byte {
 	return u.upid
 }
 
-type componentOffset struct {
-	componentTag byte
-	ptsOffset    gots.PTS
-}
-
 // CreateComponentOffset will create a ComponentOffset structure that
 // belongs in a SegmentationDescriptor.
 func CreateComponentOffset() ComponentOffset {
@@ -70,11 +58,12 @@ func (c *componentOffset) ComponentTag() byte {
 	return c.componentTag
 }
 
-// PTS returns the PTS offset of the component.
+// PTSOffset returns the PTS offset of the component.
 func (c *componentOffset) PTSOffset() gots.PTS {
 	return c.ptsOffset
 }
 
+// data returns the raw data bytes of the componentOffset
 func (c *componentOffset) data() []byte {
 	bytes := make([]byte, 6)
 	bytes[0] = c.componentTag
@@ -97,47 +86,6 @@ func componentFromBytes(bytes []byte) componentOffset {
 	c.ptsOffset = gots.PTS(pts)
 	return c
 }
-
-type segmentationDescriptor struct {
-	// common fields we care about for sorting/identifying, but is not necessarily needed for users of this lib
-	typeID                SegDescType
-	eventID               uint32
-	hasDuration           bool
-	duration              gots.PTS
-	upidType              SegUPIDType
-	upid                  []byte
-	mid                   []upidSt //A MID can contains `n` UPID uids in it.
-	segNum                uint8
-	segsExpected          uint8
-	subSegNum             uint8
-	subSegsExpected       uint8
-	spliceInfo            SCTE35
-	eventCancelIndicator  bool
-	deliveryNotRestricted bool
-	hasSubSegments        bool
-
-	programSegmentationFlag bool
-	webDeliveryAllowedFlag  bool
-	noRegionalBlackoutFlag  bool
-	archiveAllowedFlag      bool
-	deviceRestrictions      DeviceRestrictions
-
-	components []componentOffset
-}
-
-type segCloseType uint8
-
-// conditions for closing specific descriptor types
-const (
-	segCloseNormal segCloseType = iota
-	segCloseNoBreakaway
-	segCloseEventID
-	segCloseBreakaway
-	segCloseDiffPTS
-	segCloseNotNested
-	segCloseEventIDNotNested
-	segCloseUnconditional
-)
 
 var segCloseRules map[SegDescType]map[SegDescType]segCloseType
 
@@ -354,7 +302,7 @@ func (d *segmentationDescriptor) UPID() []byte {
 	return d.upid
 }
 
-// StreamSwitchSignalID returns the signalID of streamswitch signal if
+// StreamSwitchSignalId returns the signalID of streamswitch signal if
 // present in the descriptor
 func (d *segmentationDescriptor) StreamSwitchSignalId() (string, error) {
 	var signalId string
@@ -429,7 +377,7 @@ func (d *segmentationDescriptor) CanClose(out SegmentationDescriptor) bool {
 	return false
 }
 
-// Determines equality for two segmentation descriptors
+// Equal determines equality for two segmentation descriptors
 // Equality in this sense means that two "in" events are duplicates
 // A lot of debate went in to what actually constitutes a "duplicate".  We get
 // all sorts of things from different providers/transcoders, so in the end, we

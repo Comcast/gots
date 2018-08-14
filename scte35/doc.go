@@ -163,6 +163,20 @@ const (
 	SegUPIDURN                     = 0x0f
 )
 
+type segCloseType uint8
+
+// conditions for closing specific descriptor types
+const (
+	segCloseNormal segCloseType = iota
+	segCloseNoBreakaway
+	segCloseEventID
+	segCloseBreakaway
+	segCloseDiffPTS
+	segCloseNotNested
+	segCloseEventIDNotNested
+	segCloseUnconditional
+)
+
 var SegUPIDTypeNames = map[SegUPIDType]string{
 	SegUPIDNotUsed:     "SegUPIDNotUsed",
 	SegUPIDUserDefined: "SegUPIDUserDefined",
@@ -182,6 +196,123 @@ var SegUPIDTypeNames = map[SegUPIDType]string{
 	SegUPIDURN:         "SegUPIDURN",
 }
 
+// upidSt is the struct used for creating a Multiple UPID (MID)
+type upidSt struct {
+	upidType SegUPIDType
+	upidLen  int
+	upid     []byte
+}
+
+// component is a structure in SegmentationDescriptor.
+type component struct {
+	componentTag byte
+
+	hasPts bool
+	pts    gots.PTS
+}
+
+// componentOffset is a structure in SegmentationDescriptor.
+type componentOffset struct {
+	componentTag byte
+	ptsOffset    gots.PTS
+}
+
+// spliceNull is a struct that represents a null splice command in SCTE35
+type spliceNull struct {
+}
+
+// timeSignal is a struct that represents a time signal splice command in SCTE35
+type timeSignal struct {
+	hasPTS bool
+	pts    gots.PTS
+}
+
+// spliceInsert is a struct that represents a splice insert command in SCTE35
+type spliceInsert struct {
+	eventID               uint32
+	eventCancelIndicator  bool
+	outOfNetworkIndicator bool
+
+	isProgramSplice bool
+	spliceImmediate bool
+
+	hasPTS bool
+	pts    gots.PTS
+
+	components []Component
+
+	hasDuration     bool
+	duration        gots.PTS
+	autoReturn      bool
+	uniqueProgramId uint16
+	availNum        uint8
+	availsExpected  uint8
+}
+
+// scte35 is a structure representing a SCTE35 message.
+type scte35 struct {
+	tableHeader         psi.TableHeader
+	protocolVersion     uint8
+	encryptedPacket     bool     // not supported
+	encryptionAlgorithm uint8    // 6 bits
+	pts                 gots.PTS // pts is stored adjusted in struct
+	cwIndex             uint8
+	tier                uint16 // 12 bits
+	spliceCommandLength uint16 // 12 bits
+	commandType         SpliceCommandType
+	commandInfo         SpliceCommand
+	descriptors         []SegmentationDescriptor
+	crc32               uint32
+	alignmentStuffing   uint
+
+	data []byte
+
+	// because there is no support for descriptors other than segmentation descriptors,
+	// the bytes need to be stored so information is not lost.
+	otherDescriptorBytes []byte
+}
+
+// segmentationDescriptor is a strurture representing a segmentation descriptor in SCTE35
+type segmentationDescriptor struct {
+	// common fields we care about for sorting/identifying, but is not necessarily needed for users of this lib
+	typeID                SegDescType
+	eventID               uint32
+	hasDuration           bool
+	duration              gots.PTS
+	upidType              SegUPIDType
+	upid                  []byte
+	mid                   []upidSt //A MID can contains `n` UPID uids in it.
+	segNum                uint8
+	segsExpected          uint8
+	subSegNum             uint8
+	subSegsExpected       uint8
+	spliceInfo            SCTE35
+	eventCancelIndicator  bool
+	deliveryNotRestricted bool
+	hasSubSegments        bool
+
+	programSegmentationFlag bool
+	webDeliveryAllowedFlag  bool
+	noRegionalBlackoutFlag  bool
+	archiveAllowedFlag      bool
+	deviceRestrictions      DeviceRestrictions
+
+	components []componentOffset
+}
+
+type receivedElem struct {
+	pts   gots.PTS
+	descs []SegmentationDescriptor
+}
+
+type state struct {
+	open         []SegmentationDescriptor
+	received     []*receivedElem
+	receivedHead int
+	blackoutIdx  int
+	inBlackout   bool
+}
+
 // SCTE35 represent operations available on a SCTE35 message.
 type SCTE35 interface {
 	// HasPTS returns true if there is a pts time.
@@ -194,7 +325,7 @@ type SCTE35 interface {
 	// If HasPTS is false, then it will have no effect until it is set to true. Also this command has no
 	// effect with a null splice command.
 	SetPTS(pts gots.PTS)
-	// AdjustPTS will modify the pts adjustment field. The disired PTS value
+	// SetAdjustPTS will modify the pts adjustment field. The desired PTS value
 	// after adjustment should be passed, The adjustment value will be calculated
 	// during the call to Data().
 	SetAdjustPTS(pts gots.PTS)
@@ -251,7 +382,7 @@ type SpliceCommand interface {
 	SetHasPTS(value bool)
 	// SetPTS sets the PTS.
 	SetPTS(value gots.PTS)
-	// returns the bytes of this splice command.
+	// Data returns the bytes of this splice command.
 	Data() []byte
 }
 
@@ -280,11 +411,11 @@ type Component interface {
 type ComponentOffset interface {
 	// ComponentTag returns the tag of the component.
 	ComponentTag() byte
-	// PTS returns the PTS offset of the component.
+	// PTSOffset returns the PTS offset of the component.
 	PTSOffset() gots.PTS
 	// SetComponentTag sets the component tag, which is used for the identification of the component.
 	SetComponentTag(value byte)
-	// SetPTS sets the PTS offset of the component.
+	// SetPTSOffset sets the PTS offset of the component.
 	SetPTSOffset(value gots.PTS)
 }
 
@@ -347,7 +478,7 @@ type UPID interface {
 	UPID() []byte
 	// SetUPIDType will set the type of the UPID
 	SetUPIDType(value SegUPIDType)
-	// UPID set the actual UPID
+	// SetUPID set the actual UPID
 	SetUPID(value []byte)
 }
 
@@ -397,7 +528,7 @@ type SegmentationDescriptor interface {
 	SetDeviceRestrictions(DeviceRestrictions)
 	// Components will return components' offsets
 	Components() []ComponentOffset
-	// Components will set components' offsets
+	// SetComponents will set components' offsets
 	SetComponents([]ComponentOffset)
 	// UPIDType returns the type of the upid
 	UPIDType() SegUPIDType
@@ -473,7 +604,7 @@ type SegmentationDescriptor interface {
 type State interface {
 	// Open returns a list of open signals
 	Open() []SegmentationDescriptor
-	// Process takes a scte35 descriptor and returns a list of descriptors closed by it
+	// ProcessDescriptor takes a scte35 descriptor and returns a list of descriptors closed by it
 	ProcessDescriptor(desc SegmentationDescriptor) ([]SegmentationDescriptor, error)
 	// Close acts like Process and acts as if an appropriate close has been
 	// received for this given descriptor.

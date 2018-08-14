@@ -39,28 +39,6 @@ const (
 	segDescID  = 0x43554549
 )
 
-type scte35 struct {
-	tableHeader         psi.TableHeader
-	protocolVersion     uint8
-	encryptedPacket     bool     // not supported
-	encryptionAlgorithm uint8    // 6 bits
-	pts                 gots.PTS // pts is stored adjusted in struct
-	cwIndex             uint8
-	tier                uint16 // 12 bits
-	spliceCommandLength uint16 // 12 bits
-	commandType         SpliceCommandType
-	commandInfo         SpliceCommand
-	descriptors         []SegmentationDescriptor
-	crc32               uint32
-	alignmentStuffing   uint
-
-	data []byte
-
-	// because there is no support for descriptors other than segmentation descriptors,
-	// the bytes need to be stored so information is not lost.
-	otherDescriptorBytes []byte
-}
-
 // NewSCTE35 creates a new SCTE35 signal from the provided byte slice. The byte slice is parsed and relevant info is made available fir the SCTE35 interface. If the message cannot me parsed, an error is returned.
 func NewSCTE35(data []byte) (SCTE35, error) {
 	s := &scte35{}
@@ -216,15 +194,6 @@ func (s *scte35) AlignmentStuffing() uint {
 // Data returns the raw data bytes of the scte signal
 func (s *scte35) Data() []byte {
 	return s.data
-}
-
-func abs(num int8) int8 {
-	switch {
-	case num < 0:
-		return -num
-	default:
-		return num
-	}
 }
 
 func uint40(buf []byte) gots.PTS {

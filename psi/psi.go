@@ -61,6 +61,10 @@ func sectionLength(psi []byte) uint16 {
 	return uint16(psi[1]&3)<<8 | uint16(psi[2])
 }
 
+// NewPointerField will return a new pointer field with stuffing as raw bytes.
+// The pointer field specifies where the TableHeader should start.
+// Everything in between the pointer field and table header should
+// be bytes with the value 0xFF.
 func NewPointerField(size int) []byte {
 	data := make([]byte, size+1)
 	data[0] = byte(size)

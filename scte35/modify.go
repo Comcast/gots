@@ -57,7 +57,7 @@ func CreateSCTE35() SCTE35 {
 	return scte35
 }
 
-// Subtract subtracts the two PTS times and returns a new PTS
+// subtractPTS subtracts the two PTS times and returns a new PTS
 // This is different from the durationFrom function since the
 // order of operands matters. It will always subtract final
 // minus initial. If the result is negative then it will add
@@ -72,7 +72,8 @@ func subtractPTS(final gots.PTS, initial gots.PTS) gots.PTS {
 	}
 }
 
-// generateData will generate the raw data bytes of the scte signal.
+// UpdateData will encode the SCTE35 information to bytes and return it.
+// UpdateData will make the next call to Data() return these new bytes.
 func (s *scte35) UpdateData() []byte {
 	// splice command generate bytes
 	spliceCommandBytes := s.commandInfo.Data()
@@ -143,14 +144,16 @@ func (s *scte35) SetHasPTS(flag bool) {
 	s.commandInfo.SetHasPTS(true)
 }
 
-// HasPTS returns true if there is a pts time.
+// SetPTS sets the PTS time of the signal's command. There will be no PTS adjustment using this function.
+// If HasPTS is false, then it will have no effect until it is set to true. Also this command has no
+// effect with a null splice command.
 func (s *scte35) SetPTS(pts gots.PTS) {
 	s.pts = pts
 	s.commandInfo.SetPTS(s.pts & 0x01ffffffff) // truncate to fit in 33 bits
 	// pts adjustment will be zero since the difference between adjusted and command pts is zero
 }
 
-// AdjustPTS will modify the pts adjustment field. The disired PTS value
+// SetAdjustPTS will modify the pts adjustment field. The desired PTS value
 // after adjustment should be passed, The adjustment value will be calculated
 // during the call to Data().
 func (s *scte35) SetAdjustPTS(pts gots.PTS) {
@@ -158,8 +161,8 @@ func (s *scte35) SetAdjustPTS(pts gots.PTS) {
 	s.pts = pts
 }
 
-// CommandInfo returns an object describing fields of the signal's splice
-// command structure.
+// SetCommandInfo sets the object describing fields of the signal's splice
+// command structure
 func (s *scte35) SetCommandInfo(commandInfo SpliceCommand) {
 	s.commandInfo = commandInfo
 	s.commandType = s.commandInfo.CommandType()

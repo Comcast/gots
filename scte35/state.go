@@ -28,19 +28,6 @@ import "github.com/Comcast/gots"
 
 const receivedRingLen = 10
 
-type receivedElem struct {
-	pts   gots.PTS
-	descs []SegmentationDescriptor
-}
-
-type state struct {
-	open         []SegmentationDescriptor
-	received     []*receivedElem
-	receivedHead int
-	blackoutIdx  int
-	inBlackout   bool
-}
-
 // NewState returns an initialized state object
 func NewState() State {
 	return &state{received: make([]*receivedElem, receivedRingLen)}

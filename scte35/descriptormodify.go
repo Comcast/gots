@@ -33,7 +33,7 @@ func (u *upidSt) SetUPIDType(value SegUPIDType) {
 	u.upidType = value
 }
 
-// UPID set the actual UPID
+// SetUPID set the actual UPID
 func (u *upidSt) SetUPID(value []byte) {
 	u.upid = value
 }
@@ -43,7 +43,7 @@ func (c *componentOffset) SetComponentTag(value byte) {
 	c.componentTag = value
 }
 
-// SetPTS sets the PTS offset of the component.
+// SetPTSOffset sets the PTS offset of the component.
 func (c *componentOffset) SetPTSOffset(value gots.PTS) {
 	c.ptsOffset = value
 }
@@ -258,7 +258,7 @@ func (d *segmentationDescriptor) SetMID(value []UPID) {
 	}
 }
 
-// Components will set components' offsets
+// SetComponents will set components' offsets
 func (d *segmentationDescriptor) SetComponents(value []ComponentOffset) {
 	d.components = make([]componentOffset, len(value))
 	for i := range value {

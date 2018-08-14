@@ -31,11 +31,6 @@ import (
 	"github.com/Comcast/gots"
 )
 
-type timeSignal struct {
-	hasPTS bool
-	pts    gots.PTS
-}
-
 // CommandType returns the signal's splice command type value.
 func (c *timeSignal) CommandType() SpliceCommandType {
 	return TimeSignal
@@ -64,9 +59,6 @@ func (c *timeSignal) PTS() gots.PTS {
 	return c.pts
 }
 
-type spliceNull struct {
-}
-
 // CommandType returns the signal's splice command type value.
 func (c *spliceNull) CommandType() SpliceCommandType {
 	return SpliceNull
@@ -80,13 +72,6 @@ func (c *spliceNull) HasPTS() bool {
 // PTS returns the PTS time of the command, not including adjustment.
 func (c *spliceNull) PTS() gots.PTS {
 	return 0
-}
-
-type component struct {
-	componentTag byte
-
-	hasPts bool
-	pts    gots.PTS
 }
 
 // CreateComponent will create a component that is used in SpliceInsertCommand.
@@ -107,27 +92,6 @@ func (c *component) HasPTS() bool {
 // PTS returns the PTS time of the command, not including adjustment.
 func (c *component) PTS() gots.PTS {
 	return c.pts
-}
-
-type spliceInsert struct {
-	eventID               uint32
-	eventCancelIndicator  bool
-	outOfNetworkIndicator bool
-
-	isProgramSplice bool
-	spliceImmediate bool
-
-	hasPTS bool
-	pts    gots.PTS
-
-	components []Component
-
-	hasDuration     bool
-	duration        gots.PTS
-	autoReturn      bool
-	uniqueProgramId uint16
-	availNum        uint8
-	availsExpected  uint8
 }
 
 // CommandType returns the signal's splice command type value.

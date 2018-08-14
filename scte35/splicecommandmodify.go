@@ -62,7 +62,7 @@ func (c *component) SetPTS(value gots.PTS) {
 	c.pts = value & 0x01ffffffff
 }
 
-// returns the bytes of this splice command.
+// Data returns the bytes of this splice command.
 func (c *spliceNull) Data() []byte {
 	return []byte{} // return empty slice
 }
@@ -93,7 +93,7 @@ func spliceTimeBytes(hasPTS bool, pts gots.PTS) []byte {
 	return []byte{0x7E} // only reserved bits are set
 }
 
-// returns the bytes of this splice command.
+// Data returns the bytes of this splice command.
 func (c *timeSignal) Data() []byte {
 	return spliceTimeBytes(c.hasPTS, c.pts)
 }
@@ -108,7 +108,7 @@ func (c *timeSignal) SetPTS(value gots.PTS) {
 	c.pts = value & 0x01ffffffff
 }
 
-// returns the bytes of this splice command.
+// Data returns the bytes of this splice command.
 func (c *spliceInsert) Data() []byte {
 	bytes := make([]byte, 6)
 	bytes[0] = byte(c.eventID >> 24)
@@ -189,7 +189,7 @@ func (c *spliceInsert) SetEventID(value uint32) {
 	c.eventID = value
 }
 
-// IsOut returns the value of the out of network indicator
+// SetIsOut sets the value of the out of network indicator
 func (c *spliceInsert) SetIsOut(value bool) {
 	c.outOfNetworkIndicator = value
 }
@@ -219,7 +219,7 @@ func (c *spliceInsert) SetDuration(value gots.PTS) {
 	c.duration = value
 }
 
-// IsAutoReturn returns the boolean value of the auto return field
+// SetIsAutoReturn sets the boolean value of the auto return field
 func (c *spliceInsert) SetIsAutoReturn(value bool) {
 	c.autoReturn = value
 }
@@ -234,7 +234,7 @@ func (c *spliceInsert) SetAvailNum(value uint8) {
 	c.availNum = value
 }
 
-// AvailsExpected returns avails_expected field, number of avails for program
+// SetAvailsExpected sets the avails_expected field, number of avails for program
 func (c *spliceInsert) SetAvailsExpected(value uint8) {
 	c.availsExpected = value
 }
