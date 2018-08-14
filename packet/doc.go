@@ -34,8 +34,31 @@ const (
 	NullPacketPid = 8191 // 0x1FFF
 )
 
+// TransportScramblingControlOptions is a set of constants for
+// selecting the transport scrambling control.
+type TransportScramblingControlOptions byte
+
+const (
+	NoScrambleFlag      TransportScramblingControlOptions = 0 // 00
+	ScrambleEvenKeyFlag TransportScramblingControlOptions = 2 // 10
+	ScrambleOddKeyFlag  TransportScramblingControlOptions = 3 // 11
+)
+
+// AdaptationFieldControlOptions is a set of constants for
+// selecting the adaptation field control.
+type AdaptationFieldControlOptions byte
+
+const (
+	PayloadFlag                   AdaptationFieldControlOptions = 1 // 10
+	AdaptationFieldFlag           AdaptationFieldControlOptions = 2 // 01
+	PayloadAndAdaptationFieldFlag AdaptationFieldControlOptions = 3 // 11
+)
+
 // Packet is the basic unit in a transport stream.
 type Packet [PacketSize]byte
+
+// AdaptationField is an optional part of the packet.
+type AdaptationField Packet
 
 // Accumulator is used to gather multiple packets
 // and return their concatenated payloads.
