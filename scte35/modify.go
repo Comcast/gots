@@ -172,6 +172,9 @@ func (s *scte35) SetCommandInfo(commandInfo SpliceCommand) {
 // should be sorted by descriptor weight (least important signals first)
 func (s *scte35) SetDescriptors(descriptors []SegmentationDescriptor) {
 	s.descriptors = descriptors
+	for i := range s.descriptors {
+		s.descriptors[i].(*segmentationDescriptor).spliceInfo = s
+	}
 }
 
 // SetAlignmentStuffing sets how many stuffing bytes will be added to the SCTE35
