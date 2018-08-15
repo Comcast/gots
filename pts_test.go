@@ -124,6 +124,10 @@ func TestAdd(t *testing.T) {
 	if PTS(2000) != PTS(1500).Add(PTS(500)) {
 		t.Error("PTS addition 2 test failed")
 	}
+	// both of these values cannot fit in 33 bits
+	if PTS(0x187654321) != PTS(0x2E00000000).Add(PTS(0x5587654321)) {
+		t.Error("PTS addition 3 test failed")
+	}
 }
 
 func TestInsertPTS(t *testing.T) {
