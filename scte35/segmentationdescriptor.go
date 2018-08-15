@@ -32,6 +32,13 @@ import (
 	"github.com/Comcast/gots"
 )
 
+// upidSt is the struct used for creating a Multiple UPID (MID)
+type upidSt struct {
+	upidType SegUPIDType
+	upidLen  int
+	upid     []byte
+}
+
 // CreateUPID will create a default UPID. (SegUPIDNotUsed)
 func CreateUPID() UPID {
 	return &upidSt{}
@@ -45,6 +52,12 @@ func (u *upidSt) UPIDType() SegUPIDType {
 // UPID returns the actual UPID
 func (u *upidSt) UPID() []byte {
 	return u.upid
+}
+
+// componentOffset is a structure in SegmentationDescriptor.
+type componentOffset struct {
+	componentTag byte
+	ptsOffset    gots.PTS
 }
 
 // CreateComponentOffset will create a ComponentOffset structure that
@@ -86,6 +99,48 @@ func componentFromBytes(bytes []byte) componentOffset {
 	c.ptsOffset = gots.PTS(pts)
 	return c
 }
+
+// segmentationDescriptor is a strurture representing a segmentation descriptor in SCTE35
+type segmentationDescriptor struct {
+	// common fields we care about for sorting/identifying, but is not necessarily needed for users of this lib
+	typeID                SegDescType
+	eventID               uint32
+	hasDuration           bool
+	duration              gots.PTS
+	upidType              SegUPIDType
+	upid                  []byte
+	mid                   []upidSt //A MID can contains `n` UPID uids in it.
+	segNum                uint8
+	segsExpected          uint8
+	subSegNum             uint8
+	subSegsExpected       uint8
+	spliceInfo            SCTE35
+	eventCancelIndicator  bool
+	deliveryNotRestricted bool
+	hasSubSegments        bool
+
+	programSegmentationFlag bool
+	webDeliveryAllowedFlag  bool
+	noRegionalBlackoutFlag  bool
+	archiveAllowedFlag      bool
+	deviceRestrictions      DeviceRestrictions
+
+	components []componentOffset
+}
+
+type segCloseType uint8
+
+// conditions for closing specific descriptor types
+const (
+	segCloseNormal segCloseType = iota
+	segCloseNoBreakaway
+	segCloseEventID
+	segCloseBreakaway
+	segCloseDiffPTS
+	segCloseNotNested
+	segCloseEventIDNotNested
+	segCloseUnconditional
+)
 
 var segCloseRules map[SegDescType]map[SegDescType]segCloseType
 
