@@ -34,7 +34,7 @@ var (
 
 var (
 	// TestPatPacket is a minimal PAT packet for testing. It contains a single program stream with no payload.
-	TestPatPacket = []byte{
+	TestPatPacket = Packet{
 		0x47, 0x40, 0x00, 0x10, 0x00, 0x00, 0xb0, 0x0d, 0x00, 0x01, 0xcb, 0x00,
 		0x00, 0x00, 0x01, 0xe0, 0x64, 0x68, 0xd6, 0x84, 0x2e, 0xff, 0xff, 0xff,
 		0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
@@ -51,7 +51,7 @@ var (
 		0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
 		0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
 		0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}
-	TestPmtPacket = []byte{
+	TestPmtPacket = Packet{
 		0x47, 0x40, 0x64, 0x10, 0x00, 0x02, 0xb0, 0x2d, 0x00, 0x01, 0xcb, 0x00,
 		0x00, 0xe0, 0x65, 0xf0, 0x06, 0x05, 0x04, 0x43, 0x55, 0x45, 0x49, 0x1b,
 		0xe0, 0x65, 0xf0, 0x05, 0x0e, 0x03, 0x00, 0x04, 0xb0, 0x0f, 0xe0, 0x66,
@@ -79,8 +79,8 @@ var (
 //              WithContinuousAF,
 //              WithPUSI),
 //        cc)
-func Create(pid uint16, options ...func(*Packet)) Packet {
-	var pkt Packet = make([]byte, 188)
+func Create(pid uint16, options ...func(*Packet)) *Packet {
+	var pkt Packet
 	setPid(&pkt, pid)
 	for _, option := range options {
 		option(&pkt)
@@ -88,13 +88,13 @@ func Create(pid uint16, options ...func(*Packet)) Packet {
 	for _, option := range required {
 		option(&pkt)
 	}
-	return pkt
+	return &pkt
 }
 
 // CreateTestPacket creates a test packet with the given PID, continuity counter, payload unit start indicator and payload flag
 // This is a convenience function for often used packet creatio options functions
-func CreateTestPacket(pid uint16, cc uint8, pusi, hasPay bool) Packet {
-	var pkt Packet
+func CreateTestPacket(pid uint16, cc uint8, pusi, hasPay bool) *Packet {
+	var pkt *Packet
 	if hasPay && pusi {
 		pkt, _ = SetCC(
 			Create(pid,
@@ -116,13 +116,13 @@ func CreateTestPacket(pid uint16, cc uint8, pusi, hasPay bool) Packet {
 }
 
 // CreateDCPacket creates a new packet with a discontinuous adapataion field and the given PID and CC
-func CreateDCPacket(pid uint16, cc uint8) Packet {
+func CreateDCPacket(pid uint16, cc uint8) *Packet {
 	pkt, _ := SetCC(Create(pid, WithDiscontinuousAF, WithHasPayloadFlag), cc)
 	return pkt
 }
 
 // CreatePacketWithPayload creates a new packet with the given PID, CC and payload
-func CreatePacketWithPayload(pid uint16, cc uint8, pay []byte) Packet {
+func CreatePacketWithPayload(pid uint16, cc uint8, pay []byte) *Packet {
 	pkt, _ := SetCC(
 		Create(
 			pid,
@@ -137,38 +137,38 @@ func CreatePacketWithPayload(pid uint16, cc uint8, pay []byte) Packet {
 	return pkt
 }
 func setPid(pkt *Packet, pid uint16) {
-	(*pkt)[1] = byte(pid >> 8 & 0x1f)
-	(*pkt)[2] = byte(pid & 0xff)
+	pkt[1] = byte(pid >> 8 & 0x1f)
+	pkt[2] = byte(pid & 0xff)
 }
 
 // WithHasPayloadFlag is an option function for creating a packet with a payload flag
 func WithHasPayloadFlag(pkt *Packet) {
-	(*pkt)[3] = byte((*pkt)[3] | 0x10)
+	pkt[3] |= 0x10
 }
 
 // WithHasAdaptationFieldFlag is an option function for creating a packet with an adaptation field
 func WithHasAdaptationFieldFlag(pkt *Packet) {
-	(*pkt)[3] = (*pkt)[3] | 0x20
+	pkt[3] |= 0x02
 }
 
 // WithAFPrivateDataFlag is an option function for creating a packet with a adaptation field private data flag
 func WithAFPrivateDataFlag(pkt *Packet) {
-	(*pkt)[5] = (*pkt)[5] | 0x02
+	pkt[5] |= 0x02
 }
 
 // WithPUSI is an option function for creating a packet with the payload unit start indicator flag set
 func WithPUSI(pkt *Packet) {
-	(*pkt)[1] = byte((*pkt)[1] | 0x40)
+	pkt[1] |= 0x40
 }
 
 // WithContinuousAF is an option function for creating a packet with a continuous adaptation field
 func WithContinuousAF(pkt *Packet) {
-	(*pkt)[5] = byte((*pkt)[5] & 0x7f)
+	pkt[5] |= 0x7f
 }
 
 // WithDisconinuousAF is an option function for creating a packet with a discontinuous adaptation field
 func WithDiscontinuousAF(pkt *Packet) {
-	(*pkt)[5] = byte((*pkt)[5] | 0x80)
+	pkt[5] |= 0x80
 }
 
 // WithPES is an option function for creating a packet with a PES header
@@ -197,20 +197,20 @@ func WithPES(pkt *Packet, pts uint64) {
 
 // InsertPTS insterts a given pts time into a byte slice
 func InsertPTS(b []byte, pts uint64) {
-	b[0] = byte(pts >> 29 & 0x07)
-	b[1] = byte(pts >> 22 & 0x4f)
-	b[2] = byte(pts >> 14 & 0xff)
-	b[3] = byte(pts >> 7 & 0x7f)
 	b[4] = byte(pts&0xff) << 1
+	b[3] = byte(pts >> 7 & 0x7f)
+	b[2] = byte(pts >> 14 & 0xff)
+	b[1] = byte(pts >> 22 & 0x4f)
+	b[0] = byte(pts >> 29 & 0x07)
 }
 
 // SetPayload sets the payload of a given packet
 func SetPayload(pkt *Packet, pay []byte) int {
-	start := payloadStart((*pkt))
+	start := payloadStart(pkt)
 	i := start
 	j := 0
 	for i < PacketSize && j < len(pay) {
-		(*pkt)[i] = pay[j]
+		pkt[i] = pay[j]
 		i++
 		j++
 	}
@@ -219,5 +219,5 @@ func SetPayload(pkt *Packet, pay []byte) int {
 
 // Required parts of a packet
 func setSyncByte(pkt *Packet) {
-	(*pkt)[0] = SyncByte
+	pkt[0] = SyncByte
 }
