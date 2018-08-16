@@ -93,14 +93,6 @@ func TestPTSDurationFrom(t *testing.T) {
 	if 16 != PTS(5).DurationFrom(PTS(MaxPtsValue-10)) {
 		t.Error("Expected duration of 16")
 	}
-
-	if 0x011111111 != PTS(MaxPtsTicks-0x010000000).DurationFrom(PTS(0x001111111)) {
-		t.Error("Expected duration of 0x011111111")
-	}
-
-	if PtsPositiveInfinity != PTS(0x110000000).DurationFrom(PtsPositiveInfinity) {
-		t.Error("Expected duration of PtsPositiveInfinity")
-	}
 }
 
 func TestPTSGreaterOrEqual(t *testing.T) {
