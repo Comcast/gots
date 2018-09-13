@@ -105,7 +105,7 @@ func Payload(packet *Packet) ([]byte, error) {
 	}
 	start := payloadStart(packet)
 	if start > len(packet) {
-		return nil, ErrInvalidPacketLength
+		return nil, gots.ErrInvalidPacketLength
 	}
 	pay := packet[start:]
 	return pay, nil
