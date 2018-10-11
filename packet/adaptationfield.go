@@ -31,7 +31,7 @@ import (
 // NewPacket creates a new packet with a Null ID, sync byte, and with the adaptation field control set to payload only.
 // This function is error free.
 func NewAdaptationField() *AdaptationField {
-	p := NewPacket()
+	p := New()
 	p.SetAdaptationFieldControl(AdaptationFieldFlag)
 	af, _ := p.AdaptationField()
 	return af

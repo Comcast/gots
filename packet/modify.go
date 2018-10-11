@@ -34,28 +34,28 @@ const (
 	invalidAdaptationFieldControlFlag     AdaptationFieldControlOptions     = 0 // 00
 )
 
-// NewPacket creates a new packet with a Null ID, sync byte, and with the adaptation field control set to payload only.
-// This function is error free.
-func NewPacket() (pkt Packet) {
+// New creates a new packet with a Null ID, sync byte, and with the adaptation
+// field control set to payload only.
+func New() *Packet {
 	//Default packet is the Null packet
-	pkt[0] = 0x47 // sets the sync byte
-	pkt[1] = 0x1F // equivalent to pkt.SetPID(NullPacketPid)
-	pkt[2] = 0xFF // equivalent to pkt.SetPID(NullPacketPid)
-	pkt[3] = 0x10 // equivalent to pkt.SetAdaptationFieldControl(PayloadFlag)
-	return
+	return &Packet{
+		0: 0x47,          // Sync byte
+		1: 0x1f, 2: 0xff, // pkt.SetPID(NullPacketPid)
+		3: 0x10, // pkt.SetAdaptationFieldControl(PayloadFlag)
+	}
 }
 
 // FromBytes creates a ts packet from a slice of bytes 188 in length.
 // If the bytes provided have errors or the slice is not 188 in length,
 // then an error vill be returned along with a nill slice.
-func FromBytes(bytes []byte) (pkt Packet, err error) {
+func FromBytes(bytes []byte) (*Packet, error) {
 	if len(bytes) != PacketSize {
-		err = gots.ErrInvalidPacketLength
-		return
+		return nil, gots.ErrInvalidPacketLength
 	}
+	var pkt Packet
 	copy(pkt[:], bytes)
-	err = pkt.CheckErrors()
-	return
+	err := pkt.CheckErrors()
+	return &pkt, err
 }
 
 // SetTransportErrorIndicator sets the Transport Error Indicator flag.
