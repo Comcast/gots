@@ -38,7 +38,7 @@ func generatePacketAF(t *testing.T, AFString string) (*Packet, *AdaptationField)
 	if a == nil {
 		t.Errorf("adaptation field does not exist")
 	}
-	return &p, a
+	return p, a
 }
 
 func TestDiscontinuity(t *testing.T) {
