@@ -31,6 +31,12 @@ import (
 	"time"
 )
 
+// cableLabsEbp is an encoder boundary point
+type comcastEbp struct {
+	baseEbp
+	Grouping uint8
+}
+
 // CreateComcastEBP returns a new comcastEbp with default values.
 func CreateComcastEBP() comcastEbp {
 	return comcastEbp{
