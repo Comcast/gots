@@ -30,9 +30,20 @@ import (
 	"github.com/Comcast/gots/packet"
 )
 
-func TestPESHeader(t *testing.T) {
+func parseHexString(h string) *packet.Packet {
+	b, err := hex.DecodeString(h)
+	if err != nil {
+		panic("bad test: " + h)
+	}
+	pkt := new(packet.Packet)
+	if copy(pkt[:], b) != packet.PacketSize {
+		panic("bad test (wrong length): " + h)
+	}
+	return pkt
+}
 
-	pkt, _ := hex.DecodeString(
+func TestPESHeader(t *testing.T) {
+	pkt := parseHexString(
 		"4740661a000001c006ff80800521dee9ca57fff94c801d2000210995341d9d43" +
 			"61089848180b0884626048901425ddc09249220129d2fce728111c987e67ecb7" +
 			"4284af5099181d8cd095b841b0c7539ad6c06260536e137615560052369fc984" +
@@ -61,8 +72,7 @@ func TestPESHeader(t *testing.T) {
 }
 
 func TestPESHeader2(t *testing.T) {
-
-	pkt, _ := hex.DecodeString(
+	pkt := parseHexString(
 		"4740651C000001E0000084C00A39EFF33A7519EFF30B89000000010950000000" +
 			"01060104001A20100411B500314741393403C2FFFD8080FC942FFF8000000001" +
 			"21A81C29145C6FEB86EB239E2EE231302CF5163D32D183B7822FE37E7FB84549" +
@@ -92,11 +102,10 @@ func TestPESHeader2(t *testing.T) {
 }
 
 func TestNewPESHeaderMissingBytes(t *testing.T) {
-
 	// Actual data from Cisco Transcoder (AMC channel).  Below packet was causing
 	// index out of bounds exception.  It has the PES prefix code but we were not
 	// checking to see if it's a PUSI to begin with
-	pkt, _ := hex.DecodeString(
+	pkt := parseHexString(
 		"47006531b300ffffffffffffffffffffffffffffffffffffffffffffffffffff" +
 			"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
 			"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
@@ -110,8 +119,7 @@ func TestNewPESHeaderMissingBytes(t *testing.T) {
 }
 
 func TestPESHeaderTS(t *testing.T) {
-
-	pkt, _ := hex.DecodeString(
+	pkt := parseHexString(
 		"4752a31c000001e0000080c00a210005bf21210005a7ab000001000697fffb80" +
 			"000001b5844ffb9400000001b24741393403d4fffc8080fd8fdffa0000fa0000" +
 			"fa0000fa0000fa0000fa0000fa0000fa0000fa0000fa0000fa0000fa0000fa00" +

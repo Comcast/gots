@@ -64,13 +64,12 @@ const (
 	CrcLen       uint16 = 4
 )
 
-// PSI interface represents operations available on all PSI
-type PSI interface {
-	PointerField() uint8
-	TableID() uint8
-	SectionSyntaxIndicator() bool
-	PrivateIndicator() bool
-	SectionLength() uint16
+// TableHeader struct represents operations available on all PSI
+type TableHeader struct {
+	TableID                uint8
+	SectionSyntaxIndicator bool
+	PrivateIndicator       bool
+	SectionLength          uint16
 }
 
 // PmtStreamType is used to represent elementary steam type inside a PMT

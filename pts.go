@@ -33,10 +33,10 @@ const (
 	PTS_DTS_INDICATOR_NONE     = 0 // 00
 
 	// MaxPtsValue is the highest value the PTS can hold before it rolls over, since its a 33 bit timestamp.
-	MaxPtsValue = 8589934591 // 2^33 - 1
+	MaxPtsValue = (1 << 33) - 1 // 2^33 - 1 = 8589934591 = 0x1FFFFFFFF
 
 	// MaxPtsTicks is the length of the complete PTS timeline.
-	MaxPtsTicks = 8589934592 // 2^33.
+	MaxPtsTicks = 1 << 33 // 2^33 = 8589934592 = 0x200000000
 
 	// Used as a sentinel values for algorithms working against PTS
 	PtsNegativeInfinity = PTS(math.MaxUint64 - 1) //18446744073709551614
@@ -105,11 +105,7 @@ func (p PTS) DurationFrom(from PTS) uint64 {
 
 // Add adds the two PTS times together and returns a new PTS
 func (p PTS) Add(x PTS) PTS {
-	result := p + x
-	if result > MaxPtsValue {
-		result = result - MaxPtsTicks
-	}
-	return PTS(result)
+	return (p + x) & MaxPtsValue
 }
 
 // ExtractTime extracts a PTS time
