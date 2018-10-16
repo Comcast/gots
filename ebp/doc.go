@@ -24,25 +24,3 @@ SOFTWARE.
 
 // Package ebp is used to detect and extract EBP information. EBP information is stored in a packet adaptation field in the private data section.
 package ebp
-
-import "time"
-
-// EBP tags
-const (
-	ComcastEbpTag             = uint8(0xA9)
-	CableLabsEbpTag           = uint8(0xDF)
-	CableLabsFormatIdentifier = 0x45425030
-)
-
-// EncoderBoundaryPoint represents shared operations available on an all EBPs.
-type EncoderBoundaryPoint interface {
-	SegmentFlag() bool
-	FragmentFlag() bool
-	TimeFlag() bool
-	EBPTime() time.Time            // time set in the EBP
-	EBPSuccessReadTime() time.Time // time the EBP was successfully read
-	SapFlag() bool
-	Sap() byte
-	ExtensionFlag() bool
-	EBPType() byte
-}

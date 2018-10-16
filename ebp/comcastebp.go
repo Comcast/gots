@@ -25,71 +25,50 @@ SOFTWARE.
 package ebp
 
 import (
+	"bytes"
 	"encoding/binary"
 	"io"
 	"time"
 )
 
+// cableLabsEbp is an encoder boundary point
 type comcastEbp struct {
-	DataFieldTag    uint8
-	DataFieldLength uint8
-	DataFlags       uint8
-	ExtensionFlags  uint8
-	SapType         uint8
-	Grouping        uint8
-	TimeSeconds     uint32
-	TimeFraction    uint32
-	ReservedBytes   []uint8
-	SuccessReadTime time.Time
+	baseEbp
+	Grouping uint8
 }
 
-func (ebp comcastEbp) EBPType() byte {
+// CreateComcastEBP returns a new comcastEbp with default values.
+func CreateComcastEBP() comcastEbp {
+	return comcastEbp{
+		baseEbp: baseEbp{
+			DataFieldTag:    ComcastEbpTag,
+			DataFieldLength: 1, // not empty by default
+		},
+	}
+}
+
+// EBPtype returns the type (what is the format) of the EBP.
+func (ebp *comcastEbp) EBPType() byte {
 	return ebp.DataFieldTag
 }
 
-func (ebp comcastEbp) FragmentFlag() bool {
-	return ebp.DataFieldLength != 0 && ebp.DataFlags&0x80 != 0
-}
-
-func (ebp comcastEbp) SegmentFlag() bool {
-	return ebp.DataFieldLength != 0 && ebp.DataFlags&0x40 != 0
-}
-
-func (ebp comcastEbp) SapFlag() bool {
-	return ebp.DataFieldLength != 0 && ebp.DataFlags&0x20 != 0
-}
-
-func (ebp comcastEbp) GroupingFlag() bool {
-	return ebp.DataFieldLength != 0 && ebp.DataFlags&0x10 != 0
-}
-
-func (ebp comcastEbp) TimeFlag() bool {
-	return ebp.DataFieldLength != 0 && ebp.DataFlags&0x08 != 0
-}
-
-func (ebp comcastEbp) DiscontinuityFlag() bool {
+// DiscontinuityFlag returns true if the discontinuity flag is set.
+func (ebp *comcastEbp) DiscontinuityFlag() bool {
 	return ebp.DataFieldLength != 0 && ebp.DataFlags&0x04 != 0
 }
 
-func (ebp comcastEbp) ExtensionFlag() bool {
-	return ebp.DataFieldLength != 0 && ebp.DataFlags&0x01 != 0
+// SetDiscontinuityFlag sets the discontinuity flag.
+func (ebp *comcastEbp) SetDiscontinuityFlag(value bool) {
+	if ebp.DataFieldLength != 0 && value {
+		ebp.DataFlags |= 0x04
+	}
 }
 
-func (ebp comcastEbp) EBPTime() time.Time {
-	return extractUtcTime(ebp.TimeSeconds, ebp.TimeFraction)
-}
-
-func (ebp comcastEbp) Sap() byte {
-	return ebp.SapType
-}
-
-// Defines when the EBP was read successfully
-func (ebp comcastEbp) EBPSuccessReadTime() time.Time {
-	return ebp.SuccessReadTime
-}
-
+// readComcastEbp will parse raw bytes without the tag into a Comcast EBP.
 func readComcastEbp(data io.Reader) (ebp *comcastEbp, err error) {
-	ebp = &comcastEbp{DataFieldTag: ComcastEbpTag}
+	ebp = &comcastEbp{
+		baseEbp: baseEbp{DataFieldTag: ComcastEbpTag},
+	}
 
 	if err = binary.Read(data, ebpEncoding, &ebp.DataFieldLength); err != nil {
 		return nil, err
@@ -150,4 +129,43 @@ func readComcastEbp(data io.Reader) (ebp *comcastEbp, err error) {
 	ebp.SuccessReadTime = time.Now()
 
 	return ebp, nil
+}
+
+// Data will return the raw bytes of the EBP
+func (ebp *comcastEbp) Data() []byte {
+	requiredFields := new(bytes.Buffer)
+	data := new(bytes.Buffer)
+	binary.Write(requiredFields, ebpEncoding, ebp.DataFieldTag)
+
+	if ebp.DataFieldLength == 0 {
+		return data.Bytes()
+	}
+
+	binary.Write(data, ebpEncoding, ebp.DataFlags)
+
+	if ebp.ExtensionFlag() {
+		binary.Write(data, ebpEncoding, ebp.ExtensionFlags)
+	}
+
+	if ebp.SapFlag() {
+		binary.Write(data, ebpEncoding, ebp.SapType)
+	}
+
+	if ebp.GroupingFlag() {
+		binary.Write(data, ebpEncoding, ebp.Grouping)
+	}
+
+	if ebp.TimeFlag() {
+		binary.Write(data, ebpEncoding, ebp.TimeSeconds)
+		binary.Write(data, ebpEncoding, ebp.TimeFraction)
+	}
+
+	binary.Write(data, ebpEncoding, ebp.ReservedBytes)
+
+	ebp.DataFieldLength = uint8(data.Len())
+
+	binary.Write(requiredFields, ebpEncoding, ebp.DataFieldLength)
+	binary.Write(requiredFields, ebpEncoding, data.Bytes())
+
+	return requiredFields.Bytes()
 }

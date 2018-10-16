@@ -25,77 +25,64 @@ SOFTWARE.
 package ebp
 
 import (
+	"bytes"
 	"encoding/binary"
 	"io"
 	"time"
 )
 
+// cableLabsEbp is an encoder boundary point
 type cableLabsEbp struct {
-	DataFieldTag     uint8
-	DataFieldLength  uint8
+	baseEbp
 	FormatIdentifier uint32
-	DataFlags        uint8
-	ExtensionFlags   uint8
-	SapType          uint8
 	Grouping         []uint8
-	TimeSeconds      uint32
-	TimeFraction     uint32
 	PartitionFlags   uint8
-	ReservedBytes    []byte
-	SuccessReadTime  time.Time
 }
 
-func (ebp cableLabsEbp) EBPType() byte {
+// CreateCableLabsEbp returns a new cableLabsEbp with default values.
+func CreateCableLabsEbp() cableLabsEbp {
+	return cableLabsEbp{
+		baseEbp: baseEbp{
+			DataFieldTag:    CableLabsEbpTag,
+			DataFieldLength: 1, // not empty by default
+		},
+		FormatIdentifier: CableLabsFormatIdentifier,
+	}
+}
+
+// EBPtype returns the type (what is the format) of the EBP.
+func (ebp *cableLabsEbp) EBPType() byte {
 	return ebp.DataFieldTag
 }
 
-func (ebp cableLabsEbp) FragmentFlag() bool {
-	return ebp.DataFlags&0x80 != 0
-}
-
-func (ebp cableLabsEbp) SegmentFlag() bool {
-	return ebp.DataFlags&0x40 != 0
-}
-
-func (ebp cableLabsEbp) SapFlag() bool {
-	return ebp.DataFlags&0x20 != 0
-}
-
-func (ebp cableLabsEbp) GroupingFlag() bool {
-	return ebp.DataFlags&0x10 != 0
-}
-
-func (ebp cableLabsEbp) TimeFlag() bool {
-	return ebp.DataFlags&0x08 != 0
-}
-
-func (ebp cableLabsEbp) ConcealmentFlag() bool {
+// ConcealmentFlag returns true if the concealment flag is set.
+func (ebp *cableLabsEbp) ConcealmentFlag() bool {
 	return ebp.DataFlags&0x04 != 0
 }
 
-func (ebp cableLabsEbp) ExtensionFlag() bool {
-	return ebp.DataFlags&0x01 != 0
+// SetConcealmentFlag sets the concealment flag.
+func (ebp *cableLabsEbp) SetConcealmentFlag(value bool) {
+	if ebp.DataFieldLength != 0 && value {
+		ebp.DataFlags |= 0x04
+	}
 }
 
-func (ebp cableLabsEbp) EBPTime() time.Time {
-	return extractUtcTime(ebp.TimeSeconds, ebp.TimeFraction)
-}
-
-func (ebp cableLabsEbp) Sap() byte {
-	return ebp.SapType
-}
-
-func (ebp cableLabsEbp) PartitionFlag() bool {
+// SetPartitionFlag returns true if the partition flag.
+func (ebp *cableLabsEbp) PartitionFlag() bool {
 	return ebp.ExtensionFlag() && ebp.ExtensionFlags&0x80 != 0
 }
 
-// Defines when the EBP was read successfully
-func (ebp cableLabsEbp) EBPSuccessReadTime() time.Time {
-	return ebp.SuccessReadTime
+// SetPartitionFlag sets the partition flag.
+func (ebp *cableLabsEbp) SetPartitionFlag(value bool) {
+	if ebp.ExtensionFlag() && value {
+		ebp.ExtensionFlags |= 0x80
+	}
 }
 
 func readCableLabsEbp(data io.Reader) (ebp *cableLabsEbp, err error) {
-	ebp = &cableLabsEbp{DataFieldTag: CableLabsEbpTag}
+	ebp = &cableLabsEbp{
+		baseEbp: baseEbp{DataFieldTag: CableLabsEbpTag},
+	}
 
 	if err = binary.Read(data, ebpEncoding, &ebp.DataFieldLength); err != nil {
 		return nil, err
@@ -173,4 +160,54 @@ func readCableLabsEbp(data io.Reader) (ebp *cableLabsEbp, err error) {
 	ebp.SuccessReadTime = time.Now()
 
 	return ebp, nil
+}
+
+// Data will return the raw bytes of the EBP
+func (ebp *cableLabsEbp) Data() []byte {
+	requiredFields := new(bytes.Buffer)
+	data := new(bytes.Buffer)
+	binary.Write(requiredFields, ebpEncoding, ebp.DataFieldTag)
+
+	if ebp.DataFieldLength == 0 {
+		return data.Bytes()
+	}
+
+	binary.Write(data, ebpEncoding, ebp.FormatIdentifier)
+
+	binary.Write(data, ebpEncoding, ebp.DataFlags)
+	if ebp.ExtensionFlag() {
+		binary.Write(data, ebpEncoding, ebp.ExtensionFlags)
+	}
+
+	if ebp.SapFlag() {
+		binary.Write(data, ebpEncoding, ebp.SapType)
+	}
+
+	if ebp.GroupingFlag() {
+		for i := range ebp.Grouping {
+			ebp.Grouping[i] |= 0x80 // set flag because this is not the last ID
+			if i == len(ebp.Grouping)-1 {
+				ebp.Grouping[i] &= 0x7F // last index does not have this flag set
+			}
+			binary.Write(data, ebpEncoding, ebp.Grouping[i])
+		}
+	}
+
+	if ebp.TimeFlag() {
+		binary.Write(data, ebpEncoding, ebp.TimeSeconds)
+		binary.Write(data, ebpEncoding, ebp.TimeFraction)
+	}
+
+	if ebp.PartitionFlag() {
+		binary.Write(data, ebpEncoding, ebp.PartitionFlags)
+	}
+
+	binary.Write(data, ebpEncoding, ebp.ReservedBytes)
+
+	ebp.DataFieldLength = uint8(data.Len())
+
+	binary.Write(requiredFields, ebpEncoding, ebp.DataFieldLength)
+	binary.Write(requiredFields, ebpEncoding, data.Bytes())
+
+	return requiredFields.Bytes()
 }
