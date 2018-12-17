@@ -228,7 +228,7 @@ func FilterPMTPacketsToPids(packets []*packet.Packet, pids []uint16) []*packet.P
 		filteredPMT.Write(pmtPayload[programInfoLengthOffset+2 : programInfoLengthOffset+2+programInfoLength])
 	}
 
-	for offset := programInfoLengthOffset + 2 + programInfoLength; offset < sectionLength-pmtEsDescriptorStaticLen-CrcLen; {
+	for offset := programInfoLengthOffset + 2 + programInfoLength; offset < PSIHeaderLen+sectionLength-pmtEsDescriptorStaticLen-CrcLen; {
 		elementaryPid := uint16(pmtPayload[offset+1]&0x1f)<<8 | uint16(pmtPayload[offset+2])
 		infoLength := uint16(pmtPayload[offset+3]&0x0f)<<8 | uint16(pmtPayload[offset+4])
 

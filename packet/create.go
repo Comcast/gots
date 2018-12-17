@@ -148,7 +148,7 @@ func WithHasPayloadFlag(pkt *Packet) {
 
 // WithHasAdaptationFieldFlag is an option function for creating a packet with an adaptation field
 func WithHasAdaptationFieldFlag(pkt *Packet) {
-	pkt[3] |= 0x02
+	pkt[3] |= 0x20
 }
 
 // WithAFPrivateDataFlag is an option function for creating a packet with a adaptation field private data flag
@@ -163,7 +163,7 @@ func WithPUSI(pkt *Packet) {
 
 // WithContinuousAF is an option function for creating a packet with a continuous adaptation field
 func WithContinuousAF(pkt *Packet) {
-	pkt[5] |= 0x7f
+	pkt[5] |= 0x7fgi
 }
 
 // WithDisconinuousAF is an option function for creating a packet with a discontinuous adaptation field
