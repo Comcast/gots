@@ -163,7 +163,7 @@ func WithPUSI(pkt *Packet) {
 
 // WithContinuousAF is an option function for creating a packet with a continuous adaptation field
 func WithContinuousAF(pkt *Packet) {
-	pkt[5] |= 0x7fgi
+	pkt[5] |= 0x7f
 }
 
 // WithDisconinuousAF is an option function for creating a packet with a discontinuous adaptation field
