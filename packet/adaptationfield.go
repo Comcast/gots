@@ -28,7 +28,7 @@ import (
 	"github.com/Comcast/gots"
 )
 
-// NewPacket creates a new packet with a Null ID, sync byte, and with the adaptation field control set to payload only.
+// NewAdaptationField creates a new *AdaptationField with the flag set for AdaptationField and no payload
 // This function is error free.
 func NewAdaptationField() *AdaptationField {
 	p := New()

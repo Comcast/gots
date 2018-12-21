@@ -6,51 +6,51 @@ import (
 )
 
 // Length returns the length of the adaptation field in bytes
-func Length(pkt *packet.Packet) uint8 {
-	return uint8(pkt[4])
-}
+// func Length(pkt *packet.Packet) uint8 {
+// 	return uint8(pkt[4])
+// }
 
 // IsDiscontinuous returns the discontinuity indicator for this adaptation field
-func IsDiscontinuous(pkt *packet.Packet) bool {
-	return pkt[5]&0x80 != 0
-}
+// func IsDiscontinuous(pkt *packet.Packet) bool {
+// 	return pkt[5]&0x80 != 0
+// }
 
 // IsRandomAccess returns the random access indicator for this adaptation field
-func IsRandomAccess(pkt *packet.Packet) bool {
-	return pkt[5]&0x40 != 0
-}
+// func IsRandomAccess(pkt *packet.Packet) bool {
+// 	return pkt[5]&0x40 != 0
+// }
 
 // IsESHigherPriority returns true if this elementary stream is
 // high priority. Corresponds to the elementary stream
 // priority indicator.
-func IsESHigherPriority(pkt *packet.Packet) bool {
-	return pkt[5]&0x20 != 0
-}
+// func IsESHigherPriority(pkt *packet.Packet) bool {
+// 	return pkt[5]&0x20 != 0
+// }
 
 // HasPCR returns true when the PCR flag is set
-func HasPCR(pkt *packet.Packet) bool {
-	return pkt[5]&0x10 != 0
-}
+// func HasPCR(pkt *packet.Packet) bool {
+// 	return pkt[5]&0x10 != 0
+// }
 
 // HasOPCR returns true when the OPCR flag is set
-func HasOPCR(pkt *packet.Packet) bool {
-	return pkt[5]&0x08 != 0
-}
+// func HasOPCR(pkt *packet.Packet) bool {
+// 	return pkt[5]&0x08 != 0
+// }
 
 // HasSplicingPoint returns true when the splicing countdown field is present
-func HasSplicingPoint(pkt *packet.Packet) bool {
-	return pkt[5]&0x04 != 0
-}
+// func HasSplicingPoint(pkt *packet.Packet) bool {
+// 	return pkt[5]&0x04 != 0
+// }
 
 // HasTransportPrivateData returns true when the private data field is present
-func HasTransportPrivateData(pkt *packet.Packet) bool {
-	return pkt[5]&0x02 != 0
-}
+// func HasTransportPrivateData(pkt *packet.Packet) bool {
+// 	return pkt[5]&0x02 != 0
+// }
 
 // HasAdaptationFieldExtension returns true if this adaptation field contains an extension field
-func HasAdaptationFieldExtension(pkt *packet.Packet) bool {
-	return pkt[5]&0x01 != 0
-}
+// func HasAdaptationFieldExtension(pkt *packet.Packet) bool {
+// 	return pkt[5]&0x01 != 0
+// }
 
 // EncoderBoundaryPoint returns the byte array located in the optional TransportPrivateData of the (also optional)
 // AdaptationField of the Packet. If either of these optional fields are missing an empty byte array is returned with an error
