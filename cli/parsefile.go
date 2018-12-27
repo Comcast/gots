@@ -138,7 +138,7 @@ func main() {
 
 		}
 		if *showEbp {
-			ebpBytes, err := adaptationfield.EncoderBoundaryPoint(&pkt)
+			ebpBytes, err := adaptationfield.EncoderBoundaryPointBytes(&pkt)
 			if err != nil {
 				// Not an EBP
 				continue

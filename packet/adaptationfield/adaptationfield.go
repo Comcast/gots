@@ -1,9 +1,4 @@
-package adaptationfield
-
-import (
-	"github.com/Comcast/gots"
-	"github.com/Comcast/gots/packet"
-)
+//package adaptationfield
 
 // Length returns the length of the adaptation field in bytes
 // func Length(pkt *packet.Packet) uint8 {
@@ -52,85 +47,85 @@ import (
 // 	return pkt[5]&0x01 != 0
 // }
 
-// EncoderBoundaryPoint returns the byte array located in the optional TransportPrivateData of the (also optional)
-// AdaptationField of the Packet. If either of these optional fields are missing an empty byte array is returned with an error
-func EncoderBoundaryPoint(pkt *packet.Packet) ([]byte, error) {
-	hasAdapt, err := packet.ContainsAdaptationField(pkt)
-	if err != nil {
-		return nil, nil
-	}
-	if hasAdapt && Length(pkt) > 0 && HasTransportPrivateData(pkt) {
-		ebp, err := TransportPrivateData(pkt)
-		if err != nil {
-			return nil, err
-		}
-		return ebp, nil
-	}
-	return nil, gots.ErrNoEBP
-}
+// // EncoderBoundaryPoint returns the byte array located in the optional TransportPrivateData of the (also optional)
+// // AdaptationField of the Packet. If either of these optional fields are missing an empty byte array is returned with an error
+// func EncoderBoundaryPoint(pkt *packet.Packet) ([]byte, error) {
+// 	hasAdapt, err := packet.ContainsAdaptationField(pkt)
+// 	if err != nil {
+// 		return nil, nil
+// 	}
+// 	if hasAdapt && Length(pkt) > 0 && HasTransportPrivateData(pkt) {
+// 		ebp, err := TransportPrivateData(pkt)
+// 		if err != nil {
+// 			return nil, err
+// 		}
+// 		return ebp, nil
+// 	}
+// 	return nil, gots.ErrNoEBP
+// }
 
 // PCR is the Program Clock Reference.
 // First 33 bits are PCR base.
 // Next 6 bits are reserved.
 // Final 9 bits are PCR extension.
-func PCR(pkt *packet.Packet) ([]byte, error) {
-	if !HasPCR(pkt) {
-		return nil, gots.ErrNoPCR
-	}
-	offset := 6
-	return pkt[offset : offset+6], nil
-}
+// func PCR(pkt *packet.Packet) ([]byte, error) {
+// 	if !HasPCR(pkt) {
+// 		return nil, gots.ErrNoPCR
+// 	}
+// 	offset := 6
+// 	return pkt[offset : offset+6], nil
+// }
 
 // OPCR is the Original Program Clock Reference.
 // First 33 bits are original PCR base.
 // Next 6 bits are reserved.
 // Final 9 bits are original PCR extension.
-func OPCR(pkt *packet.Packet) ([]byte, error) {
-	if !HasOPCR(pkt) {
-		return nil, gots.ErrNoOPCR
-	}
-	offset := 6
-	if HasPCR(pkt) {
-		offset += 6
-	}
-	return pkt[offset : offset+6], nil
-}
+// func OPCR(pkt *packet.Packet) ([]byte, error) {
+// 	if !HasOPCR(pkt) {
+// 		return nil, gots.ErrNoOPCR
+// 	}
+// 	offset := 6
+// 	if HasPCR(pkt) {
+// 		offset += 6
+// 	}
+// 	return pkt[offset : offset+6], nil
+// }
 
 // SpliceCountdown returns a count of how many packets after this one until
 // a splice point occurs or an error if none exist. This function calls
 // HasSplicingPoint to check for the existence of a splice countdown.
-func SpliceCountdown(pkt *packet.Packet) (uint8, error) {
-	if !HasSplicingPoint(pkt) {
-		return 0, gots.ErrNoSplicePoint
-	}
-	offset := 6
-	if HasPCR(pkt) {
-		offset += 6
-	}
-	if HasOPCR(pkt) {
-		offset += 6
-	}
-	return pkt[offset], nil
-}
+// func SpliceCountdown(pkt *packet.Packet) (uint8, error) {
+// 	if !HasSplicingPoint(pkt) {
+// 		return 0, gots.ErrNoSplicePoint
+// 	}
+// 	offset := 6
+// 	if HasPCR(pkt) {
+// 		offset += 6
+// 	}
+// 	if HasOPCR(pkt) {
+// 		offset += 6
+// 	}
+// 	return pkt[offset], nil
+// }
 
 // TransportPrivateData returns the private data from this adaptation field
 // or an empty array and an error if there is none. This function calls
 // HasTransportPrivateData to check for the existence of private data.
-func TransportPrivateData(pkt *packet.Packet) ([]byte, error) {
-	if !HasTransportPrivateData(pkt) {
-		return nil, gots.ErrNoPrivateTransportData
-	}
-	offset := 6
-	if HasPCR(pkt) {
-		offset += 6
-	}
-	if HasOPCR(pkt) {
-		offset += 6
-	}
-	if HasSplicingPoint(pkt) {
-		offset++
-	}
-	dataLength := uint8(pkt[offset])
-	offset++
-	return pkt[uint8(offset) : uint8(offset)+dataLength], nil
-}
+// func TransportPrivateData(pkt *packet.Packet) ([]byte, error) {
+// 	if !HasTransportPrivateData(pkt) {
+// 		return nil, gots.ErrNoPrivateTransportData
+// 	}
+// 	offset := 6
+// 	if HasPCR(pkt) {
+// 		offset += 6
+// 	}
+// 	if HasOPCR(pkt) {
+// 		offset += 6
+// 	}
+// 	if HasSplicingPoint(pkt) {
+// 		offset++
+// 	}
+// 	dataLength := uint8(pkt[offset])
+// 	offset++
+// 	return pkt[uint8(offset) : uint8(offset)+dataLength], nil
+// }
