@@ -35,8 +35,6 @@ import (
 
 	"github.com/Comcast/gots/ebp"
 	"github.com/Comcast/gots/packet"
-
-	// "github.com/Comcast/gots/packet/adaptationfield"
 	"github.com/Comcast/gots/psi"
 	"github.com/Comcast/gots/scte35"
 )
