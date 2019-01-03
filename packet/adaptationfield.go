@@ -95,34 +95,6 @@ func initAdaptationField(p *Packet) {
 	}
 }
 
-// EncoderBoundaryPointBytes returns the byte array located in the optional TransportPrivateData of the (also optional)
-// AdaptationField of the Packet. If either of these optional fields are missing an empty byte array is returned with an error
-func EncoderBoundaryPointBytes(packet *Packet) ([]byte, error) {
-	hasAdapt, err := ContainsAdaptationField(packet)
-	if err != nil {
-		return nil, nil
-	}
-
-	af, err := packet.AdaptationField()
-	if err != nil {
-		return nil, err
-	}
-
-	hasTransPriv, err := af.HasTransportPrivateData()
-	if err != nil {
-		return nil, err
-	}
-
-	if hasAdapt && af.Length() > 0 && hasTransPriv {
-		ebp, err := af.TransportPrivateData()
-		if err != nil {
-			return nil, err
-		}
-		return ebp, nil
-	}
-	return nil, gots.ErrNoEBP
-}
-
 // returns if the adaptation field has a PCR, this does not check for errors.
 func (af *AdaptationField) hasPCR() bool {
 	return af.getBit(5, 0x10)
@@ -590,4 +562,28 @@ func (af *AdaptationField) AdaptationFieldExtension() ([]byte, error) {
 		return nil, gots.ErrNoAdaptationFieldExtension
 	}
 	return af[af.adaptationExtensionStart():af.stuffingStart()], nil
+}
+
+// EncoderBoundaryPointBytes returns the byte array located in the optional TransportPrivateData of the (also optional)
+// AdaptationField of the Packet. If either of these optional fields are missing an empty byte array is returned with an error
+func EncoderBoundaryPointBytes(packet *Packet) ([]byte, error) {
+
+	af, err := packet.AdaptationField()
+	if err != nil {
+		return nil, err
+	}
+
+	hasTransPriv, err := af.HasTransportPrivateData()
+	if err != nil {
+		return nil, err
+	}
+
+	if af.Length() > 0 && hasTransPriv {
+		ebp, err := af.TransportPrivateData()
+		if err != nil {
+			return nil, err
+		}
+		return ebp, nil
+	}
+	return nil, gots.ErrNoEBP
 }
