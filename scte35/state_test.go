@@ -596,6 +596,81 @@ func TestVSS(t *testing.T) {
 	}
 }
 
+// Test the logic for when we recieve a VSS signal
+// with same signalID and eventID as the earlier one
+// and that we drop it.
+func TestVSSSameSignalIdBackToBack(t *testing.T) {
+	state := NewState()
+
+	vss_1 := "/DB7AAH//y+UAP/wBQb+AAAAAABlAlJDVUVJAAALkn+XDUMJIUJMQUNLT1VUOnZUaDZqMUNDRFZ3QUFBQUFBQUFCQVE9PQ4eY29tY2FzdDpsaW5lYXI6bGljZW5zZXJvdGF0aW9uQAAAAg9DVUVJAAALkn+XAABBAABupj9l" //PTS: 8589881236 , EventID: 2962, SignalID:vTh6j1CCDVwAAAAAAAABAQ==
+	vss_2 := "/DB7AAAAAOBaAP/wBQb+AAAAAABlAlJDVUVJAAALkn+XDUMJIUJMQUNLT1VUOnZUaDZqMUNDRFZ3QUFBQUFBQUFCQVE9PQ4eY29tY2FzdDpsaW5lYXI6bGljZW5zZXJvdGF0aW9uQAAAAg9DVUVJAAALkn+XAABBAAAuynMR" //PTS:57434, EventID:2962, SignalID:vTh6j1CCDVwAAAAAAAABAQ==
+
+	outSignalBytes1, _ := base64.StdEncoding.DecodeString(vss_1)
+	outSignal1, err := NewSCTE35(append([]byte{0x0}, outSignalBytes1...))
+	if err != nil {
+		t.Errorf("Error creating SCTE-35 signal: %s", err.Error())
+	}
+
+	// 0x40
+	closed1, err := state.ProcessDescriptor(outSignal1.Descriptors()[0])
+	if err != nil {
+		t.Errorf("ProcessDescriptor returned an error: %s", err.Error())
+	}
+	if len(closed1) != 0 {
+		t.Errorf("No events should have been closed (%d were)", len(closed1))
+	}
+	if len(state.Open()) != 1 {
+		t.Errorf("There should be one open signal (%d)", len(state.Open()))
+	}
+	if state.Open()[0].TypeID() != SegDescUnscheduledEventStart {
+		t.Errorf("Expected segmentation_type_id 0x40 but got %x", state.Open()[0].TypeID())
+	}
+	if state.Open()[0].EventID() != 2962 {
+		t.Errorf("Expected event_id 2962 but got %d", state.Open()[0].EventID())
+	}
+
+	// 0x41
+	closed1, err = state.ProcessDescriptor(outSignal1.Descriptors()[1])
+	if err != nil {
+		t.Errorf("ProcessDescriptor returned an error: %s", err.Error())
+	}
+	if len(closed1) != 1 {
+		t.Errorf("1 event should have been closed (%d were)", len(closed1))
+	}
+	if len(state.Open()) != 0 {
+		t.Errorf("There should not be any open signals (%d)", len(state.Open()))
+	}
+
+	// Send another VSS signal with the same signalID and same eventID
+	// Check that we drop the signal.
+	outSignalBytes2, _ := base64.StdEncoding.DecodeString(vss_2)
+	outSignal2, err := NewSCTE35(append([]byte{0x0}, outSignalBytes2...))
+	if err != nil {
+		t.Errorf("Error creating SCTE-35 signal: %s", err.Error())
+	}
+
+	// 0x40
+	closed2, err := state.ProcessDescriptor(outSignal2.Descriptors()[0])
+	if err != gots.ErrSCTE35DuplicateDescriptor {
+		t.Errorf("ProcessDescriptor should have dropped this as it is a duplicate descriptor: %s", err.Error())
+	}
+	if len(state.Open()) != 0 {
+		t.Errorf("This signal should have been dropped, there should be 0 open signals (%d)", len(state.Open()))
+	}
+	// 0x41
+	closed2, err = state.ProcessDescriptor(outSignal2.Descriptors()[1])
+	if err != gots.ErrSCTE35MissingOut {
+		t.Errorf("0x40 was dropped so 0x41 should have been dropped as there was no matching out: %s", err.Error())
+	}
+	if len(closed2) != 0 {
+		t.Errorf("0 events should have been closed (%d were)", len(closed2))
+	}
+	if len(state.Open()) != 0 {
+		t.Errorf("There should not be any open signals (%d)", len(state.Open()))
+	}
+
+}
+
 func printState(s State, header string) {
 	fmt.Printf("\n%s\n", header)
 	for _, open := range s.Open() {
