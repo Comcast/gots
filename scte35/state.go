@@ -24,7 +24,10 @@ SOFTWARE.
 
 package scte35
 
-import "github.com/Comcast/gots"
+import (
+	"github.com/Comcast/gots"
+	"strings"
+)
 
 const receivedRingLen = 10
 
@@ -68,14 +71,39 @@ func (s *state) ProcessDescriptor(desc SegmentationDescriptor) ([]SegmentationDe
 	descAdded := false
 	pts := desc.SCTE35().PTS()
 	for _, e := range s.received {
-		if e != nil && e.pts == pts {
+		if e != nil {
 			for _, d := range e.descs {
-				if desc.Equal(d) {
-					return nil, gots.ErrSCTE35DuplicateDescriptor
+				if e.pts == pts {
+					if desc.Equal(d) {
+						// Duplicate desc found
+						return nil, gots.ErrSCTE35DuplicateDescriptor
+					}
+					e.descs = append(e.descs, desc)
+					descAdded = true
+				}
+				// check if we have seen a VSS signal with the same signalId and
+				// same eventId before.
+				if desc.EventID() == d.EventID() &&
+					d.TypeID() == SegDescUnscheduledEventStart && desc.TypeID() == SegDescUnscheduledEventStart {
+					descStreamSwitchSignalId, err := desc.StreamSwitchSignalId()
+					if err != nil {
+						return nil, err
+					}
+
+					dStreamSwitchSignalId, err := d.StreamSwitchSignalId()
+					if err != nil {
+						return nil, err
+					}
+
+					if strings.Compare(descStreamSwitchSignalId, dStreamSwitchSignalId) == 0 &&
+						(d.EventID() == desc.EventID()) {
+						// desc and d contain same signalId and same eventID
+						// we should not be processing this desc.
+						return nil, gots.ErrSCTE35DuplicateDescriptor
+					}
+					descAdded = true
 				}
 			}
-			e.descs = append(e.descs, desc)
-			descAdded = true
 		}
 	}
 	if !descAdded {
