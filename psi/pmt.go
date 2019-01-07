@@ -47,9 +47,20 @@ type pmt struct {
 // PmtAccumulatorDoneFunc is a doneFunc that can be used for packet accumulation
 // to create a PMT
 func PmtAccumulatorDoneFunc(b []byte) (bool, error) {
-	if len(b) < (int(SectionLength(b)) + int(PointerField(b)) + int(PSIHeaderLen)) {
+	start := 1 + int(PointerField(b))
+	if len(b) < start {
 		return false, nil
 	}
+
+	sectionBytes := b[start:]
+	for len(sectionBytes) > 0 && sectionBytes[0] != 0xFF {
+		tableLength := sectionLength(sectionBytes)
+		if len(sectionBytes) < int(tableLength)+3 {
+			return false, nil
+		}
+		sectionBytes = sectionBytes[3+tableLength:]
+	}
+
 	return true, nil
 }
 
@@ -57,58 +68,71 @@ func PmtAccumulatorDoneFunc(b []byte) (bool, error) {
 // pmtBytes should be concatenated packet payload contents.
 func NewPMT(pmtBytes []byte) (PMT, error) {
 	pmt := &pmt{}
-	err := pmt.parseTable(pmtBytes)
+	err := pmt.parseTables(pmtBytes)
 	if err != nil {
 		return nil, err
 	}
 	return pmt, nil
 }
 
-func (p *pmt) parseTable(pmtBytes []byte) error {
+func (p *pmt) parseTables(pmtBytes []byte) error {
+	sectionBytes := pmtBytes[1+PointerField(pmtBytes):]
+
+	for len(sectionBytes) > 0 && sectionBytes[0] != 0xFF {
+		tableLength := sectionLength(sectionBytes)
+
+		if tableID(sectionBytes) == 0x2 {
+			err := p.parsePMTSection(sectionBytes[0 : 3+tableLength])
+			if err != nil {
+				return err
+			}
+		}
+		sectionBytes = sectionBytes[3+tableLength:]
+	}
+
+	return nil
+}
+
+func (p *pmt) parsePMTSection(pmtBytes []byte) error {
 	var pids []uint16
 	var elementaryStreams []PmtElementaryStream
+	sectionLength := sectionLength(pmtBytes)
+	programInfoLength := uint16(pmtBytes[programInfoLengthOffset]&0x0f)<<8 |
+		uint16(pmtBytes[programInfoLengthOffset+1])
 
-	psiStart := uint16(PointerField(pmtBytes)) + 1 // Skip pointer field
-	if TableID(pmtBytes) == 0x02 {
-		programInfoLength := uint16(pmtBytes[psiStart+programInfoLengthOffset]&0x0f)<<8 |
-			uint16(pmtBytes[psiStart+programInfoLengthOffset+1])
-		sectionLength := SectionLength(pmtBytes)
+	// start at the stream descriptors, parse until the CRC
+	for offset := programInfoLengthOffset + 2 + programInfoLength; offset < PSIHeaderLen+sectionLength-pmtEsDescriptorStaticLen-CrcLen; {
+		elementaryStreamType := uint8(pmtBytes[offset])
+		elementaryPid := uint16(pmtBytes[offset+1]&0x1f)<<8 | uint16(pmtBytes[offset+2])
+		pids = append(pids, elementaryPid)
+		infoLength := uint16(pmtBytes[offset+3]&0x0f)<<8 | uint16(pmtBytes[offset+4])
 
-		// start at the stream descriptors, parse until the CRC
-		for offset := psiStart + programInfoLengthOffset + 2 + programInfoLength; offset < psiStart+PSIHeaderLen+sectionLength-pmtEsDescriptorStaticLen-CrcLen; {
-			elementaryStreamType := uint8(pmtBytes[offset])
-			elementaryPid := uint16(pmtBytes[offset+1]&0x1f)<<8 | uint16(pmtBytes[offset+2])
-			pids = append(pids, elementaryPid)
-			infoLength := uint16(pmtBytes[offset+3]&0x0f)<<8 | uint16(pmtBytes[offset+4])
-
-			// Move past the es descriptor static data
-			offset += pmtEsDescriptorStaticLen
-			var descriptors []PmtDescriptor
-			if infoLength != 0 && int(infoLength+offset) < len(pmtBytes) {
-				var descriptorOffset uint16
-				for descriptorOffset < infoLength {
-					tag := uint8(pmtBytes[offset+descriptorOffset])
-					descriptorOffset++
-					descriptorLength := uint16(pmtBytes[offset+descriptorOffset])
-					descriptorOffset++
-					startPos := offset + descriptorOffset
-					endPos := int(offset + descriptorOffset + descriptorLength)
-					if endPos < len(pmtBytes) {
-						data := pmtBytes[startPos:endPos]
-						descriptors = append(descriptors, NewPmtDescriptor(tag, data))
-					} else {
-						return gots.ErrParsePMTDescriptor
-					}
-					descriptorOffset += descriptorLength
+		// Move past the es descriptor static data
+		offset += pmtEsDescriptorStaticLen
+		var descriptors []PmtDescriptor
+		if infoLength != 0 && int(infoLength+offset) < len(pmtBytes) {
+			var descriptorOffset uint16
+			for descriptorOffset < infoLength {
+				tag := uint8(pmtBytes[offset+descriptorOffset])
+				descriptorOffset++
+				descriptorLength := uint16(pmtBytes[offset+descriptorOffset])
+				descriptorOffset++
+				startPos := offset + descriptorOffset
+				endPos := int(offset + descriptorOffset + descriptorLength)
+				if endPos < len(pmtBytes) {
+					data := pmtBytes[startPos:endPos]
+					descriptors = append(descriptors, NewPmtDescriptor(tag, data))
+				} else {
+					return gots.ErrParsePMTDescriptor
 				}
-				offset += infoLength
+				descriptorOffset += descriptorLength
 			}
-			es := NewPmtElementaryStream(elementaryStreamType, elementaryPid, descriptors)
-			elementaryStreams = append(elementaryStreams, es)
+			offset += infoLength
 		}
-	} else {
-		return gots.ErrUnknownTableID
+		es := NewPmtElementaryStream(elementaryStreamType, elementaryPid, descriptors)
+		elementaryStreams = append(elementaryStreams, es)
 	}
+
 	p.pids = pids
 	p.elementaryStreams = elementaryStreams
 	return nil
@@ -168,7 +192,7 @@ func (p *pmt) String() string {
 }
 
 // FilterPMTPacketsToPids filters the PMT contents of the provided packet to the PIDs provided and returns a new packet. For example: if the provided PMT has PIDs 101, 102, and 103 and the provides PIDs are 101 and 102, the new PMT will have only descriptors for PID 101 and 102. The descriptor for PID 103 will be stripped from the new PMT packet.
-func FilterPMTPacketsToPids(packets []packet.Packet, pids []uint16) []packet.Packet {
+func FilterPMTPacketsToPids(packets []*packet.Packet, pids []uint16) []*packet.Packet {
 	// make sure we have packets
 	if len(packets) == 0 {
 		return nil
@@ -231,7 +255,7 @@ func FilterPMTPacketsToPids(packets []packet.Packet, pids []uint16) []packet.Pac
 	// Recalculate the CRC
 	fPMT = append(fPMT, gots.ComputeCRC(fPMT[pointerField:])...)
 
-	var filteredPMTPackets []packet.Packet
+	var filteredPMTPackets []*packet.Packet
 	for _, pkt := range packets {
 		var pktBuf bytes.Buffer
 		header, err := packet.Header(pkt)
@@ -252,8 +276,7 @@ func FilterPMTPacketsToPids(packets []packet.Packet, pids []uint16) []packet.Pac
 			// all done
 			break
 		}
-		padPacket(&pktBuf)
-		filteredPMTPackets = append(filteredPMTPackets, pktBuf.Bytes())
+		filteredPMTPackets = append(filteredPMTPackets, padPacket(&pktBuf))
 	}
 	return filteredPMTPackets
 }
@@ -262,7 +285,7 @@ func FilterPMTPacketsToPids(packets []packet.Packet, pids []uint16) []packet.Pac
 // defined by the PAT provided. Returns ErrNilPAT if pat
 // is nil, or any error encountered in parsing the PID
 // of pkt.
-func IsPMT(pkt packet.Packet, pat PAT) (bool, error) {
+func IsPMT(pkt *packet.Packet, pat PAT) (bool, error) {
 	if pat == nil {
 		return false, gots.ErrNilPAT
 	}
@@ -290,10 +313,12 @@ func safeSlice(byteArray []byte, start, end int) []byte {
 	return byteArray[start:len(byteArray)]
 }
 
-func padPacket(pkt *bytes.Buffer) {
-	for i := pkt.Len(); i < packet.PacketSize; i++ {
-		pkt.WriteByte(255)
+func padPacket(buf *bytes.Buffer) *packet.Packet {
+	var pkt packet.Packet
+	for i := copy(pkt[:], buf.Bytes()); i < packet.PacketSize; i++ {
+		pkt[i] = 0xff
 	}
+	return &pkt
 }
 
 func pidIn(pids []uint16, target uint16) bool {
@@ -311,25 +336,25 @@ func pidIn(pids []uint16, target uint16) bool {
 // It returns a new PMT object parsed from the packet(s), if found, and
 // otherwise returns an error.
 func ReadPMT(r io.Reader, pid uint16) (PMT, error) {
-	pkt := make(packet.Packet, packet.PacketSize)
+	var pkt packet.Packet
 	pmtAcc := packet.NewAccumulator(PmtAccumulatorDoneFunc)
 	done := false
 	var pmt PMT
 	for !done {
-		if _, err := io.ReadFull(r, pkt); err != nil {
+		if _, err := io.ReadFull(r, pkt[:]); err != nil {
 			if err == io.EOF || err == io.ErrUnexpectedEOF {
 				return nil, gots.ErrPMTNotFound
 			}
 			return nil, err
 		}
-		currPid, err := packet.Pid(pkt)
+		currPid, err := packet.Pid(&pkt)
 		if err != nil {
 			return nil, err
 		}
 		if currPid != pid {
 			continue
 		}
-		done, err = pmtAcc.Add(pkt)
+		done, err = pmtAcc.Add(pkt[:])
 		if err != nil {
 			return nil, err
 		}
@@ -341,6 +366,10 @@ func ReadPMT(r io.Reader, pid uint16) (PMT, error) {
 			pmt, err = NewPMT(b)
 			if err != nil {
 				return nil, err
+			}
+			if len(pmt.Pids()) == 0 {
+				done = false
+				pmtAcc = packet.NewAccumulator(PmtAccumulatorDoneFunc)
 			}
 		}
 	}

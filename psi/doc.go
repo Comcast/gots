@@ -41,7 +41,8 @@ const (
 
 // Program Element Stream Descriptor Type.
 const (
-	AUDIO_STREAM       uint8 = 2   // 0000 0010 (0x02)
+	VIDEO_STREAM       uint8 = 2   // 0000 0010 (0x02)
+	AUDIO_STREAM       uint8 = 3   // 0000 0011 (0x03)
 	REGISTRATION       uint8 = 5   // 0000 1000 (0x05)
 	CONDITIONAL_ACCESS uint8 = 9   // 0000 1001 (0x09)
 	LANGUAGE           uint8 = 10  // 0000 1010 (0x0A)
@@ -50,9 +51,10 @@ const (
 	COPYRIGHT          uint8 = 13  // 0000 1101 (0x0D)
 	MAXIMUM_BITRATE    uint8 = 14  // 0000 1110 (0x0E)
 	AVC_VIDEO          uint8 = 40  // 0010 1000 (0x28)
+	STREAM_IDENTIFIER  uint8 = 82  // 0101 0010 (0x52)
 	SCTE_ADAPTATION    uint8 = 151 // 1001 0111 (0x97)
 	EBP                uint8 = 233 // 1110 1001 (0xE9)
-	EC3                uint8 = 204 // 1100 1100(0xCC)
+	EC3                uint8 = 204 // 1100 1100 (0xCC)
 )
 
 // Unaccounted bytes before the end of the SectionLength field
@@ -62,18 +64,18 @@ const (
 	CrcLen       uint16 = 4
 )
 
-// PSI interface represents operations available on all PSI
-type PSI interface {
-	PointerField() uint8
-	TableID() uint8
-	SectionSyntaxIndicator() bool
-	PrivateIndicator() bool
-	SectionLength() uint16
+// TableHeader struct represents operations available on all PSI
+type TableHeader struct {
+	TableID                uint8
+	SectionSyntaxIndicator bool
+	PrivateIndicator       bool
+	SectionLength          uint16
 }
 
 // PmtStreamType is used to represent elementary steam type inside a PMT
 type PmtStreamType interface {
 	StreamType() uint8
+	StreamTypeDescription() string
 	IsStreamWherePresentationLagsEbp() bool
 	IsAudioContent() bool
 	IsVideoContent() bool

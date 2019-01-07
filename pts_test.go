@@ -35,7 +35,7 @@ func TestPTSIsAfterWithoutRollover(t *testing.T) {
 
 func TestPTSIsAfterWithRollover(t *testing.T) {
 	p := PTS(1)
-	other := PTS(8589934591) // maxPts
+	other := PTS(8589934591) // MaxPtsValue
 	if !p.After(other) {
 		t.Errorf("PTS=%v, not After other=%v", p, other)
 	}
@@ -79,7 +79,7 @@ func TestPTSIsNotAfterWithRolloverOverThreshold(t *testing.T) {
 
 func TestPTSRolledOver(t *testing.T) {
 	p := PTS(1)
-	other := PTS(8589934591) // maxPts
+	other := PTS(8589934591) // MaxPtsValue
 	if !p.RolledOver(other) {
 		t.Errorf("PTS=%v, not After other=%v", p, other)
 	}
@@ -90,7 +90,7 @@ func TestPTSDurationFrom(t *testing.T) {
 		t.Error("Expected duration of 5")
 	}
 
-	if 16 != PTS(5).DurationFrom(PTS(MaxPts-10)) {
+	if 16 != PTS(5).DurationFrom(PTS(MaxPtsValue-10)) {
 		t.Error("Expected duration of 16")
 	}
 }
@@ -110,11 +110,15 @@ func TestPTSGreaterOrEqual(t *testing.T) {
 }
 
 func TestAdd(t *testing.T) {
-	if PTS(6674924900) != PTS(7594224546).Add(PTS(7670634945)) {
+	if PTS(6674924900) != PTS(7594224547).Add(PTS(7670634945)) {
 		t.Error("PTS addition 1 test failed")
 	}
 	if PTS(2000) != PTS(1500).Add(PTS(500)) {
 		t.Error("PTS addition 2 test failed")
+	}
+	// both of these values cannot fit in 33 bits
+	if PTS(0x187654321) != PTS(0x2E00000000).Add(PTS(0x5587654321)) {
+		t.Error("PTS addition 3 test failed")
 	}
 }
 

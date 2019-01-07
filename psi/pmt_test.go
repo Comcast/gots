@@ -21,6 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
+
 package psi
 
 import (
@@ -32,6 +33,18 @@ import (
 	"github.com/Comcast/gots"
 	"github.com/Comcast/gots/packet"
 )
+
+func parseHexString(h string) *packet.Packet {
+	b, err := hex.DecodeString(h)
+	if err != nil {
+		panic("bad test: " + h)
+	}
+	pkt := new(packet.Packet)
+	if copy(pkt[:], b) != packet.PacketSize {
+		panic("bad test (wrong length): " + h)
+	}
+	return pkt
+}
 
 type testPmtElementaryStream struct {
 	elementaryPid       uint16
@@ -45,6 +58,10 @@ func (es *testPmtElementaryStream) ElementaryPid() uint16 {
 
 func (es *testPmtElementaryStream) StreamType() uint8 {
 	return es.streamType
+}
+
+func (es *testPmtElementaryStream) StreamTypeDescription() string {
+	return "Test Stream Description"
 }
 
 func (es *testPmtElementaryStream) IsAudioContent() bool {
@@ -82,7 +99,7 @@ func TestParseTable(t *testing.T) {
 		"ffffffffffffffffffffffffffffffffffffffff")
 
 	pmt := pmt{}
-	err := pmt.parseTable(byteArray)
+	err := pmt.parseTables(byteArray)
 	if err != nil {
 		t.Errorf("Can't parse PMT table %v", err)
 	}
@@ -99,6 +116,36 @@ func TestParseTable(t *testing.T) {
 		}
 	}
 }
+
+func TestParseMultipleTables(t *testing.T) {
+	byteArray, _ := hex.DecodeString("00c00015000297000b0000000000000100000000006ed1581a" +
+		"02b02d0001cb0000e065f0060504435545491b" +
+		"e065f0050e030004b00fe066f0060a04656e670086e06ef0" +
+		"007fc9ad32ffffffffffffffffffffffffffffffffffffff" +
+		"ffffffffffffffffffffffffffffffffffffffffffffffff" +
+		"ffffffffffffffffffffffffffffffffffffffffffffffff" +
+		"ffffffffffffffffffffffffffffffffffffffffffffffff" +
+		"ffffffffffffffffffffffffffffffffffffffff")
+
+	pmt := pmt{}
+	err := pmt.parseTables(byteArray)
+	if err != nil {
+		t.Errorf("Can't parse PMT table %v", err)
+	}
+
+	want := []uint16{101, 102, 110}
+	got := pmt.Pids()
+	if len(want) != len(got) {
+		t.Errorf("ES count does not match want:%v got:%v", len(want), len(got))
+	}
+
+	for i, pid := range got {
+		if want[i] != pid {
+			t.Errorf("PID does not match Want:%v Got:%v", want[i], pid)
+		}
+	}
+}
+
 func TestBuildPMT(t *testing.T) {
 	pkt, _ := hex.DecodeString("474064100002b02d0001cb0000e065f0060504435545491b" +
 		"e065f0050e030004b00fe066f0060a04656e670086e06ef0" +
@@ -382,7 +429,7 @@ func TestStringFormat(t *testing.T) {
 }
 
 func TestFilterPMTPacketsToPids_SinglePacketPMT(t *testing.T) {
-	bytes := []byte{
+	bytes := packet.Packet{
 		0x47, 0x40, 0x64, 0x10, 0x00, 0x02, 0xb0, 0x2d, 0x00, 0x01, 0xcb, 0x00,
 		0x00, 0xe0, 0x65, 0xf0, 0x06, 0x05, 0x04, 0x43, 0x55, 0x45, 0x49, 0x1b,
 		0xe0, 0x65, 0xf0, 0x05, 0x0e, 0x03, 0x00, 0x04, 0xb0, 0x0f, 0xe0, 0x66,
@@ -401,7 +448,7 @@ func TestFilterPMTPacketsToPids_SinglePacketPMT(t *testing.T) {
 		0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}
 
 	acc := packet.NewAccumulator(PmtAccumulatorDoneFunc)
-	acc.Add(bytes)
+	acc.Add(bytes[:])
 	payload, err := acc.Parse()
 	if err != nil {
 		t.Error(err)
@@ -414,11 +461,11 @@ func TestFilterPMTPacketsToPids_SinglePacketPMT(t *testing.T) {
 	pids := unfilteredPmt.Pids()
 	pids = pids[:len(pids)-1]
 
-	filteredPmtPackets := FilterPMTPacketsToPids([]packet.Packet{bytes}, pids)
+	filteredPmtPackets := FilterPMTPacketsToPids([]*packet.Packet{&bytes}, pids)
 
 	acc = packet.NewAccumulator(PmtAccumulatorDoneFunc)
 	for _, p := range filteredPmtPackets {
-		acc.Add(p)
+		acc.Add(p[:])
 	}
 	payload, err = acc.Parse()
 	filteredPmt, err := NewPMT(payload)
@@ -433,13 +480,13 @@ func TestFilterPMTPacketsToPids_SinglePacketPMT(t *testing.T) {
 }
 
 func TestFilterPMTPacketsToPids_MultiPacketPMT(t *testing.T) {
-	firstPacketBytes, _ := hex.DecodeString("474064100002b0ba0001c10000e065f00b0504435545490e03c03dd01be065f016970028046400283fe907108302808502800e03c0392087e066f0219700050445414333cc03c0c2100a04656e6700e907108302808502800e03c000f087e067f0219700050445414333cc03c0c4100a0473706100e907108302808502800e03c001e00fe068f01697000a04656e6700e907108302808502800e03c000f00fe069f01697000a0473706100e907108302808502800e03c000f086e0dc")
+	firstPacketBytes := parseHexString("474064100002b0ba0001c10000e065f00b0504435545490e03c03dd01be065f016970028046400283fe907108302808502800e03c0392087e066f0219700050445414333cc03c0c2100a04656e6700e907108302808502800e03c000f087e067f0219700050445414333cc03c0c4100a0473706100e907108302808502800e03c001e00fe068f01697000a04656e6700e907108302808502800e03c000f00fe069f01697000a0473706100e907108302808502800e03c000f086e0dc")
 
-	secondPacketBytes, _ := hex.DecodeString("47006411f0002b59bc22ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
+	secondPacketBytes := parseHexString("47006411f0002b59bc22ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
 
 	acc := packet.NewAccumulator(PmtAccumulatorDoneFunc)
-	acc.Add(firstPacketBytes)
-	acc.Add(secondPacketBytes)
+	acc.Add(firstPacketBytes[:])
+	acc.Add(secondPacketBytes[:])
 	payload, err := acc.Parse()
 	if err != nil {
 		t.Error(err)
@@ -448,10 +495,10 @@ func TestFilterPMTPacketsToPids_MultiPacketPMT(t *testing.T) {
 	wantedPids := []uint16{101, 102, 103, 104, 105, 220}
 
 	filteredPids := wantedPids[:len(wantedPids)-1]
-	filteredPMTPackets := FilterPMTPacketsToPids([]packet.Packet{firstPacketBytes, secondPacketBytes}, filteredPids)
+	filteredPMTPackets := FilterPMTPacketsToPids([]*packet.Packet{firstPacketBytes, secondPacketBytes}, filteredPids)
 	acc = packet.NewAccumulator(PmtAccumulatorDoneFunc)
 	for _, p := range filteredPMTPackets {
-		acc.Add(p)
+		acc.Add(p[:])
 	}
 
 	wantedPids = []uint16{101, 102, 103, 104, 105}
@@ -541,7 +588,7 @@ func TestPMTIsIFrameStreamNegative(t *testing.T) {
 }
 
 func TestIsPMT(t *testing.T) {
-	patPkt, _ := hex.DecodeString("4740003001000000b00d0001c100000001e1e02d507804ffffffffffffffffff" +
+	patPkt := parseHexString("4740003001000000b00d0001c100000001e1e02d507804ffffffffffffffffff" +
 		"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
 		"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
 		"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
@@ -555,14 +602,14 @@ func TestIsPMT(t *testing.T) {
 		t.Error("Couldn't load the PAT")
 	}
 
-	pmt, _ := hex.DecodeString("4741e03001000002b0480001c10000e1e1f0050e03c004751be1e1f016970028" +
+	pmt := parseHexString("4741e03001000002b0480001c10000e1e1f0050e03c004751be1e1f016970028" +
 		"044d401f3fe907108302808502800e03c003350fe1e2f01697000a04656e6700" +
 		"e907108302808502800e03c00104db121f57ffffffffffffffffffffffffffff" +
 		"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
 		"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
 		"ffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
 
-	notPMT, _ := hex.DecodeString("4741e13117f200014307ff050fdf0d45425030c8dae4dd8000000000000001e0" +
+	notPMT := parseHexString("4741e13117f200014307ff050fdf0d45425030c8dae4dd8000000000000001e0" +
 		"000084d00d31000bab4111000b93cb80054700000001091000000001674d401f" +
 		"ba202833f3e022000007d20001d4c1c040020f400041eb4d4601f18311200000" +
 		"000168ebef20000000010600068232993c76c08000000001060447b500314741" +
@@ -581,7 +628,7 @@ func TestIsPMT(t *testing.T) {
 func TestIsPMTErrorConditions(t *testing.T) {
 	// Test nil PAT
 
-	pmt, _ := hex.DecodeString("4741e03001000002b0480001c10000e1e1f0050e03c004751be1e1f016970028" +
+	pmt := parseHexString("4741e03001000002b0480001c10000e1e1f0050e03c004751be1e1f016970028" +
 		"044d401f3fe907108302808502800e03c003350fe1e2f01697000a04656e6700" +
 		"e907108302808502800e03c00104db121f57ffffffffffffffffffffffffffff" +
 		"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
@@ -597,14 +644,7 @@ func TestIsPMTErrorConditions(t *testing.T) {
 		t.Error("Nil Pat should return nil pat error")
 	}
 
-	badPMT, _ := hex.DecodeString("4741e03001000002b0480001c10000e1e1f0050e03c004751be1e1f016970028" +
-		"044d401f3fe907108302808502800e03c003350fe1e2f01697000a04656e6700" +
-		"e907108302808502800e03c00104db121f57ffffffffffffffffffffffffffff" +
-		"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
-		"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
-		"ffffffffffffffffffffffffffffffffffffffffffffffffffffff")
-
-	patPkt, _ := hex.DecodeString("4740003001000000b00d0001c100000001e1e02d507804ffffffffffffffffff" +
+	patPkt := parseHexString("4740003001000000b00d0001c100000001e1e02d507804ffffffffffffffffff" +
 		"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
 		"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
 		"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
@@ -616,16 +656,6 @@ func TestIsPMTErrorConditions(t *testing.T) {
 
 	if pat == nil {
 		t.Error("Couldn't load the PAT")
-	}
-
-	isPMTExpectFalse, errExpectBadLen := IsPMT(badPMT, pat)
-
-	if isPMTExpectFalse == true {
-		t.Error("Bad PMT Length should return false")
-	}
-
-	if errExpectBadLen == nil {
-		t.Error("Bad PMT Length should return  an error, probably invalid packet length")
 	}
 }
 func TestReadPMTForSmoke(t *testing.T) {
@@ -647,6 +677,7 @@ func TestReadPMTForSmoke(t *testing.T) {
 	pmt, err := ReadPMT(r, pid)
 	if err != nil {
 		t.Errorf("Unexpected error reading PMT: %v", err)
+		return
 	}
 	// sanity check (tests integration a bit)
 	if len(pmt.ElementaryStreams()) != 2 {
@@ -667,6 +698,64 @@ func TestReadPMTIncomplete(t *testing.T) {
 	_, err := ReadPMT(r, pid)
 	if err == nil {
 		t.Errorf("Expected to get error reading PMT, but did not")
+	}
+}
+
+func TestReadPMTSCTE(t *testing.T) {
+	bs, _ := hex.DecodeString("47403b1b00c0001500000100810000000000000100000000002f832c69ff" +
+		"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
+		"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
+		"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
+		"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
+		"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
+		"ffffffffffffffff47403b1c0002b0b20001cb0000f13df01809044749e1" +
+		"0b050441432d330504454143330504435545491bf13df0102a027e1f9700" +
+		"e9080c001f418507d04181f13ef00f810706380fff1f003f0a04656e6700" +
+		"81f13ff00f8107061003ff1f003f0a047370610086f140f00f8a01009700" +
+		"e9080c001f418507d041c0f141f012050445545631a100e9080c001f4185" +
+		"07d041c0f142f013050445545631a20100e9080c001f418507d041c0f164" +
+		"f008bf06496e766964690bcfa64bffff") // two PMT packets, first with SCTE 0xc0 table only
+	r := bytes.NewReader(bs)
+
+	pid := uint16(59)
+	pmt, err := ReadPMT(r, pid)
+	if err != nil {
+		t.Errorf("Unexpected error reading PMT: %v", err)
+		return
+	}
+	// sanity check (tests integration a bit)
+	if len(pmt.ElementaryStreams()) != 7 {
+		t.Errorf("PMT read is invalid, did not have expected number of streams")
+	}
+}
+
+func TestReadPMT_MultipleTables_MultiplePackets(t *testing.T) {
+	bs, _ := hex.DecodeString("47403b1e00c0001500000100610000000000000100000000" +
+		"0035e3e2d702b0b20001c50000eefdf01809044749e10b05" +
+		"0441432d330504454143330504435545491beefdf0102a02" +
+		"7e1f9700e9080c001f418507d04181eefef00f810706380f" +
+		"ff1f003f0a04656e670081eefff00f8107061003ff1f003f" +
+		"0a047370610086ef00f00f8a01009700e9080c001f418507" +
+		"d041c0ef01f012050445545631a100e9080c001f418507d0" +
+		"41c0ef02f013050445545631a20100e9080c001f47003b1f" +
+		"418507d041c0ef03f008bf06496e76696469a5cff3afffff" +
+		"ffffffffffffffffffffffffffffffffffffffffffffffff" +
+		"ffffffffffffffffffffffffffffffffffffffffffffffff" +
+		"ffffffffffffffffffffffffffffffffffffffffffffffff" +
+		"ffffffffffffffffffffffffffffffffffffffffffffffff" +
+		"ffffffffffffffffffffffffffffffffffffffffffffffff" +
+		"ffffffffffffffffffffffffffffffffffffffffffffffff" +
+		"ffffffffffffffffffffffffffffffff") // two tables (0xc0 and 0x2) combined across two packets
+	r := bytes.NewReader(bs)
+
+	pid := uint16(59)
+	pmt, err := ReadPMT(r, pid)
+	if err != nil {
+		t.Errorf("Unexpected error reading PMT: %v", err)
+		return
+	}
+	if len(pmt.ElementaryStreams()) != 7 {
+		t.Errorf("PMT read is invalid, did not have expected number of streams")
 	}
 }
 

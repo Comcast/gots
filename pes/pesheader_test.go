@@ -30,9 +30,20 @@ import (
 	"github.com/Comcast/gots/packet"
 )
 
-func TestPESHeader(t *testing.T) {
+func parseHexString(h string) *packet.Packet {
+	b, err := hex.DecodeString(h)
+	if err != nil {
+		panic("bad test: " + h)
+	}
+	pkt := new(packet.Packet)
+	if copy(pkt[:], b) != packet.PacketSize {
+		panic("bad test (wrong length): " + h)
+	}
+	return pkt
+}
 
-	pkt, _ := hex.DecodeString(
+func TestPESHeader(t *testing.T) {
+	pkt := parseHexString(
 		"4740661a000001c006ff80800521dee9ca57fff94c801d2000210995341d9d43" +
 			"61089848180b0884626048901425ddc09249220129d2fce728111c987e67ecb7" +
 			"4284af5099181d8cd095b841b0c7539ad6c06260536e137615560052369fc984" +
@@ -61,8 +72,7 @@ func TestPESHeader(t *testing.T) {
 }
 
 func TestPESHeader2(t *testing.T) {
-
-	pkt, _ := hex.DecodeString(
+	pkt := parseHexString(
 		"4740651C000001E0000084C00A39EFF33A7519EFF30B89000000010950000000" +
 			"01060104001A20100411B500314741393403C2FFFD8080FC942FFF8000000001" +
 			"21A81C29145C6FEB86EB239E2EE231302CF5163D32D183B7822FE37E7FB84549" +
@@ -92,11 +102,10 @@ func TestPESHeader2(t *testing.T) {
 }
 
 func TestNewPESHeaderMissingBytes(t *testing.T) {
-
 	// Actual data from Cisco Transcoder (AMC channel).  Below packet was causing
 	// index out of bounds exception.  It has the PES prefix code but we were not
 	// checking to see if it's a PUSI to begin with
-	pkt, _ := hex.DecodeString(
+	pkt := parseHexString(
 		"47006531b300ffffffffffffffffffffffffffffffffffffffffffffffffffff" +
 			"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
 			"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
@@ -106,5 +115,37 @@ func TestNewPESHeaderMissingBytes(t *testing.T) {
 	_, err := packet.PESHeader(pkt)
 	if err == nil {
 		t.Errorf("Expected that this packet is not a PES since PUSI is 0")
+	}
+}
+
+func TestPESHeaderTS(t *testing.T) {
+	pkt := parseHexString(
+		"4752a31c000001e0000080c00a210005bf21210005a7ab000001000697fffb80" +
+			"000001b5844ffb9400000001b24741393403d4fffc8080fd8fdffa0000fa0000" +
+			"fa0000fa0000fa0000fa0000fa0000fa0000fa0000fa0000fa0000fa0000fa00" +
+			"00fa0000fa0000fa0000fa0000fa0000ff000001014a24afffa4e8b836d7eeee" +
+			"4dafded260dab9688b2a0d89bed7fd3ad106c1b6bfe5a24a20d89b572ca92544" +
+			"389b572ca7b441b176bffebd06c5daffe8bd06c9b5fbb8364da6ffad")
+
+	pesBytes, err := packet.PESHeader(pkt)
+	if err != nil {
+		t.Errorf("Expected that this packet is a PES")
+	}
+	pes, err := NewPESHeader(pesBytes)
+	if err != nil {
+		t.Error(err)
+	}
+
+	expectedPTS := uint64(90000)
+	if pes.PTS() != expectedPTS {
+		t.Errorf("Invalid pts. Expected: %d, Actual: %d", expectedPTS, pes.PTS())
+	}
+
+	expectedDTS := uint64(86997)
+	if !pes.HasDTS() {
+		t.Errorf("Invalid dts indicator.")
+	}
+	if pes.DTS() != expectedDTS {
+		t.Errorf("Invalid dts. Expected: %d, Actual: %d", expectedDTS, pes.DTS())
 	}
 }

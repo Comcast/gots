@@ -27,15 +27,25 @@ package packet
 import (
 	"bytes"
 	"encoding/hex"
-	"fmt"
 	"testing"
+
+	"github.com/Comcast/gots"
 )
 
-func printlnf(format string, a ...interface{}) {
-	fmt.Printf(format+"\n", a...)
+func parseHexString(h string) *Packet {
+	b, err := hex.DecodeString(h)
+	if err != nil {
+		panic("bad test: " + h)
+	}
+	pkt := new(Packet)
+	if copy(pkt[:], b) != PacketSize {
+		panic("bad test (wrong length): " + h)
+	}
+	return pkt
 }
+
 func TestPayloadUnitStartIndicatorTrue(t *testing.T) {
-	packet, _ := hex.DecodeString(
+	packet := parseHexString(
 		"474000130000b00d0001c700000001e0642273423bffffffffffffffffffffff" +
 			"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
 			"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
@@ -48,7 +58,7 @@ func TestPayloadUnitStartIndicatorTrue(t *testing.T) {
 	}
 }
 func TestPayloadUnitStartIndicatorFalse(t *testing.T) {
-	packet, _ := hex.DecodeString(
+	packet := parseHexString(
 		"4700673b7000ffffffffffffffffffffffffffffffffffffffffffffffffffff" +
 			"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
 			"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
@@ -62,7 +72,7 @@ func TestPayloadUnitStartIndicatorFalse(t *testing.T) {
 }
 
 func TestPid(t *testing.T) {
-	packet, _ := hex.DecodeString(
+	packet := parseHexString(
 		"47406618000001c000f280800523fae5b8a3fff94c801d4010210994fd959f4b" +
 			"6108806a912e4b972d025c92429595817016dca64a18e7fc5c271bb40a0f9150" +
 			"3c0057776bdd66c0e9ab2ba7614de80ee468cc6e860846241710cfda6dabc569" +
@@ -75,8 +85,8 @@ func TestPid(t *testing.T) {
 	}
 }
 
-func TestPidGreaterThen255(t *testing.T) {
-	packet, _ := hex.DecodeString(
+func TestPidGreaterThan255(t *testing.T) {
+	packet := parseHexString(
 		"4701221B000001c000f280800523fae5b8a3fff94c801d4010210994fd959f4b" +
 			"6108806a912e4b972d025c92429595817016dca64a18e7fc5c271bb40a0f9150" +
 			"3c0057776bdd66c0e9ab2ba7614de80ee468cc6e860846241710cfda6dabc569" +
@@ -90,7 +100,7 @@ func TestPidGreaterThen255(t *testing.T) {
 }
 
 func TestContainsPayloadTrue(t *testing.T) {
-	packet, _ := hex.DecodeString(
+	packet := parseHexString(
 		"47406618000001c000f280800523fae5b8a3fff94c801d4010210994fd959f4b" +
 			"6108806a912e4b972d025c92429595817016dca64a18e7fc5c271bb40a0f9150" +
 			"3c0057776bdd66c0e9ab2ba7614de80ee468cc6e860846241710cfda6dabc569" +
@@ -104,7 +114,7 @@ func TestContainsPayloadTrue(t *testing.T) {
 }
 
 func TestContainsPayloadFalse(t *testing.T) {
-	packet, _ := hex.DecodeString(
+	packet := parseHexString(
 		"47006523b7103f5c99597ef7ffffffffffffffffffffffffffffffffffffffff" +
 			"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
 			"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
@@ -118,7 +128,7 @@ func TestContainsPayloadFalse(t *testing.T) {
 }
 
 func TestContinuityCounter(t *testing.T) {
-	packet, _ := hex.DecodeString(
+	packet := parseHexString(
 		"47006518dc0eff960f094176e794721d00cfedc13c1b039abf71e0f16bfeef88" +
 			"de1d1901a576793da53551cfc53363e00be1417c08383ce8bc51efda4c4a465c" +
 			"9aee27f76997169968829cf3343253c16243f7c21602cb2161767fda0485d4de" +
@@ -132,7 +142,7 @@ func TestContinuityCounter(t *testing.T) {
 }
 
 func TestZeroLenthAdaptationField(t *testing.T) {
-	packet, _ := hex.DecodeString(
+	packet := parseHexString(
 		"4701e1320034fcabf65d866a87eca0195db5ce1dcb6e0f75ba45a351722714db" +
 			"a013cea9665e9e1866b13431429454a37cb5663ea00353624c5d1f84c9463651" +
 			"634497dd837080b99ddf4bb26242f18d22ecd74dde47cd84041e5df3f0c57c40" +
@@ -148,7 +158,7 @@ func TestZeroLenthAdaptationField(t *testing.T) {
 }
 
 func TestPayloadWhenPacketHasNoAdaptationField(t *testing.T) {
-	packet, _ := hex.DecodeString(
+	packet := parseHexString(
 		"47006518dc0eff960f094176e794721d00cfedc13c1b039abf71e0f16bfeef88" +
 			"de1d1901a576793da53551cfc53363e00be1417c08383ce8bc51efda4c4a465c" +
 			"9aee27f76997169968829cf3343253c16243f7c21602cb2161767fda0485d4de" +
@@ -170,7 +180,7 @@ func TestPayloadWhenPacketHasNoAdaptationField(t *testing.T) {
 }
 
 func TestPayloadWhenPacketHasAdaptationField(t *testing.T) {
-	packet, _ := hex.DecodeString(
+	packet := parseHexString(
 		"4740653214723f5d09c67ec90ca90ad800d6ae02c11e66772d000001e0000084" +
 			"c00a33faf9760713faf900b900000001091000000001274d401f9a6281004b60" +
 			"2d1000003e90000ea60e8601d400057e4bbcb8280000000128ee388000000001" +
@@ -191,7 +201,7 @@ func TestPayloadWhenPacketHasAdaptationField(t *testing.T) {
 }
 
 func TestIncrementCC(t *testing.T) {
-	packet, _ := hex.DecodeString(
+	packet := parseHexString(
 		"4700673b7000ffffffffffffffffffffffffffffffffffffffffffffffffffff" +
 			"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
 			"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
@@ -212,9 +222,12 @@ func TestIncrementCC(t *testing.T) {
 
 func TestBadLength(t *testing.T) {
 	packet, _ := hex.DecodeString("4740653214723f5d09c67ec90ca90ad800d6ae02c11e66772d000001e0000084")
-	_, err := Header(packet)
-
-	if err == nil {
+	acc := NewAccumulator(nil)
+	ok, err := acc.Add(packet)
+	if ok {
+		t.Errorf("BadLength, expected failure from new packet")
+	}
+	if err != gots.ErrInvalidPacketLength {
 		t.Errorf("BadLength, expected error from new packet")
 	}
 }
@@ -235,7 +248,7 @@ func TestIncrementCCFunc(t *testing.T) {
 }
 
 func TestContainsAdaptationField(t *testing.T) {
-	packet, _ := hex.DecodeString(
+	packet := parseHexString(
 		"4700663a7700ffffffffffffffffffffffffffffffffffffffffffffffffffff" +
 			"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
 			"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
@@ -248,7 +261,7 @@ func TestContainsAdaptationField(t *testing.T) {
 }
 
 func TestEqualsNilPacket(t *testing.T) {
-	packet, _ := hex.DecodeString(
+	packet := parseHexString(
 		"4740653214723f5d09c67ec90ca90ad800d6ae02c11e66772d000001e0000084" +
 			"c00a33faf9760713faf900b900000001091000000001274d401f9a6281004b60" +
 			"2d1000003e90000ea60e8601d400057e4bbcb8280000000128ee388000000001" +
@@ -261,21 +274,21 @@ func TestEqualsNilPacket(t *testing.T) {
 }
 
 func TestEqualsIdenticalPackets(t *testing.T) {
-	packet, _ := hex.DecodeString(
+	packet := parseHexString(
 		"4740653214723f5d09c67ec90ca90ad800d6ae02c11e66772d000001e0000084" +
 			"c00a33faf9760713faf900b900000001091000000001274d401f9a6281004b60" +
 			"2d1000003e90000ea60e8601d400057e4bbcb8280000000128ee388000000001" +
 			"060007818a378085f8c00104007820100601c40411b500314741393403c2fffd" +
 			"2980fc8080ff800000000125b80100017fb2c69de69e51f57c4a1b8623115f78" +
 			"053598e7f47c066bf03c90c6233c0405369fd5f8e20957e40437f784")
-	same := packet[:]
-	if !Equal(packet, same) {
-		t.Errorf("Identical packets are different p1%v p2%v", packet, same)
+	same := *packet
+	if !Equal(packet, &same) {
+		t.Errorf("Identical packets are different p1%v p2%v", packet, &same)
 	}
 }
 
 func TestEqualsHeadersNotEqual(t *testing.T) {
-	packet1, _ := hex.DecodeString(
+	packet1 := parseHexString(
 		"4740653214723f5d09c67ec90ca90ad800d6ae02c11e66772d000001e0000084" +
 			"c00a33faf9760713faf900b900000001091000000001274d401f9a6281004b60" +
 			"2d1000003e90000ea60e8601d400057e4bbcb8280000000128ee388000000001" +
@@ -284,7 +297,7 @@ func TestEqualsHeadersNotEqual(t *testing.T) {
 			"053598e7f47c066bf03c90c6233c0405369fd5f8e20957e40437f784")
 
 	// Same as above, but with the MPEG-TS headers TEI bit flipped.
-	packet2, _ := hex.DecodeString(
+	packet2 := parseHexString(
 		"4780653214723f5d09c67ec90ca90ad800d6ae02c11e66772d000001e0000084" +
 			"c00a33faf9760713faf900b900000001091000000001274d401f9a6281004b60" +
 			"2d1000003e90000ea60e8601d400057e4bbcb8280000000128ee388000000001" +
@@ -298,7 +311,7 @@ func TestEqualsHeadersNotEqual(t *testing.T) {
 }
 
 func TestNullPacketIsNull(t *testing.T) {
-	p, _ := hex.DecodeString(
+	p := parseHexString(
 		"471fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
 			"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
 			"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
@@ -313,7 +326,7 @@ func TestNullPacketIsNull(t *testing.T) {
 }
 
 func TestNonNullPacketIsNotNull(t *testing.T) {
-	packet1, _ := hex.DecodeString(
+	packet1 := parseHexString(
 		"4740653214723f5d09c67ec90ca90ad800d6ae02c11e66772d000001e0000084" +
 			"c00a33faf9760713faf900b900000001091000000001274d401f9a6281004b60" +
 			"2d1000003e90000ea60e8601d400057e4bbcb8280000000128ee388000000001" +
@@ -327,7 +340,7 @@ func TestNonNullPacketIsNotNull(t *testing.T) {
 }
 
 func TestIsPat(t *testing.T) {
-	pat, _ := hex.DecodeString(
+	pat := parseHexString(
 		"4740001f0000b00d0031e100000001e064bfcd282fffffffffffffffffffffff" +
 			"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
 			"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
@@ -339,7 +352,7 @@ func TestIsPat(t *testing.T) {
 		t.Error("PAT packet should be counted as a PAT")
 	}
 
-	notPat, _ := hex.DecodeString(
+	notPat := parseHexString(
 		"4740653214723f5d09c67ec90ca90ad800d6ae02c11e66772d000001e0000084" +
 			"c00a33faf9760713faf900b900000001091000000001274d401f9a6281004b60" +
 			"2d1000003e90000ea60e8601d400057e4bbcb8280000000128ee388000000001" +

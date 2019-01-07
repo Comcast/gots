@@ -94,4 +94,18 @@ func TestExtractUtcTime(t *testing.T) {
 	}
 }
 
+func TestInsertUtcTime(t *testing.T) {
+	s0 := uint32(0xD6EE7BD8)
+	f0 := uint32(0x8DC714FC)
+	want := time.Unix(0, 1396964696553818999).UTC()
+	s1, f1 := insertUtcTime(want)
+	if s0 != s1 {
+		t.Errorf("secondsInserted=%d, secondsExpected=%d\n", s1, s0)
+	}
+	if f0 != f1 {
+		t.Errorf("fractionInserted=%d, fractionExpected=%d\n", f1, f0)
+	}
+
+}
+
 // TODO TestUtcTimeAfter2036

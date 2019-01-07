@@ -26,23 +26,24 @@ package gots
 
 import "math"
 
-const ()
-
 // PTS constants
 const (
 	PTS_DTS_INDICATOR_BOTH     = 3 // 11
 	PTS_DTS_INDICATOR_ONLY_PTS = 2 // 10
 	PTS_DTS_INDICATOR_NONE     = 0 // 00
 
-	// MaxPts is the highest value the PTS can hold before it rolls over, since its a 33 bit timestamp.
-	MaxPts = 8589934591 // 2^33 - 1
+	// MaxPtsValue is the highest value the PTS can hold before it rolls over, since its a 33 bit timestamp.
+	MaxPtsValue = (1 << 33) - 1 // 2^33 - 1 = 8589934591 = 0x1FFFFFFFF
+
+	// MaxPtsTicks is the length of the complete PTS timeline.
+	MaxPtsTicks = 1 << 33 // 2^33 = 8589934592 = 0x200000000
 
 	// Used as a sentinel values for algorithms working against PTS
 	PtsNegativeInfinity = PTS(math.MaxUint64 - 1) //18446744073709551614
 	PtsPositiveInfinity = PTS(math.MaxUint64)     //18446744073709551615
 	PtsClockRate        = 90000
 
-	// UpperPtsRolloverThreshold is the threshold for a rollover on the upper end, maxPts = 30 min
+	// UpperPtsRolloverThreshold is the threshold for a rollover on the upper end, MaxPtsValue - 30 min
 	UpperPtsRolloverThreshold = 8427934591
 	// LowerPtsRolloverThreshold is the threshold for a rollover on the lower end, 30 min
 	LowerPtsRolloverThreshold = 162000000
@@ -92,9 +93,9 @@ func (p PTS) RolledOver(other PTS) bool {
 func (p PTS) DurationFrom(from PTS) uint64 {
 	switch {
 	case p.RolledOver(from):
-		return uint64((MaxPts + 1 - from) + p)
+		return uint64((MaxPtsTicks - from) + p)
 	case from.RolledOver(p):
-		return uint64((MaxPts + 1 - p) + from)
+		return uint64((MaxPtsTicks - p) + from)
 	case p < from:
 		return uint64(from - p)
 	default:
@@ -104,11 +105,7 @@ func (p PTS) DurationFrom(from PTS) uint64 {
 
 // Add adds the two PTS times together and returns a new PTS
 func (p PTS) Add(x PTS) PTS {
-	result := p + x
-	if result > MaxPts {
-		result = result - MaxPts
-	}
-	return PTS(result)
+	return (p + x) & MaxPtsValue
 }
 
 // ExtractTime extracts a PTS time

@@ -29,24 +29,47 @@ const (
 	// PacketSize is the expected size of a packet in bytes
 	PacketSize = 188
 	// SyncByte is the expected value of the sync byte
-	SyncByte = 71 // 0x47
+	SyncByte = 71 // 0x47 (0100 0111)
 	// NullPacketPid is the pid reserved for null packets
-	NullPacketPid = uint16(8191)
+	NullPacketPid = 8191 // 0x1FFF
+)
+
+// TransportScramblingControlOptions is a set of constants for
+// selecting the transport scrambling control.
+type TransportScramblingControlOptions byte
+
+const (
+	NoScrambleFlag      TransportScramblingControlOptions = 0 // 00
+	ScrambleEvenKeyFlag TransportScramblingControlOptions = 2 // 10
+	ScrambleOddKeyFlag  TransportScramblingControlOptions = 3 // 11
+)
+
+// AdaptationFieldControlOptions is a set of constants for
+// selecting the adaptation field control.
+type AdaptationFieldControlOptions byte
+
+const (
+	PayloadFlag                   AdaptationFieldControlOptions = 1 // 10
+	AdaptationFieldFlag           AdaptationFieldControlOptions = 2 // 01
+	PayloadAndAdaptationFieldFlag AdaptationFieldControlOptions = 3 // 11
 )
 
 // Packet is the basic unit in a transport stream.
-type Packet []byte
+type Packet [PacketSize]byte
+
+// AdaptationField is an optional part of the packet.
+type AdaptationField Packet
 
 // Accumulator is used to gather multiple packets
 // and return their concatenated payloads.
 // Accumulator is not thread safe.
 type Accumulator interface {
 	// Add adds a packet to the accumulator and returns true if done.
-	Add(Packet) (bool, error)
+	Add([]byte) (bool, error)
 	// Parse returns the concatenated payloads of all the packets that have been added to the accumulator
 	Parse() ([]byte, error)
 	// Packets returns the accumulated packets
-	Packets() []Packet
+	Packets() []*Packet
 	// Reset clears all packets in the accumulator
 	Reset()
 }
