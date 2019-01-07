@@ -668,7 +668,6 @@ func TestVSSSameSignalIdBackToBack(t *testing.T) {
 	if len(state.Open()) != 0 {
 		t.Errorf("There should not be any open signals (%d)", len(state.Open()))
 	}
-
 }
 
 func printState(s State, header string) {
