@@ -699,7 +699,6 @@ func TestOutInInOutIn36_37_35_37_37(t *testing.T) {
 		t.Errorf("There should be one open signal (%d)", len(state.Open()))
 	}
 
-	t.Logf("ProcessDescriptor 0x36 done")
 	// 0x37 - event_id: 0 - seg_num: 1 - seg_expected: 3
 	firstInSignalBytes, _ := base64.StdEncoding.DecodeString("/DBGAAEtT5LUAP/wBQb+AAAAAAAwAi5DVUVJT///9X+/CR9TSUdOQUw6MllEVngrUis5VnNBQUFBQUFBQUJBZz09NwEDU/ktPg==")
 	firstInSignal, err := NewSCTE35(append([]byte{0x0}, firstInSignalBytes...))
@@ -717,16 +716,15 @@ func TestOutInInOutIn36_37_35_37_37(t *testing.T) {
 	if len(state.Open()) != 1 {
 		t.Errorf("There should be one open signal (%d)", len(state.Open()))
 	}
-	t.Logf("ProcessDescriptor 0x37-1 done")
 
 	// 0x35 closes 36
-	_35SignalBytes, _ := base64.StdEncoding.DecodeString("/DAvAAD5dbEbAP/wBQb+M+6KUwAZAhdDVUVJQAAAPn+fCAgAAAAALecjUzUAALuiqds=")
-	_35Signal, err := NewSCTE35(append([]byte{0x0}, _35SignalBytes...))
+	In35SignalBytes, _ := base64.StdEncoding.DecodeString("/DAvAAD5dbEbAP/wBQb+M+6KUwAZAhdDVUVJQAAAPn+fCAgAAAAALecjUzUAALuiqds=")
+	In35Signal, err := NewSCTE35(append([]byte{0x0}, In35SignalBytes...))
 	if err != nil {
 		t.Errorf("Error creating SCTE-35 signal: %s", err.Error())
 	}
 
-	closed, err = state.ProcessDescriptor(_35Signal.Descriptors()[0])
+	closed, err = state.ProcessDescriptor(In35Signal.Descriptors()[0])
 	if err != nil {
 		t.Errorf("ProcessDescriptor returned an error: %s", err.Error())
 	}
@@ -736,7 +734,6 @@ func TestOutInInOutIn36_37_35_37_37(t *testing.T) {
 	if len(state.Open()) != 0 {
 		t.Errorf("There should be 0 open signal (%d)", len(state.Open()))
 	}
-	t.Logf("ProcessDescriptor 0x35 done")
 
 	// 0x37 - event_id: 0 - seg_num: 2 - seg_expected: 3
 	secondInSignalBytes, _ := base64.StdEncoding.DecodeString("/DBGAAEteMW0AP/wBQb+AAAAAAAwAi5DVUVJT///9X+/CR9TSUdOQUw6MllEVngrUis5VnNBQUFBQUFBQUJBdz09NwID1nPQRg==")
@@ -746,6 +743,7 @@ func TestOutInInOutIn36_37_35_37_37(t *testing.T) {
 	}
 
 	closed, err = state.ProcessDescriptor(secondInSignal.Descriptors()[0])
+	// ErrSCTE35MissingOut expected as 0x35 closed 0x36
 	if err != gots.ErrSCTE35MissingOut {
 		t.Errorf("ProcessDescriptor returned an error: %s", err.Error())
 	}
@@ -755,7 +753,6 @@ func TestOutInInOutIn36_37_35_37_37(t *testing.T) {
 	if len(state.Open()) != 0 {
 		t.Errorf("There should be 0 open signal (%d)", len(state.Open()))
 	}
-	t.Logf("ProcessDescriptor 0x37-2 done")
 
 	// 0x37 = event_id: 0 - seg_num: 3 - seg_expected: 3
 	// This will return ErrMissingOut when processed since the previous 0x36 closed the 0x36 this 0x37 belongs to.
@@ -766,6 +763,7 @@ func TestOutInInOutIn36_37_35_37_37(t *testing.T) {
 	}
 
 	closed, err = state.ProcessDescriptor(thirdInSignal.Descriptors()[0])
+	// ErrSCTE35MissingOut expected as 0x35 closed 0x36
 	if err != gots.ErrSCTE35MissingOut {
 		t.Error("ProcessDescriptor of out returned unexpected err:", err)
 	}
@@ -775,5 +773,4 @@ func TestOutInInOutIn36_37_35_37_37(t *testing.T) {
 	if len(state.Open()) != 0 {
 		t.Errorf("There should be 0 open signal (%d)", len(state.Open()))
 	}
-	t.Logf("ProcessDescriptor 0x37-3 done")
 }
