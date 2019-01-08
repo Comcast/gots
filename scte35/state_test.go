@@ -677,3 +677,103 @@ func printState(s State, header string) {
 	}
 	println()
 }
+
+func TestOutInInOutIn36_37_35_37_37(t *testing.T) {
+	state := NewState()
+
+	// 0x36 - event_id:0 - seg_num: 0 - seg_expected: 0
+	outSignalBytes, _ := base64.StdEncoding.DecodeString("/DBLAAEs/S0UAP/wBQb+AAAAAAA1AjNDVUVJT///9X//AACky4AJH1NJR05BTDoyWURWeCtSKzlWc0FBQUFBQUFBQkFRPT02AAD9DXQ/")
+	outSignal, err := NewSCTE35(append([]byte{0x0}, outSignalBytes...))
+	if err != nil {
+		t.Errorf("Error creating SCTE-35 signal: %s", err.Error())
+	}
+
+	closed, err := state.ProcessDescriptor(outSignal.Descriptors()[0])
+	if err != nil {
+		t.Errorf("ProcessDescriptor returned an error: %s", err.Error())
+	}
+	if len(closed) != 0 {
+		t.Errorf("No events should have been closed (%d were)", len(closed))
+	}
+	if len(state.Open()) != 1 {
+		t.Errorf("There should be one open signal (%d)", len(state.Open()))
+	}
+
+	t.Logf("ProcessDescriptor 0x36 done")
+	// 0x37 - event_id: 0 - seg_num: 1 - seg_expected: 3
+	firstInSignalBytes, _ := base64.StdEncoding.DecodeString("/DBGAAEtT5LUAP/wBQb+AAAAAAAwAi5DVUVJT///9X+/CR9TSUdOQUw6MllEVngrUis5VnNBQUFBQUFBQUJBZz09NwEDU/ktPg==")
+	firstInSignal, err := NewSCTE35(append([]byte{0x0}, firstInSignalBytes...))
+	if err != nil {
+		t.Errorf("Error creating SCTE-35 signal: %s", err.Error())
+	}
+
+	closed, err = state.ProcessDescriptor(firstInSignal.Descriptors()[0])
+	if err != nil {
+		t.Errorf("ProcessDescriptor returned an error: %s", err.Error())
+	}
+	if len(closed) != 0 {
+		t.Errorf("No events should have been closed (%d were)", len(closed))
+	}
+	if len(state.Open()) != 1 {
+		t.Errorf("There should be one open signal (%d)", len(state.Open()))
+	}
+	t.Logf("ProcessDescriptor 0x37-1 done")
+
+	// 0x35 closes 36
+	_35SignalBytes, _ := base64.StdEncoding.DecodeString("/DAvAAD5dbEbAP/wBQb+M+6KUwAZAhdDVUVJQAAAPn+fCAgAAAAALecjUzUAALuiqds=")
+	_35Signal, err := NewSCTE35(append([]byte{0x0}, _35SignalBytes...))
+	if err != nil {
+		t.Errorf("Error creating SCTE-35 signal: %s", err.Error())
+	}
+
+	closed, err = state.ProcessDescriptor(_35Signal.Descriptors()[0])
+	if err != nil {
+		t.Errorf("ProcessDescriptor returned an error: %s", err.Error())
+	}
+	if len(closed) != 1 {
+		t.Errorf("1 event should have been closed (%d were)", len(closed))
+	}
+	if len(state.Open()) != 0 {
+		t.Errorf("There should be 0 open signal (%d)", len(state.Open()))
+	}
+	t.Logf("ProcessDescriptor 0x35 done")
+
+	// 0x37 - event_id: 0 - seg_num: 2 - seg_expected: 3
+	secondInSignalBytes, _ := base64.StdEncoding.DecodeString("/DBGAAEteMW0AP/wBQb+AAAAAAAwAi5DVUVJT///9X+/CR9TSUdOQUw6MllEVngrUis5VnNBQUFBQUFBQUJBdz09NwID1nPQRg==")
+	secondInSignal, err := NewSCTE35(append([]byte{0x0}, secondInSignalBytes...))
+	if err != nil {
+		t.Errorf("Error creating SCTE-35 signal: %s", err.Error())
+	}
+
+	closed, err = state.ProcessDescriptor(secondInSignal.Descriptors()[0])
+	if err != gots.ErrSCTE35MissingOut {
+		t.Errorf("ProcessDescriptor returned an error: %s", err.Error())
+	}
+	if len(closed) != 0 {
+		t.Errorf("No events should have been closed (%d were)", len(closed))
+	}
+	if len(state.Open()) != 0 {
+		t.Errorf("There should be 0 open signal (%d)", len(state.Open()))
+	}
+	t.Logf("ProcessDescriptor 0x37-2 done")
+
+	// 0x37 = event_id: 0 - seg_num: 3 - seg_expected: 3
+	// This will return ErrMissingOut when processed since the previous 0x36 closed the 0x36 this 0x37 belongs to.
+	thirdInSignalBytes, _ := base64.StdEncoding.DecodeString("/DBGAAEtofiUAP/wBQb+AAAAAAAwAi5DVUVJT///9X+/CR9TSUdOQUw6MllEVngrUis5VnNBQUFBQUFBQUJCQT09NwMDJVJ1Mg==")
+	thirdInSignal, err := NewSCTE35(append([]byte{0x0}, thirdInSignalBytes...))
+	if err != nil {
+		t.Errorf("Error creating SCTE-35 signal: %s", err.Error())
+	}
+
+	closed, err = state.ProcessDescriptor(thirdInSignal.Descriptors()[0])
+	if err != gots.ErrSCTE35MissingOut {
+		t.Error("ProcessDescriptor of out returned unexpected err:", err)
+	}
+	if len(closed) != 0 {
+		t.Errorf("No events should have been closed (%d were)", len(closed))
+	}
+	if len(state.Open()) != 0 {
+		t.Errorf("There should be 0 open signal (%d)", len(state.Open()))
+	}
+	t.Logf("ProcessDescriptor 0x37-3 done")
+}
