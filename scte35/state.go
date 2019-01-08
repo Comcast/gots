@@ -177,6 +177,12 @@ func (s *state) ProcessDescriptor(desc SegmentationDescriptor) ([]SegmentationDe
 		SegDescUnscheduledEventEnd,
 		SegDescNetworkEnd:
 		var openDesc SegmentationDescriptor
+		// We already closed a descriptor
+		// and have no other open descriptors
+		// so break and return closed descriptors
+		if len(closed) != 0 && len(s.open) == 0 {
+			break
+		}
 		// descriptor matches out, but doesn't close it.  Check event id against open
 		if len(closed) == 0 || closed[len(closed)-1].TypeID() != desc.TypeID()-1 {
 			if len(s.open) == 0 {
