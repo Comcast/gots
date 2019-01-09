@@ -59,7 +59,7 @@ func (a *accumulator) Add(pkt []byte) (bool, error) {
 	// need to check if the packet contains a payloadUnitStartIndicator so we know
 	// to drop old packets and re-accumulate a new scte signal
 	if payloadUnitStartIndicator(&pp) {
-		a.packets = make([]*Packet, 0)
+		a.Reset()
 	}
 	if !payloadUnitStartIndicator(&pp) && len(a.packets) == 0 {
 		// First packet must have payload unit start indicator
