@@ -35,7 +35,6 @@ import (
 
 	"github.com/Comcast/gots/ebp"
 	"github.com/Comcast/gots/packet"
-	"github.com/Comcast/gots/packet/adaptationfield"
 	"github.com/Comcast/gots/psi"
 	"github.com/Comcast/gots/scte35"
 )
@@ -138,7 +137,7 @@ func main() {
 
 		}
 		if *showEbp {
-			ebpBytes, err := adaptationfield.EncoderBoundaryPoint(&pkt)
+			ebpBytes, err := packet.EncoderBoundaryPointBytes(&pkt)
 			if err != nil {
 				// Not an EBP
 				continue

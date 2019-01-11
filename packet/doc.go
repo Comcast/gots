@@ -49,8 +49,8 @@ const (
 type AdaptationFieldControlOptions byte
 
 const (
-	PayloadFlag                   AdaptationFieldControlOptions = 1 // 10
-	AdaptationFieldFlag           AdaptationFieldControlOptions = 2 // 01
+	PayloadFlag                   AdaptationFieldControlOptions = 1 // 01
+	AdaptationFieldFlag           AdaptationFieldControlOptions = 2 // 10
 	PayloadAndAdaptationFieldFlag AdaptationFieldControlOptions = 3 // 11
 )
 

@@ -28,7 +28,7 @@ import (
 	"github.com/Comcast/gots"
 )
 
-// NewPacket creates a new packet with a Null ID, sync byte, and with the adaptation field control set to payload only.
+// NewAdaptationField creates a new *AdaptationField with the flag set for AdaptationField and no payload
 // This function is error free.
 func NewAdaptationField() *AdaptationField {
 	p := New()
@@ -305,8 +305,7 @@ func (af *AdaptationField) ElementaryStreamPriority() (bool, error) {
 	return af.getBit(5, 0x20), nil
 }
 
-// SetHasPCR sets HasPCR
-// HasPCR determines if the packet has a PCR
+// SetHasPCR sets HasPCR flag
 func (af *AdaptationField) SetHasPCR(value bool) error {
 	if err := af.valid(); err != nil {
 		return err
@@ -320,7 +319,7 @@ func (af *AdaptationField) SetHasPCR(value bool) error {
 	return nil
 }
 
-// HasPCR returns if the packet has a PCR
+// HasPCR returns true if the packet has a PCR
 func (af *AdaptationField) HasPCR() (bool, error) {
 	if err := af.valid(); err != nil {
 		return false, err
@@ -563,4 +562,28 @@ func (af *AdaptationField) AdaptationFieldExtension() ([]byte, error) {
 		return nil, gots.ErrNoAdaptationFieldExtension
 	}
 	return af[af.adaptationExtensionStart():af.stuffingStart()], nil
+}
+
+// EncoderBoundaryPointBytes returns the byte array located in the optional TransportPrivateData of the (also optional)
+// AdaptationField of the Packet. If either of these optional fields are missing an empty byte array is returned with an error
+func EncoderBoundaryPointBytes(packet *Packet) ([]byte, error) {
+
+	af, err := packet.AdaptationField()
+	if err != nil {
+		return nil, err
+	}
+
+	hasTransPriv, err := af.HasTransportPrivateData()
+	if err != nil {
+		return nil, err
+	}
+
+	if af.Length() > 0 && hasTransPriv {
+		ebp, err := af.TransportPrivateData()
+		if err != nil {
+			return nil, err
+		}
+		return ebp, nil
+	}
+	return nil, gots.ErrNoEBP
 }

@@ -26,9 +26,10 @@ package ebp
 
 import (
 	"encoding/binary"
-	"github.com/Comcast/gots"
 	"io"
 	"time"
+
+	"github.com/Comcast/gots"
 )
 
 // EBP tags

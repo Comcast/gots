@@ -24,7 +24,9 @@ SOFTWARE.
 
 package packet
 
-import "github.com/Comcast/gots"
+import (
+	"github.com/Comcast/gots"
+)
 
 // PayloadUnitStartIndicator (PUSI) is a flag that indicates the start of PES data
 // or PSI  (Program-Specific Information) such as AT, CAT, PMT or NIT.  The PUSI
@@ -36,7 +38,7 @@ func payloadUnitStartIndicator(packet *Packet) bool {
 	return packet[1]&0x040 != 0
 }
 
-// PID is the Packet Identifier.  Each table or elementary stream in the
+// Pid is the Packet Identifier.  Each table or elementary stream in the
 // transport stream is identified by a PID.  The PID is contained in the 13
 // bits that span the last 5 bits of second byte and all bits in the byte.
 func Pid(packet *Packet) (uint16, error) {
@@ -148,7 +150,7 @@ func SetCC(packet *Packet, newCC uint8) (*Packet, error) {
 	return &newPacket, nil
 }
 
-// Returns a byte slice containing the PES header if the Packet contains one,
+// PESHeader Returns a byte slice containing the PES header if the Packet contains one,
 // otherwise returns an error
 func PESHeader(packet *Packet) ([]byte, error) {
 	if containsPayload(packet) && payloadUnitStartIndicator(packet) {
