@@ -52,16 +52,16 @@ func (a *accumulator) Add(pkt []byte) (bool, error) {
 	copy(pp[:], pkt)
 	// technically we could get a packet without a payload.  Check this and
 	// return false if we get one
-	p, err := ContainsPayload(&pp)
-	if !p || err != nil {
-		return false, err
+	p := ContainsPayload(&pp)
+	if !p {
+		return false, nil
 	}
 	// need to check if the packet contains a payloadUnitStartIndicator so we know
 	// to drop old packets and re-accumulate a new scte signal
-	if payloadUnitStartIndicator(&pp) {
+	if PayloadUnitStartIndicator(&pp) {
 		a.Reset()
 	}
-	if !payloadUnitStartIndicator(&pp) && len(a.packets) == 0 {
+	if !PayloadUnitStartIndicator(&pp) && len(a.packets) == 0 {
 		// First packet must have payload unit start indicator
 		return false, gots.ErrNoPayloadUnitStartIndicator
 	}

@@ -258,10 +258,7 @@ func FilterPMTPacketsToPids(packets []*packet.Packet, pids []uint16) []*packet.P
 	var filteredPMTPackets []*packet.Packet
 	for _, pkt := range packets {
 		var pktBuf bytes.Buffer
-		header, err := packet.Header(pkt)
-		if err != nil {
-			break
-		}
+		header := packet.Header(pkt)
 		pktBuf.Write(header)
 		if len(fPMT) > 0 {
 			toWrite := safeSlice(fPMT, 0, packet.PacketSize-len(header))
@@ -291,11 +288,7 @@ func IsPMT(pkt *packet.Packet, pat PAT) (bool, error) {
 	}
 
 	pmtMap := pat.ProgramMap()
-	pid, err := packet.Pid(pkt)
-
-	if err != nil {
-		return false, err
-	}
+	pid := packet.Pid(pkt)
 
 	for _, map_pid := range pmtMap {
 		if pid == map_pid {
@@ -337,9 +330,12 @@ func pidIn(pids []uint16, target uint16) bool {
 // otherwise returns an error.
 func ReadPMT(r io.Reader, pid uint16) (PMT, error) {
 	var pkt packet.Packet
+	var err error
+	var pmt PMT
+
 	pmtAcc := packet.NewAccumulator(PmtAccumulatorDoneFunc)
 	done := false
-	var pmt PMT
+
 	for !done {
 		if _, err := io.ReadFull(r, pkt[:]); err != nil {
 			if err == io.EOF || err == io.ErrUnexpectedEOF {
@@ -347,10 +343,7 @@ func ReadPMT(r io.Reader, pid uint16) (PMT, error) {
 			}
 			return nil, err
 		}
-		currPid, err := packet.Pid(&pkt)
-		if err != nil {
-			return nil, err
-		}
+		currPid := packet.Pid(&pkt)
 		if currPid != pid {
 			continue
 		}

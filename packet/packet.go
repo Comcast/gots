@@ -29,59 +29,46 @@ import "github.com/Comcast/gots"
 // PayloadUnitStartIndicator (PUSI) is a flag that indicates the start of PES data
 // or PSI  (Program-Specific Information) such as AT, CAT, PMT or NIT.  The PUSI
 // flag is contained in the second bit of the second byte of the Packet.
-func PayloadUnitStartIndicator(packet *Packet) (bool, error) {
-	return payloadUnitStartIndicator(packet), nil
-}
-func payloadUnitStartIndicator(packet *Packet) bool {
+func PayloadUnitStartIndicator(packet *Packet) bool {
 	return packet[1]&0x040 != 0
 }
 
 // PID is the Packet Identifier.  Each table or elementary stream in the
 // transport stream is identified by a PID.  The PID is contained in the 13
 // bits that span the last 5 bits of second byte and all bits in the byte.
-func Pid(packet *Packet) (uint16, error) {
-	return pid(packet), nil
-}
-func pid(packet *Packet) uint16 {
+func Pid(packet *Packet) uint16 {
 	return uint16(packet[1]&0x1f)<<8 | uint16(packet[2])
 }
 
 // ContainsPayload is a flag that indicates the packet has a payload.  The flag is
 // contained in the 3rd bit of the 4th byte of the Packet.
-func ContainsPayload(packet *Packet) (bool, error) {
-	return containsPayload(packet), nil
-}
-func containsPayload(packet *Packet) bool {
+func ContainsPayload(packet *Packet) bool {
 	return packet[3]&0x10 != 0
 }
 
 // ContainsAdaptationField is a flag that indicates the packet has an adaptation field.
-func ContainsAdaptationField(packet *Packet) (bool, error) {
-	return hasAdaptField(packet), nil
-}
-func hasAdaptField(packet *Packet) bool {
+func ContainsAdaptationField(packet *Packet) bool {
 	return packet[3]&0x20 != 0
 }
 
 // ContinuityCounter is a 4-bit sequence number of payload packets. Incremented
 // only when a payload is present (see ContainsPayload() above).
-func ContinuityCounter(packet *Packet) (uint8, error) {
-	return packet[3] & uint8(0x0f), nil
+func ContinuityCounter(packet *Packet) uint8 {
+	return packet[3] & uint8(0x0f)
 }
 
 // IsNull returns true if the provided packet is a Null packet
 // (i.e., PID == 0x1fff (8191)).
-func IsNull(packet *Packet) (bool, error) {
-	return pid(packet) == NullPacketPid, nil
+func IsNull(packet *Packet) bool {
+	return Pid(packet) == NullPacketPid
 }
 
 // IsPat returns true if the provided packet is a PAT
-func IsPat(packet *Packet) (bool, error) {
-	return pid(packet) == 0, nil
+func IsPat(packet *Packet) bool {
+	return Pid(packet) == 0
 }
 
-// badLen returns true if the packet is not of
-// valid length
+// badLen returns true if the packet is not of valid length
 func badLen(packet []byte) bool {
 	return len(packet) != PacketSize
 }
@@ -89,7 +76,7 @@ func badLen(packet []byte) bool {
 // Returns the index of the first byte of Payload data in packetBytes.
 func payloadStart(packet *Packet) int {
 	var dataOffset = int(4) // packet header bytes
-	if hasAdaptField(packet) {
+	if ContainsAdaptationField(packet) {
 		afLength := int(packet[4])
 		dataOffset += 1 + afLength
 	}
@@ -100,7 +87,7 @@ func payloadStart(packet *Packet) int {
 // Payload returns a slice containing the packet payload. If the packet
 // does not have a payload, an empty byte slice is returned
 func Payload(packet *Packet) ([]byte, error) {
-	if !containsPayload(packet) {
+	if !ContainsPayload(packet) {
 		return nil, gots.ErrNoPayload
 	}
 	start := payloadStart(packet)
@@ -113,25 +100,25 @@ func Payload(packet *Packet) ([]byte, error) {
 
 // IncrementCC creates a new packet where the new packet has
 // a continuity counter that is increased by one
-func IncrementCC(packet *Packet) (*Packet, error) {
+func IncrementCC(packet *Packet) *Packet {
 	var newPacket Packet
 	copy(newPacket[:], packet[:])
 	ccByte := newPacket[3]
 	newCC := increment4BitInt(ccByte)
 	newCCByte := (ccByte & byte(0xf0)) | newCC
 	newPacket[3] = newCCByte
-	return &newPacket, nil
+	return &newPacket
 }
 
 // ZeroCC creates a new packet where the new packet has
 // a continuity counter that zero
-func ZeroCC(packet *Packet) (*Packet, error) {
+func ZeroCC(packet *Packet) *Packet {
 	var newPacket Packet
 	copy(newPacket[:], packet[:])
 	ccByte := newPacket[3]
 	newCCByte := ccByte & byte(0xf0)
 	newPacket[3] = newCCByte
-	return &newPacket, nil
+	return &newPacket
 }
 func increment4BitInt(cc uint8) uint8 {
 	return (cc + 1) & 0x0f
@@ -139,19 +126,19 @@ func increment4BitInt(cc uint8) uint8 {
 
 // SetCC creates a new packet where the new packet has
 // the continuity counter provided
-func SetCC(packet *Packet, newCC uint8) (*Packet, error) {
+func SetCC(packet *Packet, newCC uint8) *Packet {
 	var newPacket Packet
 	copy(newPacket[:], packet[:])
 	ccByte := newPacket[3]
 	newCCByte := (ccByte & byte(0xf0)) | newCC
 	newPacket[3] = newCCByte
-	return &newPacket, nil
+	return &newPacket
 }
 
 // Returns a byte slice containing the PES header if the Packet contains one,
 // otherwise returns an error
 func PESHeader(packet *Packet) ([]byte, error) {
-	if containsPayload(packet) && payloadUnitStartIndicator(packet) {
+	if ContainsPayload(packet) && PayloadUnitStartIndicator(packet) {
 		dataOffset := payloadStart(packet)
 		// A PES Header has a Packet Start Code Prefix of 0x000001
 		if int(packet[dataOffset+0]) == 0 &&
@@ -166,9 +153,9 @@ func PESHeader(packet *Packet) ([]byte, error) {
 }
 
 // Header Returns a slice containing the Packer Header.
-func Header(packet *Packet) ([]byte, error) {
+func Header(packet *Packet) []byte {
 	start := payloadStart(packet)
-	return packet[:start], nil
+	return packet[:start]
 }
 
 // Equal returns true if the bytes of the two packets are equal

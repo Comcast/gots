@@ -658,6 +658,7 @@ func TestIsPMTErrorConditions(t *testing.T) {
 		t.Error("Couldn't load the PAT")
 	}
 }
+
 func TestReadPMTForSmoke(t *testing.T) {
 	bs, _ := hex.DecodeString("474000100000b00d0001c100000001e256f803e71bfffffff" +
 		"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
@@ -676,14 +677,14 @@ func TestReadPMTForSmoke(t *testing.T) {
 	pid := uint16(598)
 	pmt, err := ReadPMT(r, pid)
 	if err != nil {
-		t.Errorf("Unexpected error reading PMT: %v", err)
-		return
+		t.Fatalf("Unexpected error reading PMT: %v", err)
 	}
 	// sanity check (tests integration a bit)
 	if len(pmt.ElementaryStreams()) != 2 {
 		t.Errorf("PMT read is invalid, did not have expected number of streams")
 	}
 }
+
 func TestReadPMTIncomplete(t *testing.T) {
 	bs, _ := hex.DecodeString("474000100000b00d0001c100000001e256f803e71bfffffff" +
 		"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
@@ -897,5 +898,4 @@ func TestIsDolbyATMOS(t *testing.T) {
 	if !hasATMOS {
 		t.Errorf("Positive Dolby ATMOS Stream failed. Supposed to be a Dolby ATMOS stream.")
 	}
-
 }

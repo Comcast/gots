@@ -55,10 +55,7 @@ func HasAdaptationFieldExtension(pkt *packet.Packet) bool {
 // EncoderBoundaryPoint returns the byte array located in the optional TransportPrivateData of the (also optional)
 // AdaptationField of the Packet. If either of these optional fields are missing an empty byte array is returned with an error
 func EncoderBoundaryPoint(pkt *packet.Packet) ([]byte, error) {
-	hasAdapt, err := packet.ContainsAdaptationField(pkt)
-	if err != nil {
-		return nil, nil
-	}
+	hasAdapt := packet.ContainsAdaptationField(pkt)
 	if hasAdapt && Length(pkt) > 0 && HasTransportPrivateData(pkt) {
 		ebp, err := TransportPrivateData(pkt)
 		if err != nil {
