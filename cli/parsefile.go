@@ -116,11 +116,7 @@ func main() {
 		}
 		numPackets++
 		if *dumpSCTE35 {
-			currPID, err := packet.Pid(&pkt)
-			if err != nil {
-				fmt.Printf("Cannot get packet PID for %d\n", currPID)
-				continue
-			}
+			currPID := packet.Pid(&pkt)
 			if scte35PIDs[currPID] {
 				pay, err := packet.Payload(&pkt)
 				if err != nil {
@@ -154,10 +150,7 @@ func main() {
 		}
 		if *showPacketNumberOfPID != 0 {
 			pid := uint16(*showPacketNumberOfPID)
-			pktPid, err := packet.Pid(&pkt)
-			if err != nil {
-				continue
-			}
+			pktPid := packet.Pid(&pkt)
 			if pktPid == pid {
 				fmt.Printf("First Packet of PID %d contents: %x\n", pid, pkt)
 				break
