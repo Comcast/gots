@@ -46,7 +46,14 @@ func TestSyncForSmoke(t *testing.T) {
 		t.Errorf("Unexpected error: %v", err)
 	}
 	if offset != 0 {
-		t.Errorf("Incorrect offset returned for next sync marker")
+		t.Error("Incorrect offset returned for next sync marker")
+	}
+	synced, err := IsSynced(r)
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+	if !synced {
+		t.Error("Unexpectedly unsynced")
 	}
 }
 
@@ -60,21 +67,45 @@ func TestSyncNonZeroOffset(t *testing.T) {
 		"ff4742")
 	r := bufio.NewReader(bytes.NewReader(bs))
 
+	synced, err := IsSynced(r)
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+	if synced {
+		t.Error("Unexpectedly synced")
+	}
 	offset, err := Sync(r)
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
 	if offset != 3 {
-		t.Errorf("Incorrect offset returned for next sync marker")
+		t.Error("Incorrect offset returned for next sync marker")
+	}
+	synced, err = IsSynced(r)
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+	if !synced {
+		t.Error("Unexpectedly unsynced")
 	}
 }
 
 func TestSyncNotFound(t *testing.T) {
 	// no sync byte here
-	bs, _ := hex.DecodeString("ff4000100000b00d0001c100000001e256f803e71bfffffff")
+	bs, err := hex.DecodeString("ff4000100000b00d0001c100000001e256f803e71bffffffff")
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
 	r := bufio.NewReader(bytes.NewReader(bs))
 
-	_, err := Sync(r)
+	synced, err := IsSynced(r)
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+	if synced {
+		t.Error("Unexpectedly synced")
+	}
+	_, err = Sync(r)
 	if err == nil {
 		t.Errorf("Expected there to be an error, but there was not")
 	}
