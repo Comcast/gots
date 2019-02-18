@@ -89,8 +89,6 @@ func (pat pat) ProgramMap() map[uint16]uint16 {
 
 		// ignore the top three (reserved) bits
 		pid := uint16(pat[counter+3])&0x1f<<8 | uint16(pat[counter+4])
-
-		m[pn] = pid
 		
 		// A value of 0 is reserved for a NIT packet identifier.
 		if pn > 0 {
