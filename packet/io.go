@@ -25,41 +25,100 @@ SOFTWARE.
 package packet
 
 import (
-	"bufio"
+	"encoding/binary"
 	"io"
 
 	"github.com/Comcast/gots"
 )
 
-// Sync finds the offset of the next packet sync byte and advances the reader
-// to the packet start. It also checks the next 188th byte to ensure a sync is
-// found. It returns the offset of the sync w.r.t. the original reader
-// position.
-func Sync(r *bufio.Reader) (int64, error) {
-	data := make([]byte, 1)
-	for i := int64(0); ; i++ {
-		_, err := io.ReadFull(r, data)
-		if err == io.EOF || err == io.ErrUnexpectedEOF {
-			break
+// Peeker wraps the Peek method.
+type Peeker interface {
+	// Peek returns the next n bytes without advancing the reader.
+	Peek(n int) ([]byte, error)
+}
+
+// PeekScanner is an extended io.ByteScanner with peek capacity.
+type PeekScanner interface {
+	io.ByteScanner
+	Peeker
+}
+
+// Sync finds the offset of the next packet header and advances the reader
+// to the packet start. It returns the offset of the sync relative to the
+// original reader position.
+//
+// Sync uses IsSynced to determine whether a position is at packet header.
+func Sync(r PeekScanner) (off int64, err error) {
+	for {
+		b, err := r.ReadByte()
+		if err != nil {
+			if err == io.EOF {
+				return off, gots.ErrSyncByteNotFound
+			}
+			return off, err
+		}
+		if b != SyncByte {
+			off++
+			continue
+		}
+
+		err = r.UnreadByte()
+		if err != nil {
+			return off, err
+		}
+		ok, err := IsSynced(r)
+		if ok {
+			return off, nil
 		}
 		if err != nil {
-			return 0, err
+			if err == io.EOF {
+				return off, gots.ErrSyncByteNotFound
+			}
+			return off, err
 		}
-		if int(data[0]) == SyncByte {
-			// check next 188th byte
-			rp := bufio.NewReaderSize(r, PacketSize) // extends only if needed
-			nextData, err := rp.Peek(PacketSize)
-			if err == io.EOF || err == io.ErrUnexpectedEOF {
-				break
+
+		// Advance again. This is a consequence of not
+		// duplicating IsSynced for 3 and 4 byte reads.
+		_, err = r.ReadByte()
+		// These errors should never happen since we
+		// have already read this byte above.
+		if err != nil {
+			if err == io.EOF {
+				return off, gots.ErrSyncByteNotFound
 			}
-			if err != nil {
-				return 0, err
-			}
-			if nextData[187] == SyncByte {
-				r.UnreadByte()
-				return i, nil
-			}
+			return off, err
 		}
 	}
-	return 0, gots.ErrSyncByteNotFound
+}
+
+// IsSynced returns whether r is synced to a packet boundary.
+//
+// IsSynced checks whether the first byte is the MPEG-TS sync byte,
+// the PID is not within the reserved range of 0x4-0xf and that
+// the AFC is not the reserved value 0x0.
+func IsSynced(r Peeker) (ok bool, err error) {
+	b, err := r.Peek(4)
+	if err != nil {
+		return false, err
+	}
+	// Check that the first byte is the sync byte.
+	if b[0] != SyncByte {
+		return false, nil
+	}
+
+	const (
+		pidMask = 0x1fff << 8
+		afcMask = 0x3 << 4
+	)
+	header := binary.BigEndian.Uint32(b)
+
+	// Check that the AFC is not zero (reserved).
+	afc := header & afcMask
+	if afc == 0x0 {
+		return false, nil
+	}
+
+	// Check that the PID is not 0x4-0xf (reserved).
+	pid := (header & pidMask) >> 8
+	return pid < 0x4 || 0xf < pid, nil
 }

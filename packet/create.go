@@ -96,34 +96,34 @@ func Create(pid uint16, options ...func(*Packet)) *Packet {
 func CreateTestPacket(pid uint16, cc uint8, pusi, hasPay bool) *Packet {
 	var pkt *Packet
 	if hasPay && pusi {
-		pkt, _ = SetCC(
+		pkt = SetCC(
 			Create(pid,
 				WithHasPayloadFlag,
 				WithContinuousAF,
 				WithPUSI),
 			cc)
 	} else if hasPay {
-		pkt, _ = SetCC(
+		pkt = SetCC(
 			Create(pid,
 				WithHasPayloadFlag,
 				WithContinuousAF),
 			cc)
 
 	} else {
-		pkt, _ = SetCC(Create(pid, WithContinuousAF), cc)
+		pkt = SetCC(Create(pid, WithContinuousAF), cc)
 	}
 	return pkt
 }
 
 // CreateDCPacket creates a new packet with a discontinuous adapataion field and the given PID and CC
 func CreateDCPacket(pid uint16, cc uint8) *Packet {
-	pkt, _ := SetCC(Create(pid, WithDiscontinuousAF, WithHasPayloadFlag), cc)
+	pkt := SetCC(Create(pid, WithDiscontinuousAF, WithHasPayloadFlag), cc)
 	return pkt
 }
 
 // CreatePacketWithPayload creates a new packet with the given PID, CC and payload
 func CreatePacketWithPayload(pid uint16, cc uint8, pay []byte) *Packet {
-	pkt, _ := SetCC(
+	pkt := SetCC(
 		Create(
 			pid,
 			WithHasPayloadFlag,
@@ -136,6 +136,7 @@ func CreatePacketWithPayload(pid uint16, cc uint8, pay []byte) *Packet {
 	)
 	return pkt
 }
+
 func setPid(pkt *Packet, pid uint16) {
 	pkt[1] = byte(pid >> 8 & 0x1f)
 	pkt[2] = byte(pid & 0xff)

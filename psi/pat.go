@@ -126,10 +126,8 @@ func ReadPAT(r io.Reader) (PAT, error) {
 			}
 			return nil, err
 		}
-		isPat, err := packet.IsPat(&pkt)
-		if err != nil {
-			return nil, err
-		}
+		isPat := packet.IsPat(&pkt)
+
 		if isPat {
 			pay, err := packet.Payload(&pkt)
 			if err != nil {

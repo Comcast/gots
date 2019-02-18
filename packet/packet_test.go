@@ -53,10 +53,11 @@ func TestPayloadUnitStartIndicatorTrue(t *testing.T) {
 			"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
 			"ffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
 	expected := true
-	if pusi, err := PayloadUnitStartIndicator(packet); pusi != expected || err != nil {
-		t.Errorf("PayloadUnitStartIndicator() = %t, want %t err = %v", pusi, expected, err)
+	if pusi := PayloadUnitStartIndicator(packet); pusi != expected {
+		t.Errorf("PayloadUnitStartIndicator() = %t, want %t", pusi, expected)
 	}
 }
+
 func TestPayloadUnitStartIndicatorFalse(t *testing.T) {
 	packet := parseHexString(
 		"4700673b7000ffffffffffffffffffffffffffffffffffffffffffffffffffff" +
@@ -66,8 +67,8 @@ func TestPayloadUnitStartIndicatorFalse(t *testing.T) {
 			"cb2e84e04544cd54b9ffb497e788f2b308d1a71d4f2bce4c18c563b92ecd954b" +
 			"558e7ca55796ca56ed4020812c21f1013ff5497f875897f58ffeeb1c")
 	expected := false
-	if pusi, err := PayloadUnitStartIndicator(packet); pusi != expected || err != nil {
-		t.Errorf("PayloadUnitStartIndicator() = %t, want %t err = %v", pusi, expected, err)
+	if pusi := PayloadUnitStartIndicator(packet); pusi != expected {
+		t.Errorf("PayloadUnitStartIndicator() = %t, want %t", pusi, expected)
 	}
 }
 
@@ -80,8 +81,8 @@ func TestPid(t *testing.T) {
 			"0ba9b7a659363d7347d22f835b4e53f6472f01be53d7df28ea7f1764972f5549" +
 			"34096bd6bf42eabe1dff1c59e0cc55a716b6a40618b3305b45779c31")
 	expected := uint16(102)
-	if pid, err := Pid(packet); pid != expected || err != nil {
-		t.Errorf("Pid() = %d, want %d err=%v", pid, expected, err)
+	if pid := Pid(packet); pid != expected {
+		t.Errorf("Pid() = %d, want %d", pid, expected)
 	}
 }
 
@@ -94,8 +95,8 @@ func TestPidGreaterThan255(t *testing.T) {
 			"0ba9b7a659363d7347d22f835b4e53f6472f01be53d7df28ea7f1764972f5549" +
 			"34096bd6bf42eabe1dff1c59e0cc55a716b6a40618b3305b45779c31")
 	expected := uint16(290)
-	if pid, err := Pid(packet); pid != expected || err != nil {
-		t.Errorf("Pid() = %d, want %d err=%v", pid, expected, err)
+	if pid := Pid(packet); pid != expected {
+		t.Errorf("Pid() = %d, want %d", pid, expected)
 	}
 }
 
@@ -108,8 +109,8 @@ func TestContainsPayloadTrue(t *testing.T) {
 			"0ba9b7a659363d7347d22f835b4e53f6472f01be53d7df28ea7f1764972f5549" +
 			"34096bd6bf42eabe1dff1c59e0cc55a716b6a40618b3305b45779c31")
 	expected := true
-	if containsPayload, err := ContainsPayload(packet); containsPayload != expected || err != nil {
-		t.Errorf("ContainsPayload() = %t, want %t err=%v", containsPayload, expected, err)
+	if containsPayload := ContainsPayload(packet); containsPayload != expected {
+		t.Errorf("ContainsPayload() = %t, want %tv", containsPayload, expected)
 	}
 }
 
@@ -122,7 +123,7 @@ func TestContainsPayloadFalse(t *testing.T) {
 			"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
 			"ffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
 	expected := false
-	if containsPayload, err := ContainsPayload(packet); containsPayload != expected || err != nil {
+	if containsPayload := ContainsPayload(packet); containsPayload != expected {
 		t.Errorf("ContainsPayload() = %t, want %t", containsPayload, expected)
 	}
 }
@@ -136,7 +137,7 @@ func TestContinuityCounter(t *testing.T) {
 			"43e5d197998e05e2a50f590f6923d45490c81750d5f603643f974a2bde5f4812" +
 			"749dd96f61281aca2cb496c01f01e3152fcba48c2ec78314ab21da3b")
 	expected := uint8(8)
-	if cc, err := ContinuityCounter(packet); cc != expected || err != nil {
+	if cc := ContinuityCounter(packet); cc != expected {
 		t.Errorf("ContinuityCounter() = %d, want %d", cc, expected)
 	}
 }
@@ -151,9 +152,8 @@ func TestZeroLenthAdaptationField(t *testing.T) {
 			"9ab1852b9314ae15fad86177607b75be718f0c07d22400845160d980")
 
 	expected := true
-
-	if hasadapt, err := ContainsAdaptationField(packet); hasadapt != expected || err != nil {
-		t.Errorf("ContainsAdaptationField() = %v, want %v (%v)", hasadapt, expected, err)
+	if hasadapt := ContainsAdaptationField(packet); hasadapt != expected {
+		t.Errorf("ContainsAdaptationField() = %v, want %v", hasadapt, expected)
 	}
 }
 
@@ -209,15 +209,12 @@ func TestIncrementCC(t *testing.T) {
 			"cb2e84e04544cd54b9ffb497e788f2b308d1a71d4f2bce4c18c563b92ecd954b" +
 			"558e7ca55796ca56ed4020812c21f1013ff5497f875897f58ffeeb1c")
 	packet[3] = byte(0x00)
-	newPacket, err := IncrementCC(packet)
-	if err != nil {
-		t.Error(err)
-	}
+	newPacket := IncrementCC(packet)
+
 	expected := uint8(1)
 	if expected != newPacket[3] {
 		t.Errorf("CC= %x, want %x", newPacket[3], expected)
 	}
-
 }
 
 func TestBadLength(t *testing.T) {
@@ -255,7 +252,7 @@ func TestContainsAdaptationField(t *testing.T) {
 			"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffa0b82aaa" +
 			"bd5a13a6b27a23c4e556bd78ccdb05c72a3a5cac278d76d89aae3de5241728ea" +
 			"ea79344f6ff95e63bd6060c9462c42b33a89b3fcff000480003e71c0")
-	if exists, _ := ContainsAdaptationField(packet); !exists {
+	if exists := ContainsAdaptationField(packet); !exists {
 		t.Error("Did not correctly find presence of adaptation field")
 	}
 }
@@ -319,9 +316,9 @@ func TestNullPacketIsNull(t *testing.T) {
 			"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
 			"ffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
 
-	if isNull, _ := IsNull(p); isNull == false {
-		pid, e := Pid(p)
-		t.Errorf("Packets with PID == %d should be null. PID was %v and error was %v", NullPacketPid, pid, e)
+	if isNull := IsNull(p); isNull == false {
+		pid := Pid(p)
+		t.Errorf("Packets with PID == %d should be null. PID was %v", NullPacketPid, pid)
 	}
 }
 
@@ -334,7 +331,7 @@ func TestNonNullPacketIsNotNull(t *testing.T) {
 			"2980fc8080ff800000000125b80100017fb2c69de69e51f57c4a1b8623115f78" +
 			"053598e7f47c066bf03c90c6233c0405369fd5f8e20957e40437f784")
 
-	if isNull, _ := IsNull(packet1); isNull == true {
+	if isNull := IsNull(packet1); isNull == true {
 		t.Errorf("Packets with PID != %d should not be null.", NullPacketPid)
 	}
 }
@@ -348,7 +345,7 @@ func TestIsPat(t *testing.T) {
 			"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
 			"ffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
 
-	if isPat, _ := IsPat(pat); isPat == false {
+	if isPat := IsPat(pat); isPat == false {
 		t.Error("PAT packet should be counted as a PAT")
 	}
 
@@ -360,7 +357,7 @@ func TestIsPat(t *testing.T) {
 			"2980fc8080ff800000000125b80100017fb2c69de69e51f57c4a1b8623115f78" +
 			"053598e7f47c066bf03c90c6233c0405369fd5f8e20957e40437f784")
 
-	if isPat2, _ := IsPat(notPat); isPat2 == true {
+	if isPat2 := IsPat(notPat); isPat2 == true {
 		t.Error("Non PAT Packet shouldn't be counted as a PAT")
 	}
 }
