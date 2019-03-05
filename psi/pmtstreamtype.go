@@ -53,7 +53,8 @@ func (st pmtStreamType) IsAudioContent() bool {
 func (st pmtStreamType) IsVideoContent() bool {
 	return st.code == PmtStreamTypeMpeg4VideoH264 ||
 		st.code == PmtStreamTypeMpeg4VideoH265 ||
-		st.code == PmtStreamTypeMpeg4Video
+		st.code == PmtStreamTypeMpeg4Video ||
+		st.code == PmtStreamTypeMpeg2VideoH262
 }
 
 func (st pmtStreamType) IsSCTE35Content() bool {
