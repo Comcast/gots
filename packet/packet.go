@@ -135,17 +135,15 @@ func SetCC(packet *Packet, newCC uint8) *Packet {
 	return &newPacket
 }
 
-// Returns a byte slice containing the PES header if the Packet contains one,
+// PESHeader returns a byte slice containing the PES header if the Packet contains one,
 // otherwise returns an error
 func PESHeader(packet *Packet) ([]byte, error) {
 	if ContainsPayload(packet) && PayloadUnitStartIndicator(packet) {
-		dataOffset := payloadStart(packet)
-		// A PES Header has a Packet Start Code Prefix of 0x000001
-		if int(packet[dataOffset+0]) == 0 &&
-			int(packet[dataOffset+1]) == 0 &&
-			int(packet[dataOffset+2]) == 1 {
-			start := payloadStart(packet)
-			pay := packet[start:]
+		pay, err := Payload(packet)
+		if err != nil {
+			return nil, err
+		}
+		if len(pay) > 3 && pay[0] == 0 && pay[1] == 0 && pay[2] == 1 {
 			return pay, nil
 		}
 	}
