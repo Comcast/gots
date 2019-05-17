@@ -138,7 +138,7 @@ func SetCC(packet *Packet, newCC uint8) *Packet {
 // PESHeader returns a byte slice containing the PES header if the Packet contains one,
 // otherwise returns an error
 func PESHeader(packet *Packet) ([]byte, error) {
-	if ContainsPayload(packet) && PayloadUnitStartIndicator(packet) {
+	if PayloadUnitStartIndicator(packet) {
 		pay, err := Payload(packet)
 		if err != nil {
 			return nil, err
