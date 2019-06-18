@@ -29,6 +29,38 @@ import (
 	"strconv"
 )
 
+// Program Element Stream Descriptor Type.
+const (
+	VIDEO_STREAM       uint8 = 2   // 0000 0010 (0x02)
+	AUDIO_STREAM       uint8 = 3   // 0000 0011 (0x03)
+	REGISTRATION       uint8 = 5   // 0000 1000 (0x05)
+	CONDITIONAL_ACCESS uint8 = 9   // 0000 1001 (0x09)
+	LANGUAGE           uint8 = 10  // 0000 1010 (0x0A)
+	SYSTEM_CLOCK       uint8 = 11  // 0000 1011 (0x0B)
+	DOLBY_DIGITAL      uint8 = 12  // 0000 1100 (0x0C)
+	COPYRIGHT          uint8 = 13  // 0000 1101 (0x0D)
+	MAXIMUM_BITRATE    uint8 = 14  // 0000 1110 (0x0E)
+	AVC_VIDEO          uint8 = 40  // 0010 1000 (0x28)
+	STREAM_IDENTIFIER  uint8 = 82  // 0101 0010 (0x52)
+	SCTE_ADAPTATION    uint8 = 151 // 1001 0111 (0x97)
+	EBP                uint8 = 233 // 1110 1001 (0xE9)
+	EC3                uint8 = 204 // 1100 1100 (0xCC)
+)
+
+// PmtDescriptor represents operations currently necessary on descriptors found in the PMT
+type PmtDescriptor interface {
+	Tag() uint8
+	Format() string
+	IsIso639LanguageDescriptor() bool
+	IsMaximumBitrateDescriptor() bool
+	IsIFrameProfile() bool
+	IsEBPDescriptor() bool
+	DecodeMaximumBitRate() uint32
+	DecodeIso639LanguageCode() string
+	DecodeIso639AudioType() byte
+	IsDolbyATMOS() bool
+}
+
 type pmtDescriptor struct {
 	tag  uint8
 	data []byte
