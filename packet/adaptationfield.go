@@ -165,6 +165,11 @@ func (af *AdaptationField) transportPrivateDataLength() int {
 	if !af.hasTransportPrivateData() {
 		return 0
 	}
+
+	if af.transportPrivateDataStart() >= PacketSize {
+		return 0
+	}
+
 	// cannot extend beyond adaptation field, number of bytes
 	// for field stored in transportPrivateDataLength
 	return 1 + int(af[af.transportPrivateDataStart()])
@@ -182,6 +187,11 @@ func (af *AdaptationField) adaptationExtensionLength() int {
 	if !af.hasAdaptationFieldExtension() {
 		return 0
 	}
+
+	if af.adaptationExtensionStart() >= PacketSize {
+		return 0
+	}
+
 	return 1 + int(af[af.adaptationExtensionStart()])
 }
 
@@ -203,7 +213,13 @@ func (af *AdaptationField) stuffingStart() int {
 // stuffingEnd returns the index where the stuffing bytes end
 // (first index without stuffing bytes) with respect to the start of the packet.
 func (af *AdaptationField) stuffingEnd() int {
-	return int(af[4]) + 5
+	stuffingEnd := int(af[4]) + 5
+
+	if stuffingEnd >= PacketSize {
+		return PacketSize - 1
+	}
+
+	return stuffingEnd
 }
 
 // setLength sets the length field of the adaptation field.
