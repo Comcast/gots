@@ -30,7 +30,7 @@ import (
 )
 
 func TestParseCableLabsEBP(t *testing.T) {
-	ebp, err := readCableLabsEbp(bytes.NewBuffer(CableLabsEBPBytes[1:]))
+	ebp, err := readCableLabsEbp(CableLabsEBPBytes)
 	if err != nil {
 		t.Errorf("readCableLabsEbp() returned not null error on valid EBP %v", err)
 	}
@@ -74,7 +74,7 @@ func TestParseCableLabsEBP(t *testing.T) {
 		t.Errorf("readCableLabsEbp() has incorrect reserved, %v", ebp.ReservedBytes)
 	}
 
-	ebp, err = readCableLabsEbp(bytes.NewBuffer([]byte{0xff, 0xf3}))
+	ebp, err = readCableLabsEbp([]byte{0xff, 0xf3})
 	if err == nil {
 		t.Errorf("readCableLabsEbp() returned null error %v on invalid EBP", err)
 	}

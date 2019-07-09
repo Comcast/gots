@@ -24,8 +24,6 @@ SOFTWARE.
 package ebp
 
 import (
-	"bytes"
-	"io"
 	"testing"
 	"time"
 
@@ -57,7 +55,7 @@ var ComcastEBPBytes = []byte{
 	0x04, 0x05} // Reserved
 
 func TestReadEncoderBoundaryPoint(t *testing.T) {
-	ebp, err := ReadEncoderBoundaryPoint(bytes.NewBuffer(CableLabsEBPBytes))
+	ebp, err := ReadEncoderBoundaryPoint(CableLabsEBPBytes)
 	if err != nil {
 		t.Errorf("ReadEncoderBoundaryPoint() returned error on valid: %v", err)
 	}
@@ -65,7 +63,7 @@ func TestReadEncoderBoundaryPoint(t *testing.T) {
 		t.Errorf("ReadEncoderBoundaryPoint() read wrong type of EBP")
 	}
 
-	ebp, err = ReadEncoderBoundaryPoint(bytes.NewBuffer(ComcastEBPBytes))
+	ebp, err = ReadEncoderBoundaryPoint(ComcastEBPBytes)
 	if err != nil {
 		t.Errorf("ReadEncoderBoundaryPoint() returned error on valid: %v", err)
 	}
@@ -73,14 +71,14 @@ func TestReadEncoderBoundaryPoint(t *testing.T) {
 		t.Errorf("ReadEncoderBoundaryPoint() read wrong type of EBP")
 	}
 
-	ebp, err = ReadEncoderBoundaryPoint(bytes.NewBuffer([]byte{0xAB}))
+	ebp, err = ReadEncoderBoundaryPoint([]byte{0xAB})
 	if err != gots.ErrUnrecognizedEbpType {
 		t.Errorf("ReadEncoderBoundaryPoint() read wrong type of EBP")
 	}
 
-	ebp, err = ReadEncoderBoundaryPoint(bytes.NewBuffer([]byte{}))
-	if err != io.EOF {
-		t.Errorf("ReadEncoderBoundaryPoint() should have returned io.EOF")
+	ebp, err = ReadEncoderBoundaryPoint([]byte{})
+	if err != gots.ErrNoEBPData {
+		t.Errorf("ReadEncoderBoundaryPoint() should have returned gots.ErrNoEBPData")
 	}
 }
 

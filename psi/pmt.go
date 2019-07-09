@@ -35,9 +35,25 @@ import (
 )
 
 const (
-	programInfoLengthOffset  uint16 = 10 // includes PSIHeaderLen
+	programInfoLengthOffset         = 10 // includes PSIHeaderLen
 	pmtEsDescriptorStaticLen uint16 = 5
 )
+
+// Unaccounted bytes before the end of the SectionLength field
+const (
+	// Pointerfield(1) + table id(1) + flags(.5) + section length (2.5)
+	PSIHeaderLen uint16 = 4
+	CrcLen       uint16 = 4
+)
+
+// PMT is a Program Map Table.
+type PMT interface {
+	Pids() []uint16
+	IsPidForStreamWherePresentationLagsEbp(pid uint16) bool
+	ElementaryStreams() []PmtElementaryStream
+	RemoveElementaryStreams(pids []uint16)
+	String() string
+}
 
 type pmt struct {
 	pids              []uint16
@@ -53,7 +69,7 @@ func PmtAccumulatorDoneFunc(b []byte) (bool, error) {
 	}
 
 	sectionBytes := b[start:]
-	for len(sectionBytes) > 0 && sectionBytes[0] != 0xFF {
+	for len(sectionBytes) > 2 && sectionBytes[0] != 0xFF {
 		tableLength := sectionLength(sectionBytes)
 		if len(sectionBytes) < int(tableLength)+3 {
 			return false, nil
@@ -78,7 +94,7 @@ func NewPMT(pmtBytes []byte) (PMT, error) {
 func (p *pmt) parseTables(pmtBytes []byte) error {
 	sectionBytes := pmtBytes[1+PointerField(pmtBytes):]
 
-	for len(sectionBytes) > 0 && sectionBytes[0] != 0xFF {
+	for len(sectionBytes) > 2 && sectionBytes[0] != 0xFF {
 		tableLength := sectionLength(sectionBytes)
 
 		if tableID(sectionBytes) == 0x2 {
@@ -97,6 +113,11 @@ func (p *pmt) parsePMTSection(pmtBytes []byte) error {
 	var pids []uint16
 	var elementaryStreams []PmtElementaryStream
 	sectionLength := sectionLength(pmtBytes)
+
+	if len(pmtBytes) < programInfoLengthOffset {
+		return gots.ErrParsePMTDescriptor
+	}
+
 	programInfoLength := uint16(pmtBytes[programInfoLengthOffset]&0x0f)<<8 |
 		uint16(pmtBytes[programInfoLengthOffset+1])
 
