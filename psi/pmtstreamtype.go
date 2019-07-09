@@ -26,6 +26,29 @@ package psi
 
 import "fmt"
 
+// Stream type constants
+const (
+	PmtStreamTypeMpeg2VideoH262 uint8 = 2  // H262
+	PmtStreamTypeMpeg4Video     uint8 = 27 // H264
+	PmtStreamTypeMpeg4VideoH264 uint8 = 27 // H264
+	PmtStreamTypeMpeg4VideoH265 uint8 = 36 // H265
+
+	PmtStreamTypeAac uint8 = 15  // AAC
+	PmtStreamTypeAc3 uint8 = 129 // DD
+	PmtStreamTypeEc3 uint8 = 135 // DD+
+
+	PmtStreamTypeScte35 uint8 = 134 // SCTE-35
+)
+
+// PmtStreamType is used to represent elementary steam type inside a PMT
+type PmtStreamType interface {
+	StreamType() uint8
+	StreamTypeDescription() string
+	IsStreamWherePresentationLagsEbp() bool
+	IsAudioContent() bool
+	IsVideoContent() bool
+	IsSCTE35Content() bool
+}
 type pmtStreamType struct {
 	code                uint8
 	description         string
