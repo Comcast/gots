@@ -35,7 +35,7 @@ import (
 )
 
 const (
-	programInfoLengthOffset  uint16 = 10 // includes PSIHeaderLen
+	programInfoLengthOffset         = 10 // includes PSIHeaderLen
 	pmtEsDescriptorStaticLen uint16 = 5
 )
 
@@ -113,6 +113,11 @@ func (p *pmt) parsePMTSection(pmtBytes []byte) error {
 	var pids []uint16
 	var elementaryStreams []PmtElementaryStream
 	sectionLength := sectionLength(pmtBytes)
+
+	if len(pmtBytes) < programInfoLengthOffset {
+		return gots.ErrParsePMTDescriptor
+	}
+
 	programInfoLength := uint16(pmtBytes[programInfoLengthOffset]&0x0f)<<8 |
 		uint16(pmtBytes[programInfoLengthOffset+1])
 
