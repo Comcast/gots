@@ -27,8 +27,9 @@ package ebp
 import (
 	"bytes"
 	"encoding/binary"
-	"io"
 	"time"
+
+	"github.com/Comcast/gots"
 )
 
 // cableLabsEbp is an encoder boundary point
@@ -79,81 +80,78 @@ func (ebp *cableLabsEbp) SetPartitionFlag(value bool) {
 	}
 }
 
-func readCableLabsEbp(data io.Reader) (ebp *cableLabsEbp, err error) {
+func readCableLabsEbp(data []byte) (ebp *cableLabsEbp, err error) {
 	ebp = &cableLabsEbp{
 		baseEbp: baseEbp{DataFieldTag: CableLabsEbpTag},
 	}
 
-	if err = binary.Read(data, ebpEncoding, &ebp.DataFieldLength); err != nil {
-		return nil, err
+	// We read 2 bytes not based on flags
+	if len(data) < 2 {
+		return nil, gots.ErrNoPayload
 	}
 
-	remaining := ebp.DataFieldLength
+	index := uint8(0)
 
-	if err = binary.Read(data, ebpEncoding, &ebp.FormatIdentifier); err != nil {
-		return nil, err
+	ebp.DataFieldTag = data[index]
+	index += uint8(1)
+
+	ebp.DataFieldLength = data[index]
+	index += uint8(1)
+
+	// Check if the data is as advertised
+	if ebp.DataFieldLength > 0 {
+		if len(data) >= 7 {
+			ebp.FormatIdentifier = binary.BigEndian.Uint32(data[index : index+4])
+			index += uint8(4)
+
+			ebp.DataFlags = data[index]
+			index += uint8(1)
+		} else {
+			return nil, gots.ErrInvalidEBPLength
+		}
 	}
-
-	if err = binary.Read(data, ebpEncoding, &ebp.DataFlags); err != nil {
-		return nil, err
-	}
-
-	remaining -= uint8(5)
 
 	if ebp.ExtensionFlag() {
-		if err = binary.Read(data, ebpEncoding, &ebp.ExtensionFlags); err != nil {
-			return nil, err
-		}
-		remaining -= uint8(1)
+		ebp.ExtensionFlags = data[index]
+		index += uint8(1)
 	}
 
 	if ebp.SapFlag() {
-		if err = binary.Read(data, ebpEncoding, &ebp.SapType); err != nil {
-			return nil, err
-		}
-		remaining -= uint8(1)
+		ebp.SapType = data[index]
+		index += uint8(1)
 	}
 
 	if ebp.GroupingFlag() {
 		var group byte
-		if err = binary.Read(data, ebpEncoding, &group); err != nil {
-			return nil, err
-		}
+		group = data[index]
 		ebp.Grouping = append(ebp.Grouping, group)
+		index += uint8(1)
 
-		remaining -= uint8(1)
 		for group&0x80 != 0 {
-			if err = binary.Read(data, ebpEncoding, &group); err != nil {
-				return nil, err
-			}
+			group = data[index]
 			ebp.Grouping = append(ebp.Grouping, group)
-			remaining -= uint8(1)
+			index += uint8(1)
 		}
 	}
 
 	if ebp.TimeFlag() {
-		if err = binary.Read(data, ebpEncoding, &ebp.TimeSeconds); err != nil {
-			return nil, err
-		}
-		if err = binary.Read(data, ebpEncoding, &ebp.TimeFraction); err != nil {
-			return nil, err
-		}
-		remaining -= uint8(8)
+		ebp.TimeSeconds = binary.BigEndian.Uint32(data[index : index+4])
+		index += uint8(4)
+
+		ebp.TimeFraction = binary.BigEndian.Uint32(data[index : index+4])
+		index += uint8(4)
 	}
 
 	if ebp.PartitionFlag() {
-		if err = binary.Read(data, ebpEncoding, &ebp.PartitionFlags); err != nil {
-			return nil, err
-		}
-		remaining -= uint8(1)
+		ebp.PartitionFlags = data[index]
+		index += uint8(1)
 	}
 
-	if remaining > 0 {
-		ebp.ReservedBytes = make([]byte, remaining)
-		if err = binary.Read(data, ebpEncoding, &ebp.ReservedBytes); err != nil {
-			return nil, err
+	if index < ebp.DataFieldLength+2 {
+		if int(ebp.DataFieldLength+2) > len(data) {
+			return nil, gots.ErrInvalidEBPLength
 		}
-
+		ebp.ReservedBytes = data[index : ebp.DataFieldLength+2]
 	}
 
 	// update the successful read time
