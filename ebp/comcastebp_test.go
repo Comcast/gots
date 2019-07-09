@@ -31,7 +31,7 @@ import (
 
 func TestParseComcastEBP(t *testing.T) {
 	// Read a valid EBP
-	ebp, err := readComcastEbp(bytes.NewBuffer(ComcastEBPBytes[1:]))
+	ebp, err := readComcastEbp(ComcastEBPBytes)
 	if err != nil {
 		t.Errorf("readComcastEbp() returned not null error on valid EBP %v", err)
 	}
@@ -73,7 +73,7 @@ func TestParseComcastEBP(t *testing.T) {
 	}
 
 	// Read an EBP with 0 length
-	ebp, err = readComcastEbp(bytes.NewBuffer([]byte{0x00}))
+	ebp, err = readComcastEbp([]byte{ComcastEbpTag, 0x00})
 	if err != nil {
 		t.Errorf("readComcastEbp() returned error %v on valid EBP", err)
 	}
@@ -82,7 +82,7 @@ func TestParseComcastEBP(t *testing.T) {
 	}
 
 	// Read an EBP with an invalid length
-	ebp, err = readComcastEbp(bytes.NewBuffer([]byte{0xff}))
+	ebp, err = readComcastEbp([]byte{ComcastEbpTag, 0xff})
 	if err == nil {
 		t.Errorf("readComcastEbp() returned null error %v on invalid EBP", err)
 	}

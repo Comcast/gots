@@ -28,6 +28,19 @@ import (
 	"github.com/Comcast/gots"
 )
 
+const (
+	PayloadFlag                   AdaptationFieldControlOptions = 1 // 10
+	AdaptationFieldFlag           AdaptationFieldControlOptions = 2 // 01
+	PayloadAndAdaptationFieldFlag AdaptationFieldControlOptions = 3 // 11
+)
+
+// AdaptationField is an optional part of the packet.
+type AdaptationField Packet
+
+// AdaptationFieldControlOptions is a set of constants for
+// selecting the adaptation field control.
+type AdaptationFieldControlOptions byte
+
 // NewPacket creates a new packet with a Null ID, sync byte, and with the adaptation field control set to payload only.
 // This function is error free.
 func NewAdaptationField() *AdaptationField {

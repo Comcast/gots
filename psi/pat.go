@@ -37,6 +37,13 @@ const (
 	PatPid = uint16(0)
 )
 
+// PAT interface represents operations on a Program Association Table. Currently only single program transport streams (SPTS)are supported
+type PAT interface {
+	NumPrograms() int
+	ProgramMap() map[uint16]uint16
+	SPTSpmtPID() (uint16, error)
+}
+
 // The Program Association Table (PAT) lists the programs available in transport
 // stream.  Currently it is assumed that it will always be processing a Single
 // Program Transport Stream (SPTS), and thus will only ever receive a PAT that
@@ -89,7 +96,7 @@ func (pat pat) ProgramMap() map[uint16]uint16 {
 
 		// ignore the top three (reserved) bits
 		pid := uint16(pat[counter+3])&0x1f<<8 | uint16(pat[counter+4])
-		
+
 		// A value of 0 is reserved for a NIT packet identifier.
 		if pn > 0 {
 			m[pn] = pid

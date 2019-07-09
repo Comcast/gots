@@ -24,6 +24,14 @@ SOFTWARE.
 
 package psi
 
+// TableHeader struct represents operations available on all PSI
+type TableHeader struct {
+	TableID                uint8
+	SectionSyntaxIndicator bool
+	PrivateIndicator       bool
+	SectionLength          uint16
+}
+
 func PointerField(psi []byte) uint8 {
 	return psi[0]
 }
