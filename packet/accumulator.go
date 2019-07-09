@@ -30,6 +30,19 @@ import (
 	"github.com/Comcast/gots"
 )
 
+// Accumulator is used to gather multiple packets
+// and return their concatenated payloads.
+// Accumulator is not thread safe.
+type Accumulator interface {
+	// Add adds a packet to the accumulator and returns true if done.
+	Add([]byte) (bool, error)
+	// Parse returns the concatenated payloads of all the packets that have been added to the accumulator
+	Parse() ([]byte, error)
+	// Packets returns the accumulated packets
+	Packets() []*Packet
+	// Reset clears all packets in the accumulator
+	Reset()
+}
 type accumulator struct {
 	f       func([]byte) (bool, error)
 	packets []*Packet

@@ -29,6 +29,14 @@ import (
 	"fmt"
 )
 
+// PmtElementaryStream represents an elementary stream inside a PMT
+type PmtElementaryStream interface {
+	PmtStreamType
+	ElementaryPid() uint16
+	Descriptors() []PmtDescriptor
+	MaxBitRate() uint64
+}
+
 type pmtElementaryStream struct {
 	PmtStreamType
 	elementaryPid uint16

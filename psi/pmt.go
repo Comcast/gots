@@ -39,6 +39,22 @@ const (
 	pmtEsDescriptorStaticLen uint16 = 5
 )
 
+// Unaccounted bytes before the end of the SectionLength field
+const (
+	// Pointerfield(1) + table id(1) + flags(.5) + section length (2.5)
+	PSIHeaderLen uint16 = 4
+	CrcLen       uint16 = 4
+)
+
+// PMT is a Program Map Table.
+type PMT interface {
+	Pids() []uint16
+	IsPidForStreamWherePresentationLagsEbp(pid uint16) bool
+	ElementaryStreams() []PmtElementaryStream
+	RemoveElementaryStreams(pids []uint16)
+	String() string
+}
+
 type pmt struct {
 	pids              []uint16
 	elementaryStreams []PmtElementaryStream
