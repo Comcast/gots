@@ -33,6 +33,10 @@ var (
 	ErrUnrecognizedEbpType = errors.New("unrecognized EBP")
 	// ErrNoEBP is returned when an attempt is made to extract an EBP from a packet that does not contain one
 	ErrNoEBP = errors.New("packet does not contain EBP")
+	// ErrNoEBPData is returned when an attempt is made to extract an EBP data that does not contain one
+	ErrNoEBPData = errors.New("empty data provided to EBP parser")
+	// ErrInvalidEBPLength is returned when an attempt is made to extract an EBP from a packet that contains an invalid amount of data
+	ErrInvalidEBPLength = errors.New("invalid EBP data length")
 	// ErrInvalidPacketLength denotes an packet length that is not packet.PacketSize bytes in length
 	ErrInvalidPacketLength = errors.New("invalid packet length")
 	// ErrInvalidTSCFlag is returned when the transport scrambling control bit is set to the bit reserved by the specification

@@ -27,7 +27,6 @@ package main
 
 import (
 	"bufio"
-	"bytes"
 	"flag"
 	"fmt"
 	"io"
@@ -139,8 +138,7 @@ func main() {
 				// Not an EBP
 				continue
 			}
-			buf := bytes.NewBuffer(ebpBytes)
-			boundaryPoint, err := ebp.ReadEncoderBoundaryPoint(buf)
+			boundaryPoint, err := ebp.ReadEncoderBoundaryPoint(ebpBytes)
 			if err != nil {
 				fmt.Printf("EBP construction error %v", err)
 				continue
