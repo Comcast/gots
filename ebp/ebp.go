@@ -26,9 +26,9 @@ package ebp
 
 import (
 	"encoding/binary"
-	"github.com/Comcast/gots"
-	"io"
 	"time"
+
+	"github.com/Comcast/gots"
 )
 
 // EBP tags
@@ -103,13 +103,12 @@ type baseEbp struct {
 
 // ReadEncoderBoundaryPoint parses and creates an EncoderBoundaryPoint from the given
 // reader. If the bytes do not conform to a know EBP type, an error is returned.
-func ReadEncoderBoundaryPoint(data io.Reader) (ebp EncoderBoundaryPoint, err error) {
-	dataFieldTag := []byte{byte(0)}
-	if _, err := data.Read(dataFieldTag); err != nil {
-		return nil, err
+func ReadEncoderBoundaryPoint(data []byte) (ebp EncoderBoundaryPoint, err error) {
+	if len(data) == 0 {
+		return nil, gots.ErrNoEBPData
 	}
 
-	switch dataFieldTag[0] {
+	switch data[0] {
 	case ComcastEbpTag:
 		ebp, err = readComcastEbp(data)
 	case CableLabsEbpTag:
