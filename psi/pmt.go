@@ -69,7 +69,7 @@ func PmtAccumulatorDoneFunc(b []byte) (bool, error) {
 	}
 
 	sectionBytes := b[start:]
-	for len(sectionBytes) > 0 && sectionBytes[0] != 0xFF {
+	for len(sectionBytes) > 2 && sectionBytes[0] != 0xFF {
 		tableLength := sectionLength(sectionBytes)
 		if len(sectionBytes) < int(tableLength)+3 {
 			return false, nil
@@ -94,7 +94,7 @@ func NewPMT(pmtBytes []byte) (PMT, error) {
 func (p *pmt) parseTables(pmtBytes []byte) error {
 	sectionBytes := pmtBytes[1+PointerField(pmtBytes):]
 
-	for len(sectionBytes) > 0 && sectionBytes[0] != 0xFF {
+	for len(sectionBytes) > 2 && sectionBytes[0] != 0xFF {
 		tableLength := sectionLength(sectionBytes)
 
 		if tableID(sectionBytes) == 0x2 {
