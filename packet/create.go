@@ -196,15 +196,6 @@ func WithPES(pkt *Packet, pts uint64) {
 	WithHasPayloadFlag(pkt)
 }
 
-// InsertPTS insterts a given pts time into a byte slice
-func InsertPTS(b []byte, pts uint64) {
-	b[4] = byte(pts&0xff) << 1
-	b[3] = byte(pts >> 7 & 0x7f)
-	b[2] = byte(pts >> 14 & 0xff)
-	b[1] = byte(pts >> 22 & 0x4f)
-	b[0] = byte(pts >> 29 & 0x07)
-}
-
 // SetPayload sets the payload of a given packet
 func SetPayload(pkt *Packet, pay []byte) int {
 	start := payloadStart(pkt)

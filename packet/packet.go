@@ -26,6 +26,28 @@ package packet
 
 import "github.com/Comcast/gots"
 
+const (
+	// PacketSize is the expected size of a packet in bytes
+	PacketSize = 188
+	// SyncByte is the expected value of the sync byte
+	SyncByte = 71 // 0x47 (0100 0111)
+	// NullPacketPid is the pid reserved for null packets
+	NullPacketPid = 8191 // 0x1FFF
+)
+
+// TransportScramblingControlOptions is a set of constants for
+// selecting the transport scrambling control.
+type TransportScramblingControlOptions byte
+
+const (
+	NoScrambleFlag      TransportScramblingControlOptions = 0 // 00
+	ScrambleEvenKeyFlag TransportScramblingControlOptions = 2 // 10
+	ScrambleOddKeyFlag  TransportScramblingControlOptions = 3 // 11
+)
+
+// Packet is the basic unit in a transport stream.
+type Packet [PacketSize]byte
+
 // PayloadUnitStartIndicator (PUSI) is a flag that indicates the start of PES data
 // or PSI  (Program-Specific Information) such as AT, CAT, PMT or NIT.  The PUSI
 // flag is contained in the second bit of the second byte of the Packet.
@@ -135,17 +157,15 @@ func SetCC(packet *Packet, newCC uint8) *Packet {
 	return &newPacket
 }
 
-// Returns a byte slice containing the PES header if the Packet contains one,
+// PESHeader returns a byte slice containing the PES header if the Packet contains one,
 // otherwise returns an error
 func PESHeader(packet *Packet) ([]byte, error) {
-	if ContainsPayload(packet) && PayloadUnitStartIndicator(packet) {
-		dataOffset := payloadStart(packet)
-		// A PES Header has a Packet Start Code Prefix of 0x000001
-		if int(packet[dataOffset+0]) == 0 &&
-			int(packet[dataOffset+1]) == 0 &&
-			int(packet[dataOffset+2]) == 1 {
-			start := payloadStart(packet)
-			pay := packet[start:]
+	if PayloadUnitStartIndicator(packet) {
+		pay, err := Payload(packet)
+		if err != nil {
+			return nil, err
+		}
+		if len(pay) > 3 && pay[0] == 0 && pay[1] == 0 && pay[2] == 1 {
 			return pay, nil
 		}
 	}
