@@ -75,6 +75,9 @@ func NewPAT(patBytes []byte) (PAT, error) {
 // NumPrograms returns the number of programs in this PAT
 func (pat pat) NumPrograms() int {
 	sectionLength := int(SectionLength(pat))
+	if len(pat[:]) < sectionLength {
+		sectionLength = len(pat[:])
+	}
 	numPrograms := int((sectionLength -
 		2 - // Transport Stream ID
 		1 - // Reserved|VersionNumber|CurrentNextIndicator
