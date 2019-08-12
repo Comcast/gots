@@ -63,6 +63,10 @@ type pmt struct {
 // PmtAccumulatorDoneFunc is a doneFunc that can be used for packet accumulation
 // to create a PMT
 func PmtAccumulatorDoneFunc(b []byte) (bool, error) {
+	if len(b) < 1 {
+		return false, nil
+	}
+
 	start := 1 + int(PointerField(b))
 	if len(b) < start {
 		return false, nil
