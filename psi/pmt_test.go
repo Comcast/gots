@@ -589,7 +589,7 @@ func TestFilterPMTPacketsToPids_PIDNotFound(t *testing.T) {
 	}
 
 	if pmtPkts == nil {
-		t.Error("Expected non-nil packets since none of the filtered PIDs exist in the PMT.")
+		t.Error("Expected non-nil packets since some of the filtered PIDs exist in the PMT.")
 	}
 
 	// Test when none of the PIDs to be filtered exist in the PMT.
