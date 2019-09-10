@@ -102,4 +102,6 @@ var (
 	ErrSyncByteNotFound = errors.New("Sync-byte not found.")
 	// ErrVSSSignalIdNotFound is returned when we do not find SignalID in the VSS signal's MID.
 	ErrVSSSignalIdNotFound = errors.New("VSS Signal ID not found in the VSS signal received.")
+	// ErrPIDNotInPMT
+	ErrPIDNotInPMT = errors.New("PID(s) %d not found in PMT.")
 )

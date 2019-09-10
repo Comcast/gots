@@ -184,6 +184,43 @@ func TestBuildPMT(t *testing.T) {
 		}
 	}
 }
+
+func TestPIDExists(t *testing.T) {
+	pkt, _ := hex.DecodeString("474064100002b02d0001cb0000e065f0060504435545491b" +
+		"e065f0050e030004b00fe066f0060a04656e670086e06ef0" +
+		"007fc9ad32ffffffffffffffffffffffffffffffffffffff" +
+		"ffffffffffffffffffffffffffffffffffffffffffffffff" +
+		"ffffffffffffffffffffffffffffffffffffffffffffffff" +
+		"ffffffffffffffffffffffffffffffffffffffffffffffff" +
+		"ffffffffffffffffffffffffffffffffffffffffffffffff" +
+		"ffffffffffffffffffffffffffffffffffffffff")
+	acc := packet.NewAccumulator(PmtAccumulatorDoneFunc)
+	done, err := acc.Add(pkt)
+
+	if err != nil {
+		t.Error(err)
+	}
+	if !done {
+		t.Errorf("Single packet PMT expected. This means your doneFunc is probably bad.")
+	}
+	payload, err := acc.Parse()
+	if err != nil {
+		t.Error(err)
+	}
+	pmt, err := NewPMT(payload)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if !pmt.PIDExists(101) {
+		t.Error("Expected true for PID 101 to exist in PMT.")
+	}
+
+	if pmt.PIDExists(199) {
+		t.Error("Expected false for PID 199 to exist in PMT.")
+	}
+}
+
 func TestBuildPMT_ExpectsAnotherPacket(t *testing.T) {
 	pkt, _ := hex.DecodeString(
 		"4740271A0002B0BA0001F70000E065F00C0F04534150530504435545491BE065" +
@@ -461,7 +498,10 @@ func TestFilterPMTPacketsToPids_SinglePacketPMT(t *testing.T) {
 	pids := unfilteredPmt.Pids()
 	pids = pids[:len(pids)-1]
 
-	filteredPmtPackets := FilterPMTPacketsToPids([]*packet.Packet{&bytes}, pids)
+	filteredPmtPackets, err := FilterPMTPacketsToPids([]*packet.Packet{&bytes}, pids)
+	if err != nil {
+		t.Errorf("Expected nil error, got %s", err.Error())
+	}
 
 	acc = packet.NewAccumulator(PmtAccumulatorDoneFunc)
 	for _, p := range filteredPmtPackets {
@@ -495,7 +535,11 @@ func TestFilterPMTPacketsToPids_MultiPacketPMT(t *testing.T) {
 	wantedPids := []uint16{101, 102, 103, 104, 105, 220}
 
 	filteredPids := wantedPids[:len(wantedPids)-1]
-	filteredPMTPackets := FilterPMTPacketsToPids([]*packet.Packet{firstPacketBytes, secondPacketBytes}, filteredPids)
+	filteredPMTPackets, err := FilterPMTPacketsToPids([]*packet.Packet{firstPacketBytes, secondPacketBytes}, filteredPids)
+	if err != nil {
+		t.Errorf("Expected nil error, got %s", err.Error())
+	}
+
 	acc = packet.NewAccumulator(PmtAccumulatorDoneFunc)
 	for _, p := range filteredPMTPackets {
 		acc.Add(p[:])
@@ -517,6 +561,45 @@ func TestFilterPMTPacketsToPids_MultiPacketPMT(t *testing.T) {
 		if wantedPids[i] != pid {
 			t.Errorf("PIDs do not match Expected:%d Got %d", wantedPids[i], pid)
 		}
+	}
+}
+
+func TestFilterPMTPacketsToPids_PIDNotFound(t *testing.T) {
+	// PMT contains PIDs 101-105.
+	pmtPacketBytes, _ := hex.DecodeString("4740641D0002B0940001DF0000E065F0050E03C015581BE065F0150E03C0109D2A027E1F9700E9080C001F418503E84187E066F01A0E03C00122050445414333CC07E0C2B0E8656E670A04656E670087E067F01A0E03C00122050445414333CC07E0C2B0E8656E670A04656E67000FE068F0100E03C001262B030102010A04656E67000FE069F0100E03C001262B030102010A04656E67002E9B5B71FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")
+
+	// Copy into a packet.Packet for calling FilterPMTPacketsToPids.
+	var pkt packet.Packet
+	copy(pkt[:], pmtPacketBytes)
+
+	acc := packet.NewAccumulator(PmtAccumulatorDoneFunc)
+	done, err := acc.Add(pmtPacketBytes)
+
+	if err != nil {
+		t.Error(err)
+	}
+	if !done {
+		t.Errorf("Single packet PMT expected. This means your doneFunc is probably bad.")
+	}
+
+	// Test when some of the PIDs to be filtered exist in the PMT.
+	pmtPkts, err := FilterPMTPacketsToPids([]*packet.Packet{&pkt}, []uint16{105, 106})
+	if err.Error() != "PID(s) [106] not found in PMT." {
+		t.Errorf("Expected missing PID error string, got %s", err.Error())
+	}
+
+	if pmtPkts == nil {
+		t.Error("Expected non-nil packets since some of the filtered PIDs exist in the PMT.")
+	}
+
+	// Test when none of the PIDs to be filtered exist in the PMT.
+	pmtPkts, err = FilterPMTPacketsToPids([]*packet.Packet{&pkt}, []uint16{106, 107})
+	if err.Error() != "PID(s) [106 107] not found in PMT." {
+		t.Errorf("Expected missing PID error string, got %s", err.Error())
+	}
+
+	if pmtPkts != nil {
+		t.Error("Expected nil packets since none of the filtered PIDs exist in the PMT.")
 	}
 }
 
