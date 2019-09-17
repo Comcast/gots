@@ -27,6 +27,7 @@ package psi
 import (
 	"bytes"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
 
@@ -53,6 +54,7 @@ type PMT interface {
 	ElementaryStreams() []PmtElementaryStream
 	RemoveElementaryStreams(pids []uint16)
 	String() string
+	PIDExists(pid uint16) bool
 }
 
 type pmt struct {
@@ -63,6 +65,10 @@ type pmt struct {
 // PmtAccumulatorDoneFunc is a doneFunc that can be used for packet accumulation
 // to create a PMT
 func PmtAccumulatorDoneFunc(b []byte) (bool, error) {
+	if len(b) < 1 {
+		return false, nil
+	}
+
 	start := 1 + int(PointerField(b))
 	if len(b) < start {
 		return false, nil
@@ -212,23 +218,64 @@ func (p *pmt) String() string {
 	return buf.String()
 }
 
-// FilterPMTPacketsToPids filters the PMT contents of the provided packet to the PIDs provided and returns a new packet. For example: if the provided PMT has PIDs 101, 102, and 103 and the provides PIDs are 101 and 102, the new PMT will have only descriptors for PID 101 and 102. The descriptor for PID 103 will be stripped from the new PMT packet.
-func FilterPMTPacketsToPids(packets []*packet.Packet, pids []uint16) []*packet.Packet {
+func (p *pmt) PIDExists(pid uint16) bool {
+	for _, pmtPid := range p.Pids() {
+		if pmtPid == pid {
+			return true
+		}
+	}
+	return false
+}
+
+// FilterPMTPacketsToPids filters the PMT contents of the provided packet to the PIDs provided and returns a new packet(s).
+// For example: if the provided PMT has PIDs 101, 102, and 103 and the provided PIDs are 101 and 102,
+//     the new PMT will have only descriptors for PID 101 and 102. The descriptor for PID 103 will be stripped from the new PMT packet.
+// Returns packets and nil error if all pids are present in the PMT.
+// Returns packets and non-nil error if some pids are present in the PMT.
+// Returns nil packets and non-nil error if none of the pids are present in the PMT.
+func FilterPMTPacketsToPids(packets []*packet.Packet, pids []uint16) ([]*packet.Packet, error) {
 	// make sure we have packets
 	if len(packets) == 0 {
-		return nil
+		return nil, nil
 	}
+
+	if len(pids) == 0 {
+		return packets, nil
+	}
+
 	// Mush the payloads of all PMT packets into one []byte
 	var pmtByteBuffer bytes.Buffer
 	for i := 0; i < len(packets); i++ {
 		pay, err := packet.Payload(packets[i])
 		if err != nil {
-			return nil
+			return nil, gots.ErrNoPayload
 		}
 		pmtByteBuffer.Write(pay)
 	}
 
 	pmtPayload := pmtByteBuffer.Bytes()
+
+	// Determine if any of the given PIDs aren't in the PMT.
+	unfilteredPMT, _ := NewPMT(pmtPayload)
+
+	var missingPids []uint16
+	for _, pid := range pids {
+		if !unfilteredPMT.PIDExists(pid) {
+			missingPids = append(missingPids, pid)
+		}
+	}
+
+	// Return an error if any of the given PIDs is not present in the PMT.
+	var returnError error
+	if len(missingPids) > 0 {
+		returnError = errors.New(fmt.Sprintf(gots.ErrPIDNotInPMT.Error(), missingPids))
+	}
+
+	// Return nil packets and an error if none of the PIDs being filtered exist in the PMT.
+	if len(missingPids) == len(pids) {
+		return nil, returnError
+	}
+
 	// include +1 to account for the PointerField field itself
 	pointerField := PointerField(pmtPayload) + 1
 
@@ -296,7 +343,7 @@ func FilterPMTPacketsToPids(packets []*packet.Packet, pids []uint16) []*packet.P
 		}
 		filteredPMTPackets = append(filteredPMTPackets, padPacket(&pktBuf))
 	}
-	return filteredPMTPackets
+	return filteredPMTPackets, returnError
 }
 
 // IsPMT returns true if the provided packet is a PMT
