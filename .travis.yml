@@ -2,6 +2,9 @@ language: go
 sudo: false
 matrix:
   include:
+    - go: "1.13"
+    - go: "1.12"
+    - go: "1.11"
     - go: "1.10"
       env: LATEST=true
     - go: "1.5"
