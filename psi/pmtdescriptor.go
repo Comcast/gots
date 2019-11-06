@@ -28,7 +28,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	"strconv"
-	"strings"
 )
 
 // Program Element Stream Descriptor Type.
@@ -300,18 +299,20 @@ func (descriptor *pmtDescriptor) DecodeDolbyVisionCodec(originalCodec string) st
 		dv_profile := uint8((num & 0xFE00) >> 9)
 		dv_level := uint8((num & 0xFC) >> 3)
 
-		// default to hvc1
-		baseCodec := "dvh1"
-		// otherwise
-		if strings.Contains(originalCodec, "hev1") {
-			baseCodec = "dvhe"
-		} else if strings.Contains(originalCodec, "avc3") {
-			baseCodec = "dvav"
-		} else if strings.Contains(originalCodec, "avc1") {
-			baseCodec = "dva1"
-		}
+		// Hardcode to dvhe because MPEG-2 TS doesn't support hevc
+		baseCodec := "dvhe"
+		// // default to hvc1
+		// baseCodec := "dvh1"
+		// // otherwise
+		// if strings.Contains(originalCodec, "hev1") {
+		// 	baseCodec = "dvhe"
+		// } else if strings.Contains(originalCodec, "avc3") {
+		// 	baseCodec = "dvav"
+		// } else if strings.Contains(originalCodec, "avc1") {
+		// 	baseCodec = "dva1"
+		// }
 
-		return fmt.Sprintf("%s.%d.%d", baseCodec, dv_profile, dv_level)
+		return fmt.Sprintf("%s.%02d.%02d", baseCodec, dv_profile, dv_level)
 	}
 	return ""
 }
