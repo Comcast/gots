@@ -299,18 +299,10 @@ func (descriptor *pmtDescriptor) DecodeDolbyVisionCodec(originalCodec string) st
 		dv_profile := uint8((num & 0xFE00) >> 9)
 		dv_level := uint8((num & 0xFC) >> 3)
 
-		// Hardcode to dvhe because MPEG-2 TS doesn't support hevc
+		// Hardcode to dvhe because this is MPEG2-TS which doesn't support h265
+		// The codec strings of dvc1 vs dvhe is an mp4 specific thing
+		// dolby-vision-streams-within-the-mpeg-dash-format-v2.0 see Table 2, section 4.2.3
 		baseCodec := "dvhe"
-		// // default to hvc1
-		// baseCodec := "dvh1"
-		// // otherwise
-		// if strings.Contains(originalCodec, "hev1") {
-		// 	baseCodec = "dvhe"
-		// } else if strings.Contains(originalCodec, "avc3") {
-		// 	baseCodec = "dvav"
-		// } else if strings.Contains(originalCodec, "avc1") {
-		// 	baseCodec = "dva1"
-		// }
 
 		return fmt.Sprintf("%s.%02d.%02d", baseCodec, dv_profile, dv_level)
 	}
