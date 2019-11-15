@@ -29,7 +29,7 @@ import (
 )
 
 // CreateSpliceInsertCommand will create a default SpliceInsertCommand.
-func CreateSpliceInsertCommand() SpliceCommand {
+func CreateSpliceInsertCommand() SpliceInsertCommand {
 	return &spliceInsert{
 		// enable this to have less variable sized fields by
 		// default, do not use component splice mode by default
