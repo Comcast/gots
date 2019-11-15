@@ -38,7 +38,7 @@ func CreateSpliceInsertCommand() SpliceInsertCommand {
 }
 
 // CreateTimeSignalCommand will create a default TimeSignalCommand
-func CreateTimeSignalCommand() SpliceCommand {
+func CreateTimeSignalCommand() TimeSignalCommand {
 	return &timeSignal{}
 }
 
