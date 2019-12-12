@@ -209,7 +209,6 @@ func (s *state) Close(desc SegmentationDescriptor) ([]SegmentationDescriptor, er
 	var closed []SegmentationDescriptor
 	for i := len(s.open) - 1; i >= 0; i-- {
 		d := s.open[i]
-		closed = append(closed, d)
 		if desc.Equal(d) {
 			// found our descriptor at index i, remove it
 			// Shift s.open left by one index.
@@ -218,6 +217,7 @@ func (s *state) Close(desc SegmentationDescriptor) ([]SegmentationDescriptor, er
 			s.open[len(s.open)-1] = nil
 			// Truncate slice
 			s.open = s.open[:len(s.open)-1]
+			closed = append(closed, d)
 			return closed, nil
 		}
 	}
