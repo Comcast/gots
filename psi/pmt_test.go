@@ -76,6 +76,10 @@ func (es *testPmtElementaryStream) IsSCTE35Content() bool {
 	return false
 }
 
+func (es *testPmtElementaryStream) IsID3Content() bool {
+	return false
+}
+
 func (es *testPmtElementaryStream) IsStreamWherePresentationLagsEbp() bool {
 	return es.presentationLagsEbp
 }
