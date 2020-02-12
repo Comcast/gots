@@ -27,7 +27,6 @@ package psi
 import (
 	"bytes"
 	"encoding/binary"
-	"errors"
 	"fmt"
 	"io"
 
@@ -258,9 +257,11 @@ func FilterPMTPacketsToPids(packets []*packet.Packet, pids []uint16) ([]*packet.
 	// Determine if any of the given PIDs aren't in the PMT.
 	unfilteredPMT, _ := NewPMT(pmtPayload)
 
+	pmtPid := packet.Pid(packets[0])
 	var missingPids []uint16
 	for _, pid := range pids {
-		if !unfilteredPMT.PIDExists(pid) {
+		// Ignore PAT and PMT PIDS if they are included.
+		if !unfilteredPMT.PIDExists(pid) && pid != PatPid && pid != pmtPid {
 			missingPids = append(missingPids, pid)
 		}
 	}
@@ -268,7 +269,7 @@ func FilterPMTPacketsToPids(packets []*packet.Packet, pids []uint16) ([]*packet.
 	// Return an error if any of the given PIDs is not present in the PMT.
 	var returnError error
 	if len(missingPids) > 0 {
-		returnError = errors.New(fmt.Sprintf(gots.ErrPIDNotInPMT.Error(), missingPids))
+		returnError = fmt.Errorf(gots.ErrPIDNotInPMT.Error(), missingPids)
 	}
 
 	// Return nil packets and an error if none of the PIDs being filtered exist in the PMT.
@@ -358,8 +359,8 @@ func IsPMT(pkt *packet.Packet, pat PAT) (bool, error) {
 	pmtMap := pat.ProgramMap()
 	pid := packet.Pid(pkt)
 
-	for _, map_pid := range pmtMap {
-		if pid == map_pid {
+	for _, mapPID := range pmtMap {
+		if pid == mapPID {
 			return true, nil
 		}
 	}
