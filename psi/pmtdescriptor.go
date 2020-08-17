@@ -49,6 +49,14 @@ const (
 	EC3                uint8 = 204 // 1100 1100 (0xCC)
 )
 
+// Audio service type
+const (
+	AUDIO_UNDEFINED		int = 0		// 0000 0000 (0x00)
+	AUDIO_DESCRIPTION	int = 3		// 0000	0011 (0x03)
+	AUDIO_PRIMARY		int = 128	// 1000 0000 (0x80)			
+)
+
+
 // PmtDescriptor represents operations currently necessary on descriptors found in the PMT
 type PmtDescriptor interface {
 	Tag() uint8
