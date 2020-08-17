@@ -49,7 +49,7 @@ const (
 	EC3                uint8 = 204 // 1100 1100 (0xCC)
 )
 
-// Audio service type
+// ISO_639 Audio service type
 const (
 	AUDIO_UNDEFINED		int = 0		// 0000 0000 (0x00)
 	AUDIO_DESCRIPTION	int = 3		// 0000	0011 (0x03)
