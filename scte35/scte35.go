@@ -153,6 +153,7 @@ func (s *scte35) parseTable(data []byte) error {
 				// Not interested in descriptors that are not
 				// SegmentationDescriptors
 				// Store their bytes anyways so the data is not lost.
+				s.otherDescriptorBytes = append(s.otherDescriptorBytes, descTag, descLen)
 				s.otherDescriptorBytes = append(s.otherDescriptorBytes, buf.Next(int(descLen))...)
 			} else {
 				d := &segmentationDescriptor{spliceInfo: s}
