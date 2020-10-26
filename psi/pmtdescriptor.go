@@ -43,6 +43,7 @@ const (
 	MAXIMUM_BITRATE    uint8 = 14  // 0000 1110 (0x0E)
 	AVC_VIDEO          uint8 = 40  // 0010 1000 (0x28)
 	STREAM_IDENTIFIER  uint8 = 82  // 0101 0010 (0x52)
+        TTML_SUBTITLING    uint8 = 127 // 0111 1111 (0x7F)
 	SCTE_ADAPTATION    uint8 = 151 // 1001 0111 (0x97)
 	DOLBY_VISION       uint8 = 176 // 1011 0000 (0xB0)
 	EBP                uint8 = 233 // 1110 1001 (0xE9)
@@ -63,6 +64,9 @@ type PmtDescriptor interface {
 	IsDolbyATMOS() bool
 	IsDolbyVision() bool
 	DecodeDolbyVisionCodec(string) string
+        IsTTMLSubtitlingDescriptor() bool
+	DecodeTTMLIso639LanguageCode() string
+	DecodeTTMLSubtitlePurpose() uint
 }
 
 type pmtDescriptor struct {
@@ -121,6 +125,9 @@ func (descriptor *pmtDescriptor) decode() string {
 		return fmt.Sprintf("EBP (%d)", descriptor.tag)
 	case STREAM_IDENTIFIER:
 		return fmt.Sprintf("Stream Identifier (%d): %v", descriptor.tag, descriptor.data[0])
+        case TTML_SUBTITLING:
+		return fmt.Sprintf("TTML Subtitling (tagExt=0x%X, code=%s)",
+			descriptor.DecodeTTMLDescTagExtension(), descriptor.DecodeTTMLIso639LanguageCode())
 	}
 	return "unknown tag (" + strconv.Itoa(int(descriptor.tag)) + ")"
 }
@@ -154,6 +161,29 @@ func (descriptor *pmtDescriptor) DecodeIso639LanguageCode() string {
 
 func (descriptor *pmtDescriptor) DecodeIso639AudioType() byte {
 	return descriptor.data[3]
+}
+
+func (descriptor *pmtDescriptor) DecodeTTMLDescTagExtension() byte {
+	return descriptor.data[0]
+}
+
+func (descriptor *pmtDescriptor) IsTTMLSubtitlingDescriptor() bool {
+	return descriptor.tag == TTML_SUBTITLING
+}
+
+func (descriptor *pmtDescriptor) DecodeTTMLIso639LanguageCode() string {
+	if descriptor.tag == TTML_SUBTITLING {
+		return string(descriptor.data[1:4])
+	}
+	return ""
+}
+
+func (descriptor *pmtDescriptor) DecodeTTMLSubtitlePurpose() uint {
+	if descriptor.tag == TTML_SUBTITLING {
+		return uint(descriptor.data[4] >> 2) // First 6 bits of the 5th bytes
+	}
+
+	return 0xFF
 }
 
 // IsIFrameProfile determines from the PMT if the profile is an I-Frame only track
