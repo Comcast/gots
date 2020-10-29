@@ -41,7 +41,7 @@ const (
 
 	PmtStreamTypeID3 uint8 = 21 // Nielsen ID3
 
-        PmtStreamTypePrivateContent uint8 = 6 // Subtitle
+	PmtStreamTypePrivateContent uint8 = 6 // Subtitle
 )
 
 // PmtStreamType is used to represent elementary steam type inside a PMT
@@ -53,7 +53,7 @@ type PmtStreamType interface {
 	IsVideoContent() bool
 	IsSCTE35Content() bool
 	IsID3Content() bool
-        IsPrivateContent() bool
+	IsPrivateContent() bool
 }
 type pmtStreamType struct {
 	code                uint8
