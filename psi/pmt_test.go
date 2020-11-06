@@ -80,6 +80,10 @@ func (es *testPmtElementaryStream) IsID3Content() bool {
 	return false
 }
 
+func (es *testPmtElementaryStream) IsPrivateContent() bool {
+	return false
+}
+
 func (es *testPmtElementaryStream) IsStreamWherePresentationLagsEbp() bool {
 	return es.presentationLagsEbp
 }
