@@ -139,7 +139,9 @@ func (ebp *baseEbp) SetIsEmpty(value bool) {
 	}
 }
 
-// StreamSyncSignal checks the Grouping ID field and return the Stream Sync Signal
+// StreamSyncSignal is used by some Tanscoder vendors to indicate the transcoders for a stream are in sync or not in sync. 
+// The packagers can read this signal and then determine what to do. Ideally they will always be in sync if the transcoders are configured correctly and healthy.
+// StreamSyncSignal checks the Grouping ID field and returns the Stream Sync Signal
 // Note: The intention of the Grouping ID was very broad at first and we have had many discussions over the years as to how to use it,
 // but Stream Sync and SCTE-35 were the only two ever to get implemented. MK was the only Transcoder to implement SCTE-35 within the
 // Grouping ID section and we never leveraged that data on any downstream devices.
