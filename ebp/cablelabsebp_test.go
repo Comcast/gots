@@ -73,6 +73,9 @@ func TestParseCableLabsEBP(t *testing.T) {
 	if len(ebp.ReservedBytes) != 2 {
 		t.Errorf("readCableLabsEbp() has incorrect reserved, %v", ebp.ReservedBytes)
 	}
+	if ebp.StreamSyncSignal() != StreamSynchronized {
+		t.Errorf("readCableLabsEbp() has incorrect stream sync signal")
+	}
 
 	ebp, err = readCableLabsEbp([]byte{0xff, 0xf3})
 	if err == nil {
@@ -93,7 +96,7 @@ func TestCableLabsEBP(t *testing.T) {
 	ebp.SetSapFlag(true)
 	ebp.SapType = 0x02
 	ebp.SetGroupingFlag(true)
-	ebp.Grouping = []byte{0x7F, 0xFF} // wrong on purpose, will be corrected to 0xFF, 0x7F
+	ebp.Grouping = []byte{0x80, 0x1D}
 	ebp.SetTimeFlag(true)
 	ebp.SetEBPTime(time.Unix(0, 1396964696553818999).UTC())
 	ebp.PartitionFlags = 0x03

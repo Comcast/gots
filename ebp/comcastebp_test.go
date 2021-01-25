@@ -71,6 +71,9 @@ func TestParseComcastEBP(t *testing.T) {
 	if ebp.Grouping[0] != byte(0x03) {
 		t.Errorf("readComcastEbp() has incorrect grouping")
 	}
+	if ebp.StreamSyncSignal() != InvalidStreamSyncSignal {
+		t.Errorf("readComcastEbp() has incorrect stream sync signal")
+	}
 
 	// Read an EBP with 0 length
 	ebp, err = readComcastEbp([]byte{ComcastEbpTag, 0x00})
