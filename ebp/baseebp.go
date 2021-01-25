@@ -139,7 +139,7 @@ func (ebp *baseEbp) SetIsEmpty(value bool) {
 	}
 }
 
-// StreamSyncSignal is used by some Tanscoder vendors to indicate the transcoders for a stream are in sync or not in sync.
+// StreamSyncSignal is used by some tanscoder vendors to indicate the transcoders for a stream are in sync or not in sync.
 // The packagers can read this signal and then determine what to do. Ideally they will always be in sync if the transcoders are configured correctly and healthy.
 // StreamSyncSignal checks the Grouping ID field and returns the Stream Sync Signal
 // Note: The intention of the Grouping ID was very broad at first and we have had many discussions over the years as to how to use it,

@@ -104,8 +104,7 @@ func readComcastEbp(data []byte) (ebp *comcastEbp, err error) {
 	}
 
 	if ebp.GroupingFlag() {
-		var group byte
-		group = data[index]
+		group := data[index]
 		ebp.Grouping = append(ebp.Grouping, group)
 		index += uint8(1)
 	}
