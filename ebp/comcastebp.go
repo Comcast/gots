@@ -35,7 +35,6 @@ import (
 // cableLabsEbp is an encoder boundary point
 type comcastEbp struct {
 	baseEbp
-	Grouping uint8
 }
 
 // CreateComcastEBP returns a new comcastEbp with default values.
@@ -105,7 +104,8 @@ func readComcastEbp(data []byte) (ebp *comcastEbp, err error) {
 	}
 
 	if ebp.GroupingFlag() {
-		ebp.Grouping = data[index]
+		group := data[index]
+		ebp.Grouping = append(ebp.Grouping, group)
 		index += uint8(1)
 	}
 
@@ -151,7 +151,9 @@ func (ebp *comcastEbp) Data() []byte {
 	}
 
 	if ebp.GroupingFlag() {
-		binary.Write(data, ebpEncoding, ebp.Grouping)
+		for i := range ebp.Grouping {
+			binary.Write(data, ebpEncoding, ebp.Grouping[i])
+		}
 	}
 
 	if ebp.TimeFlag() {

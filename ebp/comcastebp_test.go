@@ -68,8 +68,11 @@ func TestParseComcastEBP(t *testing.T) {
 	if ebp.Sap() != byte(0x02) {
 		t.Errorf("readComcastEbp() has incorrect SAP")
 	}
-	if ebp.Grouping != byte(0x03) {
+	if ebp.Grouping[0] != byte(0x03) {
 		t.Errorf("readComcastEbp() has incorrect grouping")
+	}
+	if ebp.StreamSyncSignal() != InvalidStreamSyncSignal {
+		t.Errorf("readComcastEbp() has incorrect stream sync signal")
 	}
 
 	// Read an EBP with 0 length
@@ -101,7 +104,7 @@ func TestCreateComcastEBP(t *testing.T) {
 	ebp.SetSapFlag(true)
 	ebp.SapType = 0x02
 	ebp.SetGroupingFlag(true)
-	ebp.Grouping = 0x03
+	ebp.Grouping = []byte{0x03}
 	ebp.SetTimeFlag(true)
 	ebp.SetEBPTime(time.Unix(0, 1396964696553818999).UTC())
 	ebp.ReservedBytes = []byte{0x04, 0x05}

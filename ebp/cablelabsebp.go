@@ -36,7 +36,6 @@ import (
 type cableLabsEbp struct {
 	baseEbp
 	FormatIdentifier uint32
-	Grouping         []uint8
 	PartitionFlags   uint8
 }
 
