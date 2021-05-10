@@ -32,14 +32,14 @@ import (
 // PmtElementaryStream represents an elementary stream inside a PMT
 type PmtElementaryStream interface {
 	PmtStreamType
-	ElementaryPid() uint16
+	ElementaryPid() int
 	Descriptors() []PmtDescriptor
 	MaxBitRate() uint64
 }
 
 type pmtElementaryStream struct {
 	PmtStreamType
-	elementaryPid uint16
+	elementaryPid int
 	descriptors   []PmtDescriptor
 }
 
@@ -51,7 +51,7 @@ const (
 )
 
 // NewPmtElementaryStream creates a new PmtElementaryStream.
-func NewPmtElementaryStream(streamType uint8, elementaryPid uint16, descriptors []PmtDescriptor) PmtElementaryStream {
+func NewPmtElementaryStream(streamType uint8, elementaryPid int, descriptors []PmtDescriptor) PmtElementaryStream {
 	es := &pmtElementaryStream{}
 	es.PmtStreamType = LookupPmtStreamType(streamType)
 	es.elementaryPid = elementaryPid
@@ -59,7 +59,7 @@ func NewPmtElementaryStream(streamType uint8, elementaryPid uint16, descriptors 
 	return es
 }
 
-func (es *pmtElementaryStream) ElementaryPid() uint16 {
+func (es *pmtElementaryStream) ElementaryPid() int {
 	return es.elementaryPid
 }
 

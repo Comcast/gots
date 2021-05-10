@@ -47,12 +47,12 @@ func parseHexString(h string) *packet.Packet {
 }
 
 type testPmtElementaryStream struct {
-	elementaryPid       uint16
+	elementaryPid       int
 	streamType          uint8
 	presentationLagsEbp bool
 }
 
-func (es *testPmtElementaryStream) ElementaryPid() uint16 {
+func (es *testPmtElementaryStream) ElementaryPid() int {
 	return es.elementaryPid
 }
 
@@ -112,7 +112,7 @@ func TestParseTable(t *testing.T) {
 		t.Errorf("Can't parse PMT table %v", err)
 	}
 
-	want := []uint16{101, 102, 110}
+	want := []int{101, 102, 110}
 	got := pmt.Pids()
 	if len(want) != len(got) {
 		t.Errorf("ES count does not match want:%v got:%v", len(want), len(got))
@@ -141,7 +141,7 @@ func TestParseMultipleTables(t *testing.T) {
 		t.Errorf("Can't parse PMT table %v", err)
 	}
 
-	want := []uint16{101, 102, 110}
+	want := []int{101, 102, 110}
 	got := pmt.Pids()
 	if len(want) != len(got) {
 		t.Errorf("ES count does not match want:%v got:%v", len(want), len(got))
@@ -181,7 +181,7 @@ func TestBuildPMT(t *testing.T) {
 		t.Error(err)
 	}
 
-	want := []uint16{101, 102, 110}
+	want := []int{101, 102, 110}
 	got := pmt.Pids()
 	if len(want) != len(got) {
 		t.Errorf("PID lengths do not match Expected %d: Got %d", len(want), len(got))
@@ -271,7 +271,7 @@ func TestBuildPMT_LargePointerFieldGood(t *testing.T) {
 		t.Error(err)
 	}
 
-	want := []uint16{101, 102, 110}
+	want := []int{101, 102, 110}
 	got := pmt.Pids()
 	if len(want) != len(got) {
 		t.Errorf("PID lengths do not match Expected %d: Got %d", len(want), len(got))
@@ -320,7 +320,7 @@ func TestBuildMultiPacketPMT(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	wantedPids := []uint16{101, 102, 103, 104, 105, 220}
+	wantedPids := []int{101, 102, 103, 104, 105, 220}
 	if len(wantedPids) != len(pmt.Pids()) {
 		t.Errorf("PID length do not match expected %d Got %d", len(wantedPids), len(pmt.Pids()))
 		t.FailNow()
@@ -377,7 +377,7 @@ func TestBuildMultiPacketPMT2(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	wantedPids := []uint16{481, 482, 483, 484, 488, 489, 490, 494, 495, 496, 500}
+	wantedPids := []int{481, 482, 483, 484, 488, 489, 490, 494, 495, 496, 500}
 	if len(wantedPids) != len(pmt.Pids()) {
 		t.Errorf("PID length do not match expected %d Got %d", len(wantedPids), len(pmt.Pids()))
 		t.FailNow()
@@ -397,7 +397,7 @@ func TestBuildMultiPacketPMT2(t *testing.T) {
 }
 
 func TestElementaryStreams(t *testing.T) {
-	pids := []uint16{101, 102, 103}
+	pids := []int{101, 102, 103}
 	want := []PmtElementaryStream{
 		&testPmtElementaryStream{101, 27, true},
 		&testPmtElementaryStream{102, 15, true},
@@ -412,13 +412,13 @@ func TestElementaryStreams(t *testing.T) {
 			t.Errorf("PIDs do not match Want %d: Got %d", es.ElementaryPid(), got[i].ElementaryPid())
 		}
 	}
-	pid := uint16(102)
+	pid := int(102)
 	if !pmt.IsPidForStreamWherePresentationLagsEbp(pid) {
 		t.Errorf("PID %d: presentation should lag EBP", pid)
 	}
 }
 func TestIsPidForStreamWherePresentationLagsEbp(t *testing.T) {
-	pids := []uint16{101, 102, 103}
+	pids := []int{101, 102, 103}
 	streams := []PmtElementaryStream{&testPmtElementaryStream{102, 15, true}}
 	pmt := &pmt{pids: pids, elementaryStreams: streams}
 	if !pmt.IsPidForStreamWherePresentationLagsEbp(102) {
@@ -427,7 +427,7 @@ func TestIsPidForStreamWherePresentationLagsEbp(t *testing.T) {
 }
 
 func TestIsNotPidForStreamWherePresentationLagsEbp(t *testing.T) {
-	pids := []uint16{101, 102, 103}
+	pids := []int{101, 102, 103}
 	streams := []PmtElementaryStream{&testPmtElementaryStream{102, 15, false}}
 	pmt := &pmt{pids: pids, elementaryStreams: streams}
 
@@ -540,7 +540,7 @@ func TestFilterPMTPacketsToPids_MultiPacketPMT(t *testing.T) {
 		t.Error(err)
 	}
 
-	wantedPids := []uint16{101, 102, 103, 104, 105, 220}
+	wantedPids := []int{101, 102, 103, 104, 105, 220}
 
 	filteredPids := wantedPids[:len(wantedPids)-1]
 	filteredPMTPackets, err := FilterPMTPacketsToPids([]*packet.Packet{firstPacketBytes, secondPacketBytes}, filteredPids)
@@ -553,7 +553,7 @@ func TestFilterPMTPacketsToPids_MultiPacketPMT(t *testing.T) {
 		acc.Add(p[:])
 	}
 
-	wantedPids = []uint16{101, 102, 103, 104, 105}
+	wantedPids = []int{101, 102, 103, 104, 105}
 	payload, err = acc.Parse()
 	if err != nil {
 		t.Error(err)
@@ -591,7 +591,7 @@ func TestFilterPMTPacketsToPids_PIDNotFound(t *testing.T) {
 	}
 
 	// Test when some of the PIDs to be filtered exist in the PMT.
-	pmtPkts, err := FilterPMTPacketsToPids([]*packet.Packet{&pkt}, []uint16{105, 106})
+	pmtPkts, err := FilterPMTPacketsToPids([]*packet.Packet{&pkt}, []int{105, 106})
 	if err.Error() != "PID(s) [106] not found in PMT." {
 		t.Errorf("Expected missing PID error string, got %s", err.Error())
 	}
@@ -601,7 +601,7 @@ func TestFilterPMTPacketsToPids_PIDNotFound(t *testing.T) {
 	}
 
 	// Test when none of the PIDs to be filtered exist in the PMT.
-	pmtPkts, err = FilterPMTPacketsToPids([]*packet.Packet{&pkt}, []uint16{106, 107})
+	pmtPkts, err = FilterPMTPacketsToPids([]*packet.Packet{&pkt}, []int{106, 107})
 	if err.Error() != "PID(s) [106 107] not found in PMT." {
 		t.Errorf("Expected missing PID error string, got %s", err.Error())
 	}
@@ -765,7 +765,7 @@ func TestReadPMTForSmoke(t *testing.T) {
 		"fffffffffffffffffffffffffffffffffffffffffffffffffffff")
 	r := bytes.NewReader(bs)
 
-	pid := uint16(598)
+	pid := 598
 	pmt, err := ReadPMT(r, pid)
 	if err != nil {
 		t.Fatalf("Unexpected error reading PMT: %v", err)
@@ -786,7 +786,7 @@ func TestReadPMTIncomplete(t *testing.T) {
 		"ff4742") // incomplete PMT packet
 	r := bytes.NewReader(bs)
 
-	pid := uint16(598)
+	pid := 598
 	_, err := ReadPMT(r, pid)
 	if err == nil {
 		t.Errorf("Expected to get error reading PMT, but did not")
@@ -809,7 +809,7 @@ func TestReadPMTSCTE(t *testing.T) {
 		"f008bf06496e766964690bcfa64bffff") // two PMT packets, first with SCTE 0xc0 table only
 	r := bytes.NewReader(bs)
 
-	pid := uint16(59)
+	pid := 59
 	pmt, err := ReadPMT(r, pid)
 	if err != nil {
 		t.Errorf("Unexpected error reading PMT: %v", err)
@@ -840,7 +840,7 @@ func TestReadPMT_MultipleTables_MultiplePackets(t *testing.T) {
 		"ffffffffffffffffffffffffffffffff") // two tables (0xc0 and 0x2) combined across two packets
 	r := bytes.NewReader(bs)
 
-	pid := uint16(59)
+	pid := 59
 	pmt, err := ReadPMT(r, pid)
 	if err != nil {
 		t.Errorf("Unexpected error reading PMT: %v", err)

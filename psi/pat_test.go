@@ -34,12 +34,12 @@ import (
 var testData = []struct {
 	patBytes          string
 	wantStreams       int
-	wantProgramNumber uint16
-	wantProgramMapPID uint16
-	wantProgramMap    map[uint16]uint16
+	wantProgramNumber int
+	wantProgramMapPID int
+	wantProgramMap    map[int]int
 }{
-	{"0000b00d0000c100000001e064dee0f320", 1, 1, 100, map[uint16]uint16{1: 100}},
-	{"0000b0150000c100000001e0640002e0c80003e12ce8f16345", 3, 0, 8192, map[uint16]uint16{1: 100, 2: 200, 3: 300}},
+	{"0000b00d0000c100000001e064dee0f320", 1, 1, 100, map[int]int{1: 100}},
+	{"0000b0150000c100000001e0640002e0c80003e12ce8f16345", 3, 0, 8192, map[int]int{1: 100, 2: 200, 3: 300}},
 }
 
 func TestNumPrograms(t *testing.T) {
@@ -121,7 +121,7 @@ func TestReadPATForSmoke(t *testing.T) {
 	}
 	// sanity check (tests integration a bit)
 	gotMap := pat.ProgramMap()
-	wantMap := map[uint16]uint16{1: 598}
+	wantMap := map[int]int{1: 598}
 	if !reflect.DeepEqual(wantMap, gotMap) {
 		t.Errorf("PAT read is invalid, did not have expected program map")
 	}
