@@ -554,7 +554,7 @@ func BenchmarkOldStyleCreate(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		SetCC(
 			Create(
-				uint16(13),
+				13,
 				WithHasPayloadFlag,
 				WithPUSI),
 			7)
