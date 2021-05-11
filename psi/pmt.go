@@ -48,16 +48,16 @@ const (
 
 // PMT is a Program Map Table.
 type PMT interface {
-	Pids() []uint16
-	IsPidForStreamWherePresentationLagsEbp(pid uint16) bool
+	Pids() []int
+	IsPidForStreamWherePresentationLagsEbp(pid int) bool
 	ElementaryStreams() []PmtElementaryStream
-	RemoveElementaryStreams(pids []uint16)
+	RemoveElementaryStreams(pids []int)
 	String() string
-	PIDExists(pid uint16) bool
+	PIDExists(pid int) bool
 }
 
 type pmt struct {
-	pids              []uint16
+	pids              []int
 	elementaryStreams []PmtElementaryStream
 }
 
@@ -115,7 +115,7 @@ func (p *pmt) parseTables(pmtBytes []byte) error {
 }
 
 func (p *pmt) parsePMTSection(pmtBytes []byte) error {
-	var pids []uint16
+	var pids []int
 	var elementaryStreams []PmtElementaryStream
 	sectionLength := sectionLength(pmtBytes)
 
@@ -129,7 +129,7 @@ func (p *pmt) parsePMTSection(pmtBytes []byte) error {
 	// start at the stream descriptors, parse until the CRC
 	for offset := programInfoLengthOffset + 2 + programInfoLength; offset < PSIHeaderLen+sectionLength-pmtEsDescriptorStaticLen-CrcLen; {
 		elementaryStreamType := uint8(pmtBytes[offset])
-		elementaryPid := uint16(pmtBytes[offset+1]&0x1f)<<8 | uint16(pmtBytes[offset+2])
+		elementaryPid := int(pmtBytes[offset+1]&0x1f)<<8 | int(pmtBytes[offset+2])
 		pids = append(pids, elementaryPid)
 		infoLength := uint16(pmtBytes[offset+3]&0x0f)<<8 | uint16(pmtBytes[offset+4])
 
@@ -164,7 +164,7 @@ func (p *pmt) parsePMTSection(pmtBytes []byte) error {
 	return nil
 }
 
-func (p *pmt) Pids() []uint16 {
+func (p *pmt) Pids() []int {
 	return p.pids
 }
 
@@ -173,7 +173,7 @@ func (p *pmt) ElementaryStreams() []PmtElementaryStream {
 }
 
 // RemoveElementaryStreams removes elementary streams in the pmt of the given pids
-func (p *pmt) RemoveElementaryStreams(removePids []uint16) {
+func (p *pmt) RemoveElementaryStreams(removePids []int) {
 	for _, pid := range removePids {
 		for j, s := range p.elementaryStreams {
 			if pid == s.ElementaryPid() {
@@ -183,7 +183,7 @@ func (p *pmt) RemoveElementaryStreams(removePids []uint16) {
 		}
 	}
 
-	var filteredPids []uint16
+	var filteredPids []int
 
 	for _, es := range p.elementaryStreams {
 		filteredPids = append(filteredPids, es.ElementaryPid())
@@ -192,7 +192,7 @@ func (p *pmt) RemoveElementaryStreams(removePids []uint16) {
 	p.pids = filteredPids
 }
 
-func (p *pmt) IsPidForStreamWherePresentationLagsEbp(pid uint16) bool {
+func (p *pmt) IsPidForStreamWherePresentationLagsEbp(pid int) bool {
 	for _, s := range p.elementaryStreams {
 		if pid == s.ElementaryPid() {
 			return s.IsStreamWherePresentationLagsEbp()
@@ -217,7 +217,7 @@ func (p *pmt) String() string {
 	return buf.String()
 }
 
-func (p *pmt) PIDExists(pid uint16) bool {
+func (p *pmt) PIDExists(pid int) bool {
 	for _, pmtPid := range p.Pids() {
 		if pmtPid == pid {
 			return true
@@ -232,7 +232,7 @@ func (p *pmt) PIDExists(pid uint16) bool {
 // Returns packets and nil error if all pids are present in the PMT.
 // Returns packets and non-nil error if some pids are present in the PMT.
 // Returns nil packets and non-nil error if none of the pids are present in the PMT.
-func FilterPMTPacketsToPids(packets []*packet.Packet, pids []uint16) ([]*packet.Packet, error) {
+func FilterPMTPacketsToPids(packets []*packet.Packet, pids []int) ([]*packet.Packet, error) {
 	// make sure we have packets
 	if len(packets) == 0 {
 		return nil, nil
@@ -258,7 +258,7 @@ func FilterPMTPacketsToPids(packets []*packet.Packet, pids []uint16) ([]*packet.
 	unfilteredPMT, _ := NewPMT(pmtPayload)
 
 	pmtPid := packet.Pid(packets[0])
-	var missingPids []uint16
+	var missingPids []int
 	for _, pid := range pids {
 		// Ignore PAT and PMT PIDS if they are included.
 		if !unfilteredPMT.PIDExists(pid) && pid != PatPid && pid != pmtPid {
@@ -298,7 +298,7 @@ func FilterPMTPacketsToPids(packets []*packet.Packet, pids []uint16) ([]*packet.
 	}
 
 	for offset := programInfoLengthOffset + 2 + programInfoLength; offset < PSIHeaderLen+sectionLength-pmtEsDescriptorStaticLen-CrcLen; {
-		elementaryPid := uint16(pmtPayload[offset+1]&0x1f)<<8 | uint16(pmtPayload[offset+2])
+		elementaryPid := int(pmtPayload[offset+1]&0x1f)<<8 | int(pmtPayload[offset+2])
 		infoLength := uint16(pmtPayload[offset+3]&0x0f)<<8 | uint16(pmtPayload[offset+4])
 
 		// This is an ES PID we want to keep
@@ -383,7 +383,7 @@ func padPacket(buf *bytes.Buffer) *packet.Packet {
 	return &pkt
 }
 
-func pidIn(pids []uint16, target uint16) bool {
+func pidIn(pids []int, target int) bool {
 	for _, pid := range pids {
 		if pid == target {
 			return true
@@ -397,7 +397,7 @@ func pidIn(pids []uint16, target uint16) bool {
 // packet(s) are found or EOF is reached.
 // It returns a new PMT object parsed from the packet(s), if found, and
 // otherwise returns an error.
-func ReadPMT(r io.Reader, pid uint16) (PMT, error) {
+func ReadPMT(r io.Reader, pid int) (PMT, error) {
 	var pkt packet.Packet
 	var err error
 	var pmt PMT
@@ -412,7 +412,7 @@ func ReadPMT(r io.Reader, pid uint16) (PMT, error) {
 			}
 			return nil, err
 		}
-		currPid := packet.Pid(&pkt)
+		currPid := pkt.PID()
 		if currPid != pid {
 			continue
 		}
