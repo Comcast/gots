@@ -54,7 +54,7 @@ func PrivateIndicator(psi []byte) bool {
 // SectionLength returns the psi section length
 func SectionLength(psi []byte) uint16 {
 	offset := int(1 + PointerField(psi))
-	if offset > len(psi) {
+	if offset >= len(psi) {
 		return 0
 	}
 	return sectionLength(psi[offset:])
