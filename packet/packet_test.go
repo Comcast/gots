@@ -80,7 +80,7 @@ func TestPid(t *testing.T) {
 			"79279065d30a93c8d5584d12b87b35938e18f2868f149f3dec38cae665db77bd" +
 			"0ba9b7a659363d7347d22f835b4e53f6472f01be53d7df28ea7f1764972f5549" +
 			"34096bd6bf42eabe1dff1c59e0cc55a716b6a40618b3305b45779c31")
-	expected := uint16(102)
+	expected := 102
 	if pid := Pid(packet); pid != expected {
 		t.Errorf("Pid() = %d, want %d", pid, expected)
 	}
@@ -94,7 +94,7 @@ func TestPidGreaterThan255(t *testing.T) {
 			"79279065d30a93c8d5584d12b87b35938e18f2868f149f3dec38cae665db77bd" +
 			"0ba9b7a659363d7347d22f835b4e53f6472f01be53d7df28ea7f1764972f5549" +
 			"34096bd6bf42eabe1dff1c59e0cc55a716b6a40618b3305b45779c31")
-	expected := uint16(290)
+	expected := 290
 	if pid := Pid(packet); pid != expected {
 		t.Errorf("Pid() = %d, want %d", pid, expected)
 	}

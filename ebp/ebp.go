@@ -38,6 +38,13 @@ const (
 	CableLabsFormatIdentifier = 0x45425030
 )
 
+// Stream Sync constants
+const (
+	InvalidStreamSyncSignal = uint8(0xFF)
+	StreamNotSynchronized   = uint8(0x1C)
+	StreamSynchronized      = uint8(0x1D)
+)
+
 var ebpEncoding = binary.BigEndian
 
 // EncoderBoundaryPoint represents shared operations available on an all EBPs.
@@ -82,6 +89,8 @@ type EncoderBoundaryPoint interface {
 	IsEmpty() bool
 	// SetIsEmpty sets if the EBP is empty (zero length)
 	SetIsEmpty(bool)
+	// StreamSyncSignal returns Stream Sync byte
+	StreamSyncSignal() uint8
 	// Data will return the raw bytes of the EBP
 	Data() []byte
 }
@@ -99,6 +108,8 @@ type baseEbp struct {
 
 	ReservedBytes   []uint8
 	SuccessReadTime time.Time
+
+	Grouping []uint8
 }
 
 // ReadEncoderBoundaryPoint parses and creates an EncoderBoundaryPoint from the given

@@ -58,8 +58,8 @@ func PayloadUnitStartIndicator(packet *Packet) bool {
 // PID is the Packet Identifier.  Each table or elementary stream in the
 // transport stream is identified by a PID.  The PID is contained in the 13
 // bits that span the last 5 bits of second byte and all bits in the byte.
-func Pid(packet *Packet) uint16 {
-	return uint16(packet[1]&0x1f)<<8 | uint16(packet[2])
+func Pid(packet *Packet) int {
+	return int(packet[1]&0x1f)<<8 | int(packet[2])
 }
 
 // ContainsPayload is a flag that indicates the packet has a payload.  The flag is

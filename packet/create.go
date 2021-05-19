@@ -79,7 +79,7 @@ var (
 //              WithContinuousAF,
 //              WithPUSI),
 //        cc)
-func Create(pid uint16, options ...func(*Packet)) *Packet {
+func Create(pid int, options ...func(*Packet)) *Packet {
 	var pkt Packet
 	setPid(&pkt, pid)
 	for _, option := range options {
@@ -93,7 +93,7 @@ func Create(pid uint16, options ...func(*Packet)) *Packet {
 
 // CreateTestPacket creates a test packet with the given PID, continuity counter, payload unit start indicator and payload flag
 // This is a convenience function for often used packet creatio options functions
-func CreateTestPacket(pid uint16, cc uint8, pusi, hasPay bool) *Packet {
+func CreateTestPacket(pid int, cc uint8, pusi, hasPay bool) *Packet {
 	var pkt *Packet
 	if hasPay && pusi {
 		pkt = SetCC(
@@ -116,13 +116,13 @@ func CreateTestPacket(pid uint16, cc uint8, pusi, hasPay bool) *Packet {
 }
 
 // CreateDCPacket creates a new packet with a discontinuous adapataion field and the given PID and CC
-func CreateDCPacket(pid uint16, cc uint8) *Packet {
+func CreateDCPacket(pid int, cc uint8) *Packet {
 	pkt := SetCC(Create(pid, WithDiscontinuousAF, WithHasPayloadFlag), cc)
 	return pkt
 }
 
 // CreatePacketWithPayload creates a new packet with the given PID, CC and payload
-func CreatePacketWithPayload(pid uint16, cc uint8, pay []byte) *Packet {
+func CreatePacketWithPayload(pid int, cc uint8, pay []byte) *Packet {
 	pkt := SetCC(
 		Create(
 			pid,
@@ -137,7 +137,7 @@ func CreatePacketWithPayload(pid uint16, cc uint8, pay []byte) *Packet {
 	return pkt
 }
 
-func setPid(pkt *Packet, pid uint16) {
+func setPid(pkt *Packet, pid int) {
 	pkt[1] = byte(pid >> 8 & 0x1f)
 	pkt[2] = byte(pid & 0xff)
 }
