@@ -119,7 +119,7 @@ func (p *pmt) parsePMTSection(pmtBytes []byte) error {
 	var elementaryStreams []PmtElementaryStream
 	sectionLength := sectionLength(pmtBytes)
 
-	if len(pmtBytes) < programInfoLengthOffset {
+	if len(pmtBytes) <= programInfoLengthOffset+1 {
 		return gots.ErrParsePMTDescriptor
 	}
 
