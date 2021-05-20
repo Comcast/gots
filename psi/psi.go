@@ -53,7 +53,11 @@ func PrivateIndicator(psi []byte) bool {
 
 // SectionLength returns the psi section length
 func SectionLength(psi []byte) uint16 {
-	return sectionLength(psi[1+PointerField(psi):])
+	offset := int(1 + PointerField(psi))
+	if offset >= len(psi) {
+		return 0
+	}
+	return sectionLength(psi[offset:])
 }
 
 // tableID returns the table id from the header of a section
