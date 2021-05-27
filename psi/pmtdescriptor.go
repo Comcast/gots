@@ -52,9 +52,9 @@ const (
 
 // ISO_639 Audio service type
 const (
-	AUDIO_UNDEFINED   int = 0   // 0000 0000 (0x00)
-	AUDIO_DESCRIPTION int = 3   // 0000	0011 (0x03)
-	AUDIO_PRIMARY     int = 128 // 1000 0000 (0x80)
+	AUDIO_UNDEFINED   int = 0	// 0000 0000 (0x00)
+	AUDIO_DESCRIPTION int = 3	// 0000 0011 (0x03)
+	AUDIO_PRIMARY     int = 128	// 1000 0000 (0x80)
 )
 
 // Descriptor tag extension
