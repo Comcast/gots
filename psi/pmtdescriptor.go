@@ -43,10 +43,23 @@ const (
 	MAXIMUM_BITRATE    uint8 = 14  // 0000 1110 (0x0E)
 	AVC_VIDEO          uint8 = 40  // 0010 1000 (0x28)
 	STREAM_IDENTIFIER  uint8 = 82  // 0101 0010 (0x52)
+	EXTENSION          uint8 = 127 // 0111 1111 (0x7F)
 	SCTE_ADAPTATION    uint8 = 151 // 1001 0111 (0x97)
 	DOLBY_VISION       uint8 = 176 // 1011 0000 (0xB0)
 	EBP                uint8 = 233 // 1110 1001 (0xE9)
 	EC3                uint8 = 204 // 1100 1100 (0xCC)
+)
+
+// ISO_639 Audio service type
+const (
+	AUDIO_UNDEFINED   int = 0   // 0000 0000 (0x00)
+	AUDIO_DESCRIPTION int = 3   // 0000	0011 (0x03)
+	AUDIO_PRIMARY     int = 128 // 1000 0000 (0x80)
+)
+
+// Descriptor tag extension
+const (
+	TTML_DESC_TAG_EXTENSION uint8 = 32 // 0010 0000 (0x20)
 )
 
 // PmtDescriptor represents operations currently necessary on descriptors found in the PMT
@@ -63,6 +76,10 @@ type PmtDescriptor interface {
 	IsDolbyATMOS() bool
 	IsDolbyVision() bool
 	DecodeDolbyVisionCodec(string) string
+	IsTTMLSubtitlingDescriptor() bool
+	DecodeTTMLIso639LanguageCode() string
+	DecodeTTMLSubtitlePurpose() uint
+	IsTTMLDescTagExtension() bool
 }
 
 type pmtDescriptor struct {
@@ -121,6 +138,8 @@ func (descriptor *pmtDescriptor) decode() string {
 		return fmt.Sprintf("EBP (%d)", descriptor.tag)
 	case STREAM_IDENTIFIER:
 		return fmt.Sprintf("Stream Identifier (%d): %v", descriptor.tag, descriptor.data[0])
+	case EXTENSION:
+		return fmt.Sprintf("TTML Subtitling (language code=%s)", descriptor.DecodeTTMLIso639LanguageCode())
 	}
 	return "unknown tag (" + strconv.Itoa(int(descriptor.tag)) + ")"
 }
@@ -153,7 +172,36 @@ func (descriptor *pmtDescriptor) DecodeIso639LanguageCode() string {
 }
 
 func (descriptor *pmtDescriptor) DecodeIso639AudioType() byte {
-	return descriptor.data[3]
+	if len(descriptor.data) >= 4 {
+		return descriptor.data[3]
+	}
+	return 0
+}
+
+func (descriptor *pmtDescriptor) IsTTMLDescTagExtension() bool {
+	return len(descriptor.data) >= 1 && uint8(descriptor.data[0]) == TTML_DESC_TAG_EXTENSION
+}
+
+func (descriptor *pmtDescriptor) IsTTMLSubtitlingDescriptor() bool {
+	return descriptor.tag == EXTENSION
+}
+
+func (descriptor *pmtDescriptor) DecodeTTMLIso639LanguageCode() string {
+	if descriptor.tag == EXTENSION {
+		if len(descriptor.data) >= 4 {
+			return string(descriptor.data[1:4])
+		}
+	}
+	return ""
+}
+
+func (descriptor *pmtDescriptor) DecodeTTMLSubtitlePurpose() uint {
+	if descriptor.tag == EXTENSION {
+		if len(descriptor.data) >= 5 {
+			return uint(descriptor.data[4] >> 2) // First 6 bits of the 5th bytes
+		}
+	}
+	return 0xFF
 }
 
 // IsIFrameProfile determines from the PMT if the profile is an I-Frame only track
