@@ -26,43 +26,47 @@ package packet
 
 import (
 	"encoding/hex"
-	"fmt"
-)
+	"testing"
 
-// FIXME THIS IS BROKEN
+	"github.com/Comcast/gots"
+)
 
 // PacketAccumulator is not thread safe
 // For a PSI specific example, see psi.PmtAccumulatorDoneFunc(PacketAccumulator)
-func ExamplePacketAccumulator() {
-	firstPacket, _ := hex.DecodeString("474064100002b0ba0001c10000e065f00b0504435545490e03c03dd01be065f016970028046400283fe907108302808502800e03c0392087e066f0219700050445414333cc03c0c2100a04656e6700e907108302808502800e03c000f087e067f0219700050445414333cc03c0c4100a0473706100e907108302808502800e03c001e00fe068f01697000a04656e6700e907108302808502800e03c000f00fe069f01697000a0473706100e907108302808502800e03c000f086e0dc")
+func TestPacketAccumulator(t *testing.T) {
+	b, _ := hex.DecodeString("474064100002b0ba0001c10000e065f00b0504435545490e03c03dd01be065f016970028046400283fe907108302808502800e03c0392087e066f0219700050445414333cc03c0c2100a04656e6700e907108302808502800e03c000f087e067f0219700050445414333cc03c0c4100a0473706100e907108302808502800e03c001e00fe068f01697000a04656e6700e907108302808502800e03c000f00fe069f01697000a0473706100e907108302808502800e03c000f086e0dc")
+	firstPacket := &Packet{}
+	copy(firstPacket[:], b)
+	b, _ = hex.DecodeString("47006411f0002b59bc22ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
+	secondPacket := &Packet{}
+	copy(secondPacket[:], b)
 
-	secondPacket, _ := hex.DecodeString("47006411f0002b59bc22ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
+	var called = false
 
-	packets := [][]byte{firstPacket, secondPacket}
+	packets := []*Packet{firstPacket, secondPacket}
 	// Just a simple func to accumulate two packets
 	dFunc := func(b []byte) (bool, error) {
 		if len(b) <= PacketSize {
 			return false, nil
 		}
+
+		called = true
+
 		return true, nil
 	}
 
 	acc := NewAccumulator(dFunc)
 	for _, pkt := range packets {
-		done, err := acc.Add(pkt)
-		if done {
+		_, err := acc.WritePacket(pkt)
+		if err == gots.ErrAccumulatorDone {
+			// Accumulation is done
 			break
-		}
-		if err != nil {
-			fmt.Printf("%v\n", err)
+		} else if err != nil {
+			t.Errorf("Unexpected accumulator error: %s", err)
 		}
 	}
-	bytes, parseErr := acc.Parse()
-	if parseErr != nil {
-		fmt.Printf("%v\n", parseErr)
-		return
-	}
-	fmt.Println(len(bytes))
-	//Output: 368
 
+	if !called {
+		t.Error("Expected Accumulator doneFunc to be called")
+	}
 }

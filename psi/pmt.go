@@ -34,6 +34,8 @@ import (
 	"github.com/Comcast/gots/packet"
 )
 
+const PidNotFound int = 1<<16 - 1
+
 const (
 	programInfoLengthOffset         = 10 // includes PSIHeaderLen
 	pmtEsDescriptorStaticLen uint16 = 5
@@ -120,7 +122,7 @@ func (p *pmt) parsePMTSection(pmtBytes []byte) error {
 	sectionLength := sectionLength(pmtBytes)
 
 	if len(pmtBytes) <= programInfoLengthOffset+1 {
-		return gots.ErrParsePMTDescriptor
+		return gots.ErrPMTParse
 	}
 
 	programInfoLength := uint16(pmtBytes[programInfoLengthOffset]&0x0f)<<8 |
@@ -224,6 +226,32 @@ func (p *pmt) PIDExists(pid int) bool {
 		}
 	}
 	return false
+}
+
+func ExtractCRC(payload []byte) (uint32, error) {
+	if len(payload) < 4 {
+		return 0, gots.ErrShortPaload
+	}
+
+	sectionLength := SectionLength(payload)
+
+	if !CanBuildPMT(payload, sectionLength) {
+		return 0, gots.ErrPMTParse
+	}
+
+	end := PSIHeaderLen + sectionLength
+
+	// The CRC is the last 4-bytes of the PSI Table.
+	data := payload[end-4 : end]
+	return binary.BigEndian.Uint32(data), nil
+}
+
+func CanBuildPMT(payload []byte, sectionLength uint16) bool {
+	if len(payload) < int(sectionLength) {
+		fmt.Println("payload short?", len(payload), sectionLength)
+		return false
+	}
+	return true
 }
 
 // FilterPMTPacketsToPids filters the PMT contents of the provided packet to the PIDs provided and returns a new packet(s).
@@ -398,7 +426,7 @@ func pidIn(pids []int, target int) bool {
 // It returns a new PMT object parsed from the packet(s), if found, and
 // otherwise returns an error.
 func ReadPMT(r io.Reader, pid int) (PMT, error) {
-	var pkt packet.Packet
+	var pkt = &packet.Packet{}
 	var err error
 	var pmt PMT
 
@@ -416,24 +444,22 @@ func ReadPMT(r io.Reader, pid int) (PMT, error) {
 		if currPid != pid {
 			continue
 		}
-		done, err = pmtAcc.Add(pkt[:])
-		if err != nil {
-			return nil, err
-		}
-		if done {
-			b, err := pmtAcc.Parse()
-			if err != nil {
-				return nil, err
-			}
-			pmt, err = NewPMT(b)
+		_, err = pmtAcc.WritePacket(pkt)
+		if err == gots.ErrAccumulatorDone {
+			pmt, err = NewPMT(pmtAcc.Bytes())
 			if err != nil {
 				return nil, err
 			}
 			if len(pmt.Pids()) == 0 {
 				done = false
 				pmtAcc = packet.NewAccumulator(PmtAccumulatorDoneFunc)
+				continue
 			}
+			done = true
+		} else if err != nil {
+			return nil, err
 		}
+
 	}
 	return pmt, nil
 }

@@ -24,7 +24,9 @@ SOFTWARE.
 
 package packet
 
-import "github.com/Comcast/gots"
+import (
+	"github.com/Comcast/gots"
+)
 
 const (
 	// PacketSize is the expected size of a packet in bytes
@@ -88,11 +90,6 @@ func IsNull(packet *Packet) bool {
 // IsPat returns true if the provided packet is a PAT
 func IsPat(packet *Packet) bool {
 	return Pid(packet) == 0
-}
-
-// badLen returns true if the packet is not of valid length
-func badLen(packet []byte) bool {
-	return len(packet) != PacketSize
 }
 
 // Returns the index of the first byte of Payload data in packetBytes.
@@ -187,4 +184,15 @@ func Equal(a, b *Packet) bool {
 		return false
 	}
 	return *a == *b
+}
+
+// CopyPackets returns a copy of the given packets with new memory
+func CopyPackets(packets []*Packet) []*Packet {
+	newPackets := make([]*Packet, len(packets))
+	for i, pkt := range packets {
+		pktCopy := &Packet{}
+		copy(pktCopy[:], pkt[:])
+		newPackets[i] = pktCopy
+	}
+	return newPackets
 }

@@ -30,85 +30,99 @@ import (
 	"github.com/Comcast/gots"
 )
 
+// Iotas to track the state of the accumulator
+const (
+	stateStarting = iota
+	stateAccumulating
+	stateDone
+)
+
 // Accumulator is used to gather multiple packets
 // and return their concatenated payloads.
 // Accumulator is not thread safe.
 type Accumulator interface {
-	// Add adds a packet to the accumulator and returns true if done.
-	Add([]byte) (bool, error)
-	// Parse returns the concatenated payloads of all the packets that have been added to the accumulator
-	Parse() ([]byte, error)
-	// Packets returns the accumulated packets
+	// WritePacket adds a packet to the accumulator and returns true if done.
+	WritePacket(*Packet) (int, error)
+	// Bytes returns the payload bytes from the underlying buffer
+	Bytes() []byte
+	// Packets returns the packets used to fill the payload buffer
 	Packets() []*Packet
-	// Reset clears all packets in the accumulator
+	// Reset resets the accumulator state
 	Reset()
 }
 type accumulator struct {
 	f       func([]byte) (bool, error)
+	buf     *bytes.Buffer
 	packets []*Packet
+	state   int
 }
 
 // NewAccumulator creates a new packet accumulator that is done when
 // the provided function returns done as true.
 func NewAccumulator(f func(data []byte) (done bool, err error)) Accumulator {
-	return &accumulator{f: f}
+	return &accumulator{f: f, state: stateStarting}
 }
 
 // Add a packet to the accumulator. If the added packet completes
 // the accumulation, based on the provided doneFunc, true is returned.
 // Returns an error if the packet is not valid.
-func (a *accumulator) Add(pkt []byte) (bool, error) {
-	if badLen(pkt) {
-		return false, gots.ErrInvalidPacketLength
-	}
-	var pp Packet
-	copy(pp[:], pkt)
-	// technically we could get a packet without a payload.  Check this and
-	// return false if we get one
-	p := ContainsPayload(&pp)
-	if !p {
-		return false, nil
-	}
-	// need to check if the packet contains a payloadUnitStartIndicator so we know
-	// to drop old packets and re-accumulate a new scte signal
-	if PayloadUnitStartIndicator(&pp) {
-		a.Reset()
-	}
-	if !PayloadUnitStartIndicator(&pp) && len(a.packets) == 0 {
-		// First packet must have payload unit start indicator
-		return false, gots.ErrNoPayloadUnitStartIndicator
-	}
-	a.packets = append(a.packets, &pp)
-	b, err := a.Parse()
-	if err != nil {
-		return false, err
-	}
-	done, err := a.f(b)
-	if err != nil {
-		return false, err
-	}
-	return done, nil
-}
-
-// Parses the accumulated packets and returns the
-// concatenated payloads or any error that occurred, not both
-func (a *accumulator) Parse() ([]byte, error) {
-	var b []byte
-	buf := bytes.NewBuffer(b)
-	for _, pkt := range a.packets {
-		pay, err := Payload(pkt)
-		if err != nil {
-			return nil, err
+func (a *accumulator) WritePacket(pkt *Packet) (int, error) {
+	switch a.state {
+	case stateStarting:
+		// need to check if the packet contains a payloadUnitStartIndicator to start
+		if !PayloadUnitStartIndicator(pkt) {
+			return PacketSize, gots.ErrNoPayloadUnitStartIndicator
 		}
-		buf.Write(pay)
+
+		a.packets = []*Packet{}
+		a.buf = &bytes.Buffer{}
+		a.state = stateAccumulating
+
+	case stateAccumulating:
+		// need to check if the packet contains a payloadUnitStartIndicator so we know
+		// to drop old packets and start re-accumulation
+		if PayloadUnitStartIndicator(pkt) {
+			a.state = stateStarting
+			return a.WritePacket(pkt)
+		}
+
+	case stateDone:
+		return 0, nil
 	}
-	return buf.Bytes(), nil
+
+	var cpyPkt = &Packet{}
+	copy(cpyPkt[:], pkt[:])
+	a.packets = append(a.packets, cpyPkt)
+
+	if b, err := Payload(pkt); err != nil {
+		return PacketSize, err
+	} else if _, err := a.buf.Write(b); err != nil {
+		return PacketSize, err
+	}
+
+	if done, err := a.f(a.buf.Bytes()); err != nil {
+		return PacketSize, err
+	} else if done {
+		a.state = stateDone
+		return PacketSize, gots.ErrAccumulatorDone
+	}
+
+	return PacketSize, nil
 }
 
+// Bytes returns the payload bytes from the underlying buffer
+func (a *accumulator) Bytes() []byte {
+	return a.buf.Bytes()
+}
+
+// Packets returns the packets used to fill the payload buffer
+// NOTE: Not thread safe
 func (a *accumulator) Packets() []*Packet {
 	return a.packets
 }
 
+// Reset resets the accumulator state
 func (a *accumulator) Reset() {
-	a.packets = nil
+	a.state = stateStarting
+	a.buf.Reset()
 }

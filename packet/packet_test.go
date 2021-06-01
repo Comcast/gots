@@ -28,8 +28,6 @@ import (
 	"bytes"
 	"encoding/hex"
 	"testing"
-
-	"github.com/Comcast/gots"
 )
 
 func parseHexString(h string) *Packet {
@@ -214,18 +212,6 @@ func TestIncrementCC(t *testing.T) {
 	expected := uint8(1)
 	if expected != newPacket[3] {
 		t.Errorf("CC= %x, want %x", newPacket[3], expected)
-	}
-}
-
-func TestBadLength(t *testing.T) {
-	packet, _ := hex.DecodeString("4740653214723f5d09c67ec90ca90ad800d6ae02c11e66772d000001e0000084")
-	acc := NewAccumulator(nil)
-	ok, err := acc.Add(packet)
-	if ok {
-		t.Errorf("BadLength, expected failure from new packet")
-	}
-	if err != gots.ErrInvalidPacketLength {
-		t.Errorf("BadLength, expected error from new packet")
 	}
 }
 

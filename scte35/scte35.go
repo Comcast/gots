@@ -88,7 +88,11 @@ func (s *scte35) parseTable(data []byte) error {
 	// read over the pointer field
 	buf.Next(int(psi.PointerField(data) + 1))
 	// read in the TableHeader
-	s.tableHeader = psi.TableHeaderFromBytes(buf.Next(3))
+	var err error
+	s.tableHeader, err = psi.TableHeaderFromBytes(buf.Next(3))
+	if err != nil {
+		return err
+	}
 	if s.tableHeader.TableID == 0xfc {
 		s.protocolVersion = readByte()
 		if readByte()&0x80 != 0 {
