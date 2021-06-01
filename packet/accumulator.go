@@ -41,7 +41,7 @@ const (
 // and return their concatenated payloads.
 // Accumulator is not thread safe.
 type Accumulator interface {
-	// WritePacket adds a packet to the accumulator and returns true if done.
+	// WritePacket adds a packet to the accumulator and returns got.ErrAccumulatorDone if done
 	WritePacket(*Packet) (int, error)
 	// Bytes returns the payload bytes from the underlying buffer
 	Bytes() []byte
@@ -64,7 +64,7 @@ func NewAccumulator(f func(data []byte) (done bool, err error)) Accumulator {
 }
 
 // Add a packet to the accumulator. If the added packet completes
-// the accumulation, based on the provided doneFunc, true is returned.
+// the accumulation, based on the provided doneFunc, gots.ErrAccumulatorDone is returned.
 // Returns an error if the packet is not valid.
 func (a *accumulator) WritePacket(pkt *Packet) (int, error) {
 	switch a.state {
@@ -87,7 +87,7 @@ func (a *accumulator) WritePacket(pkt *Packet) (int, error) {
 		}
 
 	case stateDone:
-		return 0, nil
+		return 0, gots.ErrAccumulatorDone
 	}
 
 	var cpyPkt = &Packet{}
