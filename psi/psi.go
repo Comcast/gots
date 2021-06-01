@@ -24,6 +24,10 @@ SOFTWARE.
 
 package psi
 
+import (
+	"github.com/Comcast/gots"
+)
+
 // TableHeader struct represents operations available on all PSI
 type TableHeader struct {
 	TableID                uint8
@@ -88,15 +92,19 @@ func NewPointerField(size int) []byte {
 }
 
 // PSIFromBytes returns the PSI struct from a byte slice
-func TableHeaderFromBytes(data []byte) TableHeader {
+func TableHeaderFromBytes(data []byte) (TableHeader, error) {
 	th := TableHeader{}
+
+	if len(data) < 3 {
+		return th, gots.ErrShortPayload
+	}
 
 	th.TableID = data[0]
 	th.SectionSyntaxIndicator = data[1]&0x80 != 0
 	th.PrivateIndicator = data[1]&0x40 != 0
 	th.SectionLength = uint16(data[1]&0x03 /* 0000 0011 */)<<8 | uint16(data[2])
 
-	return th
+	return th, nil
 }
 
 // Data returns the byte representation of the PSI struct.

@@ -40,7 +40,10 @@ func TestDefaultPSIData(t *testing.T) {
 
 func TestPSIFromBytes(t *testing.T) {
 	target := []byte{0x04, 0xFF, 0xFF, 0xFF, 0xFF, 0x18, 0xB1, 0xFF}
-	th := TableHeaderFromBytes(target[5:])
+	th, err := TableHeaderFromBytes(target[5:])
+	if err != nil {
+		t.FailNow()
+	}
 
 	if th.TableID != 0x18 {
 		t.Errorf("TableHeaderFromBytes does not produce expected TableID. \nExpected: %X \n     Got: %X ", 0x18, th.TableID)

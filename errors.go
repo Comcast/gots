@@ -70,6 +70,8 @@ var (
 	// ErrPMTNotFound is returned when expected PMT packet(s) are not found when
 	// reading TS packets.
 	ErrPMTNotFound = errors.New("No PMT was found while reading TS")
+	// ErrPMTParse is returned when malformed PMT data is present
+	ErrPMTParse = errors.New("PMT malformed.")
 	// ErrParsePMTDescriptor is returned when a PMT descriptor cannot be parsed
 	ErrParsePMTDescriptor = errors.New("unable to parse PMT descriptor")
 	// ErrInvalidPATLength is returned when a PAT cannot be parsed because there are not enough bytes
@@ -78,6 +80,8 @@ var (
 	ErrNoPayloadUnitStartIndicator = errors.New("packet does not have payload unit start indicator")
 	// ErrUnknownTableID is returned when PSI is parsed with an unknown table id
 	ErrUnknownTableID = errors.New("Unknown table id received")
+	// ErrTableHeaderShort is returned when a PSI table header is too short to parse
+	ErrShortPayload = errors.New("provided data is too short to parse")
 	// ErrInvalidSCTE35Length is returned when a SCTE35 cue cannot be parsed because there are not enough bytes
 	ErrInvalidSCTE35Length = errors.New("too few bytes to parse SCTE35")
 	// ErrSCTE35EncryptionUnsupported is returned when a scte35 cue cannot be parsed because it is encrypted
@@ -104,4 +108,8 @@ var (
 	ErrVSSSignalIdNotFound = errors.New("VSS Signal ID not found in the VSS signal received.")
 	// ErrPIDNotInPMT
 	ErrPIDNotInPMT = errors.New("PID(s) %d not found in PMT.")
+	// ErrDone signals an accumulator is done accumulating
+	ErrAccumulatorDone = errors.New("Accumulation is complete.")
+	// ErrInvalidState should be unreachable but is returned if the accumulator has reached an invalid state
+	ErrAccumulatorInvalidState = errors.New("Accumulator is in an invalid state.")
 )

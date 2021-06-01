@@ -155,7 +155,7 @@ func TestParseMultipleTables(t *testing.T) {
 }
 
 func TestBuildPMT(t *testing.T) {
-	pkt, _ := hex.DecodeString("474064100002b02d0001cb0000e065f0060504435545491b" +
+	pkt := parseHexString("474064100002b02d0001cb0000e065f0060504435545491b" +
 		"e065f0050e030004b00fe066f0060a04656e670086e06ef0" +
 		"007fc9ad32ffffffffffffffffffffffffffffffffffffff" +
 		"ffffffffffffffffffffffffffffffffffffffffffffffff" +
@@ -164,19 +164,13 @@ func TestBuildPMT(t *testing.T) {
 		"ffffffffffffffffffffffffffffffffffffffffffffffff" +
 		"ffffffffffffffffffffffffffffffffffffffff")
 	acc := packet.NewAccumulator(PmtAccumulatorDoneFunc)
-	done, err := acc.Add(pkt)
 
-	if err != nil {
-		t.Error(err)
-	}
-	if !done {
+	_, err := acc.WritePacket(pkt)
+	if err != gots.ErrAccumulatorDone {
 		t.Errorf("Single packet PMT expected. This means your doneFunc is probably bad.")
 	}
-	payload, err := acc.Parse()
-	if err != nil {
-		t.Error(err)
-	}
-	pmt, err := NewPMT(payload)
+
+	pmt, err := NewPMT(acc.Bytes())
 	if err != nil {
 		t.Error(err)
 	}
@@ -194,7 +188,7 @@ func TestBuildPMT(t *testing.T) {
 }
 
 func TestPIDExists(t *testing.T) {
-	pkt, _ := hex.DecodeString("474064100002b02d0001cb0000e065f0060504435545491b" +
+	pkt := parseHexString("474064100002b02d0001cb0000e065f0060504435545491b" +
 		"e065f0050e030004b00fe066f0060a04656e670086e06ef0" +
 		"007fc9ad32ffffffffffffffffffffffffffffffffffffff" +
 		"ffffffffffffffffffffffffffffffffffffffffffffffff" +
@@ -203,19 +197,12 @@ func TestPIDExists(t *testing.T) {
 		"ffffffffffffffffffffffffffffffffffffffffffffffff" +
 		"ffffffffffffffffffffffffffffffffffffffff")
 	acc := packet.NewAccumulator(PmtAccumulatorDoneFunc)
-	done, err := acc.Add(pkt)
-
-	if err != nil {
-		t.Error(err)
-	}
-	if !done {
+	_, err := acc.WritePacket(pkt)
+	if err != gots.ErrAccumulatorDone {
 		t.Errorf("Single packet PMT expected. This means your doneFunc is probably bad.")
 	}
-	payload, err := acc.Parse()
-	if err != nil {
-		t.Error(err)
-	}
-	pmt, err := NewPMT(payload)
+
+	pmt, err := NewPMT(acc.Bytes())
 	if err != nil {
 		t.Error(err)
 	}
@@ -230,7 +217,7 @@ func TestPIDExists(t *testing.T) {
 }
 
 func TestBuildPMT_ExpectsAnotherPacket(t *testing.T) {
-	pkt, _ := hex.DecodeString(
+	pkt := parseHexString(
 		"4740271A0002B0BA0001F70000E065F00C0F04534150530504435545491BE065" +
 			"F03028046400283F2A0FFF7F00000001000001C2000003E99F0E03C039219700" +
 			"E90710830A41850241860701656E677EFFFF0FE066F0160A04656E67000E03C0" +
@@ -239,13 +226,13 @@ func TestBuildPMT_ExpectsAnotherPacket(t *testing.T) {
 			"85024087E069F0160A04737061000E03C000F09700E90710830A4085")
 
 	acc := packet.NewAccumulator(PmtAccumulatorDoneFunc)
-	done, _ := acc.Add(pkt)
-	if done {
+	_, err := acc.WritePacket(pkt)
+	if err == gots.ErrAccumulatorDone {
 		t.Errorf("Expected Error because not enough packets are present to create PMT")
 	}
 }
 func TestBuildPMT_LargePointerFieldGood(t *testing.T) {
-	pkt, _ := hex.DecodeString("474064108700000000000000000000000000000000000000" +
+	pkt := parseHexString("474064108700000000000000000000000000000000000000" +
 		"0102030405060708090a0b0c0d0e0f101112131415161718" +
 		"0102030405060708090a0b0c0d0e0f101112131415161718" +
 		"0102030405060708090a0b0c0d0e0f101112131415161718" +
@@ -254,19 +241,13 @@ func TestBuildPMT_LargePointerFieldGood(t *testing.T) {
 		"01cb0000e065f0060504435545491be065f0050e030004b0" +
 		"0fe066f0060a04656e670086e06ef0007fc9ad32")
 	acc := packet.NewAccumulator(PmtAccumulatorDoneFunc)
-	done, err := acc.Add(pkt)
+	_, err := acc.WritePacket(pkt)
 
-	if err != nil {
-		t.Error(err)
-	}
-	if !done {
+	if err != gots.ErrAccumulatorDone {
 		t.Errorf("Single packet PMT expected. This means your doneFunc is probably bad.")
 	}
-	payload, err := acc.Parse()
-	if err != nil {
-		t.Error(err)
-	}
-	pmt, err := NewPMT(payload)
+
+	pmt, err := NewPMT(acc.Bytes())
 	if err != nil {
 		t.Error(err)
 	}
@@ -283,7 +264,7 @@ func TestBuildPMT_LargePointerFieldGood(t *testing.T) {
 	}
 }
 func TestBuildPMT_LargePointerFieldExpectsAnotherPacket(t *testing.T) {
-	pkt, _ := hex.DecodeString("474064108800000000000000000000000000000000000000" +
+	pkt := parseHexString("474064108800000000000000000000000000000000000000" +
 		"0102030405060708090a0b0c0d0e0f101112131415161718" +
 		"0102030405060708090a0b0c0d0e0f101112131415161718" +
 		"0102030405060708090a0b0c0d0e0f101112131415161718" +
@@ -293,30 +274,23 @@ func TestBuildPMT_LargePointerFieldExpectsAnotherPacket(t *testing.T) {
 		"b00fe066f0060a04656e670086e06ef0007fc9ad")
 
 	acc := packet.NewAccumulator(PmtAccumulatorDoneFunc)
-	done, _ := acc.Add(pkt)
-	if done {
+	_, err := acc.WritePacket(pkt)
+	if err == gots.ErrAccumulatorDone {
 		t.Errorf("Expected Error because not enough packets are present to create PMT")
 	}
 }
 func TestBuildMultiPacketPMT(t *testing.T) {
-	firstPacketBytes, _ := hex.DecodeString("474064100002b0ba0001c10000e065f00b0504435545490e03c03dd01be065f016970028046400283fe907108302808502800e03c0392087e066f0219700050445414333cc03c0c2100a04656e6700e907108302808502800e03c000f087e067f0219700050445414333cc03c0c4100a0473706100e907108302808502800e03c001e00fe068f01697000a04656e6700e907108302808502800e03c000f00fe069f01697000a0473706100e907108302808502800e03c000f086e0dc")
-
-	secondPacketBytes, _ := hex.DecodeString("47006411f0002b59bc22ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
+	firstPacketBytes := parseHexString("474064100002b0ba0001c10000e065f00b0504435545490e03c03dd01be065f016970028046400283fe907108302808502800e03c0392087e066f0219700050445414333cc03c0c2100a04656e6700e907108302808502800e03c000f087e067f0219700050445414333cc03c0c4100a0473706100e907108302808502800e03c001e00fe068f01697000a04656e6700e907108302808502800e03c000f00fe069f01697000a0473706100e907108302808502800e03c000f086e0dc")
+	secondPacketBytes := parseHexString("47006411f0002b59bc22ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
 
 	acc := packet.NewAccumulator(PmtAccumulatorDoneFunc)
-	acc.Add(firstPacketBytes)
-	done, err := acc.Add(secondPacketBytes)
-	if err != nil {
-		t.Error(err)
-	}
-	if !done {
+	acc.WritePacket(firstPacketBytes)
+	_, err := acc.WritePacket(secondPacketBytes)
+	if err != gots.ErrAccumulatorDone {
 		t.Fatal("PMT should have been done after 2 packets and it is not")
 	}
-	payload, err := acc.Parse()
-	if err != nil {
-		t.Error(err)
-	}
-	pmt, err := NewPMT(payload)
+
+	pmt, err := NewPMT(acc.Bytes())
 	if err != nil {
 		t.Error(err)
 	}
@@ -333,47 +307,30 @@ func TestBuildMultiPacketPMT(t *testing.T) {
 }
 
 func TestBuildMultiPacketPMT2(t *testing.T) {
-	firstPacket, _ := hex.DecodeString("4741E03001000002B1790001C10000E1E1F00B0504435545490E03C038F31BE1E1F016970028046400293FE907108302808502800E03C024DF0FE1EEF01697000A04656E6700E907108302808502800E03C001700FE1EFF01697000A0473706100E907108302808502800E03C001700FE1F0F01697000A04706F7200E907108302808502800E03C0017087E1E2F0219700050445414333CC03C0C4100A04656E6700E907108302808502800E03C002C287E1E3F02197000504454143")
-
-	secondPacket, _ := hex.DecodeString("4701E031010033CC03C0C2100A0473706100E907108302808502800E03C0017E87E1E4F0219700050445414333CC03C0D2100A04656E6700E907108302808502800E03C0017E81E1E8F0259700050441432D33810706380FFF1F013F0A04656E6700E907108302808502800E03C0054A81E1E9F0259700050441432D338107062005FF1F013F0A0473706100E907108302808502800E03C001EA81E1EAF0259700050441432D338107062045FF00013F0A04656E6703E90710830280")
-
-	thirdPacket, _ := hex.DecodeString("4701E03201008502800E03C001EA86E1F4F00096A58F55FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")
+	firstPacket := parseHexString("4741E03001000002B1790001C10000E1E1F00B0504435545490E03C038F31BE1E1F016970028046400293FE907108302808502800E03C024DF0FE1EEF01697000A04656E6700E907108302808502800E03C001700FE1EFF01697000A0473706100E907108302808502800E03C001700FE1F0F01697000A04706F7200E907108302808502800E03C0017087E1E2F0219700050445414333CC03C0C4100A04656E6700E907108302808502800E03C002C287E1E3F02197000504454143")
+	secondPacket := parseHexString("4701E031010033CC03C0C2100A0473706100E907108302808502800E03C0017E87E1E4F0219700050445414333CC03C0D2100A04656E6700E907108302808502800E03C0017E81E1E8F0259700050441432D33810706380FFF1F013F0A04656E6700E907108302808502800E03C0054A81E1E9F0259700050441432D338107062005FF1F013F0A0473706100E907108302808502800E03C001EA81E1EAF0259700050441432D338107062045FF00013F0A04656E6703E90710830280")
+	thirdPacket := parseHexString("4701E03201008502800E03C001EA86E1F4F00096A58F55FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")
 
 	acc := packet.NewAccumulator(PmtAccumulatorDoneFunc)
-	done, err := acc.Add(firstPacket)
-	if err != nil {
-		t.Error(err)
-	}
-	if done {
+	_, err := acc.WritePacket(firstPacket)
+	if err == gots.ErrAccumulatorDone {
 		t.Error("Added first packet of multi-packet and already indicating done. That's not right.")
 		t.FailNow()
 	}
 
-	done, err = acc.Add(secondPacket)
-	if err != nil {
-		t.Error(err)
-	}
-	if done {
+	_, err = acc.WritePacket(secondPacket)
+	if err == gots.ErrAccumulatorDone {
 		t.Error("Added second packet of multi-packet and already indicating done. That's not right.")
 		t.FailNow()
 	}
 
-	done, err = acc.Add(thirdPacket)
-	if err != nil {
-		t.Error(err)
-	}
-	if !done {
+	_, err = acc.WritePacket(thirdPacket)
+	if err != gots.ErrAccumulatorDone {
 		t.Error("Added third and final packet of multi-packet but indicating not done. That's not right.")
 		t.FailNow()
 	}
 
-	bytes, parseErr := acc.Parse()
-	if parseErr != nil {
-		fmt.Printf("%v\n", parseErr)
-		return
-	}
-
-	pmt, err := NewPMT(bytes)
+	pmt, err := NewPMT(acc.Bytes())
 	if err != nil {
 		t.Error(err)
 	}
@@ -456,12 +413,14 @@ func TestStringFormat(t *testing.T) {
 		0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}
 
 	acc := packet.NewAccumulator(PmtAccumulatorDoneFunc)
-	acc.Add(bytes)
-	payload, err := acc.Parse()
-	if err != nil {
-		t.Error(err)
+	pkt := &packet.Packet{}
+
+	for i := 0; i < len(bytes)/packet.PacketSize; i++ {
+		copy(pkt[:], bytes[i*packet.PacketSize:(i+1)*packet.PacketSize])
+		acc.WritePacket(pkt)
 	}
-	pmt, err := NewPMT(payload)
+
+	pmt, err := NewPMT(acc.Bytes())
 	if err != nil {
 		t.Error(err)
 	}
@@ -493,12 +452,14 @@ func TestFilterPMTPacketsToPids_SinglePacketPMT(t *testing.T) {
 		0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}
 
 	acc := packet.NewAccumulator(PmtAccumulatorDoneFunc)
-	acc.Add(bytes[:])
-	payload, err := acc.Parse()
-	if err != nil {
-		t.Error(err)
+	pkt := &packet.Packet{}
+
+	for i := 0; i < len(bytes)/packet.PacketSize; i++ {
+		copy(pkt[:], bytes[i*packet.PacketSize:(i+1)*packet.PacketSize])
+		acc.WritePacket(pkt)
 	}
-	unfilteredPmt, err := NewPMT(payload)
+
+	unfilteredPmt, err := NewPMT(acc.Bytes())
 	if err != nil {
 		t.Error(err)
 	}
@@ -513,10 +474,9 @@ func TestFilterPMTPacketsToPids_SinglePacketPMT(t *testing.T) {
 
 	acc = packet.NewAccumulator(PmtAccumulatorDoneFunc)
 	for _, p := range filteredPmtPackets {
-		acc.Add(p[:])
+		acc.WritePacket(p)
 	}
-	payload, err = acc.Parse()
-	filteredPmt, err := NewPMT(payload)
+	filteredPmt, err := NewPMT(acc.Bytes())
 	if err != nil {
 		t.Error(err)
 	}
@@ -529,16 +489,7 @@ func TestFilterPMTPacketsToPids_SinglePacketPMT(t *testing.T) {
 
 func TestFilterPMTPacketsToPids_MultiPacketPMT(t *testing.T) {
 	firstPacketBytes := parseHexString("474064100002b0ba0001c10000e065f00b0504435545490e03c03dd01be065f016970028046400283fe907108302808502800e03c0392087e066f0219700050445414333cc03c0c2100a04656e6700e907108302808502800e03c000f087e067f0219700050445414333cc03c0c4100a0473706100e907108302808502800e03c001e00fe068f01697000a04656e6700e907108302808502800e03c000f00fe069f01697000a0473706100e907108302808502800e03c000f086e0dc")
-
 	secondPacketBytes := parseHexString("47006411f0002b59bc22ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
-
-	acc := packet.NewAccumulator(PmtAccumulatorDoneFunc)
-	acc.Add(firstPacketBytes[:])
-	acc.Add(secondPacketBytes[:])
-	payload, err := acc.Parse()
-	if err != nil {
-		t.Error(err)
-	}
 
 	wantedPids := []int{101, 102, 103, 104, 105, 220}
 
@@ -548,17 +499,14 @@ func TestFilterPMTPacketsToPids_MultiPacketPMT(t *testing.T) {
 		t.Errorf("Expected nil error, got %s", err.Error())
 	}
 
-	acc = packet.NewAccumulator(PmtAccumulatorDoneFunc)
+	acc := packet.NewAccumulator(PmtAccumulatorDoneFunc)
 	for _, p := range filteredPMTPackets {
-		acc.Add(p[:])
+		acc.WritePacket(p)
 	}
 
 	wantedPids = []int{101, 102, 103, 104, 105}
-	payload, err = acc.Parse()
-	if err != nil {
-		t.Error(err)
-	}
-	filteredPMT, err := NewPMT(payload)
+
+	filteredPMT, err := NewPMT(acc.Bytes())
 	if err != nil {
 		t.Error(err)
 	}
@@ -574,24 +522,16 @@ func TestFilterPMTPacketsToPids_MultiPacketPMT(t *testing.T) {
 
 func TestFilterPMTPacketsToPids_PIDNotFound(t *testing.T) {
 	// PMT contains PIDs 101-105.
-	pmtPacketBytes, _ := hex.DecodeString("4740641D0002B0940001DF0000E065F0050E03C015581BE065F0150E03C0109D2A027E1F9700E9080C001F418503E84187E066F01A0E03C00122050445414333CC07E0C2B0E8656E670A04656E670087E067F01A0E03C00122050445414333CC07E0C2B0E8656E670A04656E67000FE068F0100E03C001262B030102010A04656E67000FE069F0100E03C001262B030102010A04656E67002E9B5B71FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")
-
-	// Copy into a packet.Packet for calling FilterPMTPacketsToPids.
-	var pkt packet.Packet
-	copy(pkt[:], pmtPacketBytes)
+	pmtPacketBytes := parseHexString("4740641D0002B0940001DF0000E065F0050E03C015581BE065F0150E03C0109D2A027E1F9700E9080C001F418503E84187E066F01A0E03C00122050445414333CC07E0C2B0E8656E670A04656E670087E067F01A0E03C00122050445414333CC07E0C2B0E8656E670A04656E67000FE068F0100E03C001262B030102010A04656E67000FE069F0100E03C001262B030102010A04656E67002E9B5B71FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")
 
 	acc := packet.NewAccumulator(PmtAccumulatorDoneFunc)
-	done, err := acc.Add(pmtPacketBytes)
-
-	if err != nil {
-		t.Error(err)
-	}
-	if !done {
+	_, err := acc.WritePacket(pmtPacketBytes)
+	if err != gots.ErrAccumulatorDone {
 		t.Errorf("Single packet PMT expected. This means your doneFunc is probably bad.")
 	}
 
 	// Test when some of the PIDs to be filtered exist in the PMT.
-	pmtPkts, err := FilterPMTPacketsToPids([]*packet.Packet{&pkt}, []int{105, 106})
+	pmtPkts, err := FilterPMTPacketsToPids([]*packet.Packet{pmtPacketBytes}, []int{105, 106})
 	if err.Error() != "PID(s) [106] not found in PMT." {
 		t.Errorf("Expected missing PID error string, got %s", err.Error())
 	}
@@ -601,7 +541,7 @@ func TestFilterPMTPacketsToPids_PIDNotFound(t *testing.T) {
 	}
 
 	// Test when none of the PIDs to be filtered exist in the PMT.
-	pmtPkts, err = FilterPMTPacketsToPids([]*packet.Packet{&pkt}, []int{106, 107})
+	pmtPkts, err = FilterPMTPacketsToPids([]*packet.Packet{pmtPacketBytes}, []int{106, 107})
 	if err.Error() != "PID(s) [106 107] not found in PMT." {
 		t.Errorf("Expected missing PID error string, got %s", err.Error())
 	}
@@ -612,16 +552,15 @@ func TestFilterPMTPacketsToPids_PIDNotFound(t *testing.T) {
 }
 
 func TestPMTIsIFrameStreamPositive(t *testing.T) {
-	firstPacketBytes, _ := hex.DecodeString("4741E03001000002B02D0001C10000E1E1F0050E03C003531BE1E1F016970028044D401F3FE907108301808501800E03C003175D027AA4FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")
+	firstPacket := parseHexString("4741E03001000002B02D0001C10000E1E1F0050E03C003531BE1E1F016970028044D401F3FE907108301808501800E03C003175D027AA4FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")
 
 	acc := packet.NewAccumulator(PmtAccumulatorDoneFunc)
-	acc.Add(firstPacketBytes)
-	payload, err := acc.Parse()
-	if err != nil {
+	_, err := acc.WritePacket(firstPacket)
+	if err != gots.ErrAccumulatorDone {
 		t.Error(err)
 	}
 
-	pmt, err := NewPMT(payload)
+	pmt, err := NewPMT(acc.Bytes())
 	if err != nil {
 		t.Error(err)
 	}
@@ -644,19 +583,14 @@ func TestPMTIsIFrameStreamPositive(t *testing.T) {
 }
 
 func TestPMTIsIFrameStreamNegative(t *testing.T) {
-	firstPacketBytes, _ := hex.DecodeString("4741E03001000002B0FB0001C10000E1E1F00B0504435545490E03C02FD31BE1E1F016970028046400293FE907108302808502800E03C024DF0FE1E2F01697000A04656E6700E907108302808502800E03C001700FE1E3F01697000A0473706100E907108302808502800E03C001700FE1E4F01697000A04706F7200E907108302808502800E03C0017087E1E5F0219700050445414333CC03C0C4100A04656E6700E907108302808502800E03C002C287E1E6F02197000504454143")
-
-	secondPacketBytes, _ := hex.DecodeString("4701E031010033CC03C0C2100A0473706100E907108302808502800E03C0017E87E1E7F0219700050445414333CC03C0D2100A04656E6700E907108302808502800E03C0017E86E1F4F00013E8BFD4FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")
+	firstPacket := parseHexString("4741E03001000002B0FB0001C10000E1E1F00B0504435545490E03C02FD31BE1E1F016970028046400293FE907108302808502800E03C024DF0FE1E2F01697000A04656E6700E907108302808502800E03C001700FE1E3F01697000A0473706100E907108302808502800E03C001700FE1E4F01697000A04706F7200E907108302808502800E03C0017087E1E5F0219700050445414333CC03C0C4100A04656E6700E907108302808502800E03C002C287E1E6F02197000504454143")
+	secondPacket := parseHexString("4701E031010033CC03C0C2100A0473706100E907108302808502800E03C0017E87E1E7F0219700050445414333CC03C0D2100A04656E6700E907108302808502800E03C0017E86E1F4F00013E8BFD4FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")
 
 	acc := packet.NewAccumulator(PmtAccumulatorDoneFunc)
-	acc.Add(firstPacketBytes)
-	acc.Add(secondPacketBytes)
-	payload, err := acc.Parse()
-	if err != nil {
-		t.Error(err)
-	}
+	acc.WritePacket(firstPacket)
+	acc.WritePacket(secondPacket)
 
-	pmt, err := NewPMT(payload)
+	pmt, err := NewPMT(acc.Bytes())
 	if err != nil {
 		t.Error(err)
 	}
@@ -918,14 +852,18 @@ func TestIsDolbyATMOS(t *testing.T) {
 		0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
 		0xff, 0xff, 0xff}
 
+	var pkt = &packet.Packet{}
 	acc := packet.NewAccumulator(PmtAccumulatorDoneFunc)
-	acc.Add(b1)
-	acc.Add(b2)
-	payload, err := acc.Parse()
-	if err != nil {
-		t.Error(err)
+	for i := 0; i < len(b1)/packet.PacketSize; i++ {
+		copy(pkt[:], b1[i*packet.PacketSize:(i+1)*packet.PacketSize])
+		acc.WritePacket(pkt)
 	}
-	pmt, err := NewPMT(payload)
+	for i := 0; i < len(b2)/packet.PacketSize; i++ {
+		copy(pkt[:], b2[i*packet.PacketSize:(i+1)*packet.PacketSize])
+		acc.WritePacket(pkt)
+	}
+
+	pmt, err := NewPMT(acc.Bytes())
 	if err != nil {
 		t.Error(err)
 	}
@@ -965,12 +903,12 @@ func TestIsDolbyATMOS(t *testing.T) {
 		0xff, 0xff}
 
 	acc = packet.NewAccumulator(PmtAccumulatorDoneFunc)
-	acc.Add(b)
-	payload, err = acc.Parse()
-	if err != nil {
-		t.Error(err)
+	for i := 0; i < len(b)/packet.PacketSize; i++ {
+		copy(pkt[:], b[i*packet.PacketSize:(i+1)*packet.PacketSize])
+		acc.WritePacket(pkt)
 	}
-	pmt, err = NewPMT(payload)
+
+	pmt, err = NewPMT(acc.Bytes())
 	if err != nil {
 		t.Error(err)
 	}
