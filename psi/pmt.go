@@ -230,7 +230,7 @@ func (p *pmt) PIDExists(pid int) bool {
 
 func ExtractCRC(payload []byte) (uint32, error) {
 	if len(payload) < 4 {
-		return 0, gots.ErrShortPaload
+		return 0, gots.ErrShortPayload
 	}
 
 	sectionLength := SectionLength(payload)

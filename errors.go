@@ -81,7 +81,7 @@ var (
 	// ErrUnknownTableID is returned when PSI is parsed with an unknown table id
 	ErrUnknownTableID = errors.New("Unknown table id received")
 	// ErrTableHeaderShort is returned when a PSI table header is too short to parse
-	ErrShortPaload = errors.New("provided data is too short to parse")
+	ErrShortPayload = errors.New("provided data is too short to parse")
 	// ErrInvalidSCTE35Length is returned when a SCTE35 cue cannot be parsed because there are not enough bytes
 	ErrInvalidSCTE35Length = errors.New("too few bytes to parse SCTE35")
 	// ErrSCTE35EncryptionUnsupported is returned when a scte35 cue cannot be parsed because it is encrypted

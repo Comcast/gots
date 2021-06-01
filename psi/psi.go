@@ -96,7 +96,7 @@ func TableHeaderFromBytes(data []byte) (TableHeader, error) {
 	th := TableHeader{}
 
 	if len(data) < 3 {
-		return th, gots.ErrShortPaload
+		return th, gots.ErrShortPayload
 	}
 
 	th.TableID = data[0]
