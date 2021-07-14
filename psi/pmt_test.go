@@ -96,6 +96,10 @@ func (es *testPmtElementaryStream) MaxBitRate() uint64 {
 	return 0
 }
 
+func (es *testPmtElementaryStream) IsTTMLSubtitling() bool {
+	return false
+}
+
 func TestParseTable(t *testing.T) {
 	byteArray, _ := hex.DecodeString("0002b02d0001cb0000e065f0060504435545491b" +
 		"e065f0050e030004b00fe066f0060a04656e670086e06ef0" +
