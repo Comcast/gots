@@ -60,7 +60,10 @@ type accumulator struct {
 // NewAccumulator creates a new packet accumulator that is done when
 // the provided function returns done as true.
 func NewAccumulator(f func(data []byte) (done bool, err error)) Accumulator {
-	return &accumulator{f: f, state: stateStarting}
+	return &accumulator{
+		f:     f,
+		buf:   &bytes.Buffer{},
+		state: stateStarting}
 }
 
 // Add a packet to the accumulator. If the added packet completes
@@ -75,7 +78,6 @@ func (a *accumulator) WritePacket(pkt *Packet) (int, error) {
 		}
 
 		a.packets = []*Packet{}
-		a.buf = &bytes.Buffer{}
 		a.state = stateAccumulating
 
 	case stateAccumulating:
