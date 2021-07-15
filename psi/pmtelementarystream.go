@@ -35,6 +35,7 @@ type PmtElementaryStream interface {
 	ElementaryPid() int
 	Descriptors() []PmtDescriptor
 	MaxBitRate() uint64
+	IsTTMLSubtitling() bool
 }
 
 type pmtElementaryStream struct {
@@ -76,6 +77,18 @@ func (es *pmtElementaryStream) MaxBitRate() uint64 {
 		}
 	}
 	return 0
+}
+
+// IsTTMLSubtitling checks all the descriptors and returns true if there is a TTML descriptor
+// with TTML tag extension found
+func (es *pmtElementaryStream) IsTTMLSubtitling() bool {
+	for _, descriptor := range es.Descriptors() {
+		if descriptor.IsTTMLSubtitlingDescriptor() && descriptor.IsTTMLDescTagExtension() {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (es *pmtElementaryStream) String() string {
