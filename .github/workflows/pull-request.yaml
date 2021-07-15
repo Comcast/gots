@@ -1,5 +1,7 @@
-on: [pull_request]
-name: Test
+name: unit-test
+on:
+  pull_request:
+    branches: [ master ]
 jobs:
   test:
     strategy:
