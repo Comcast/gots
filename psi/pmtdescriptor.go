@@ -52,14 +52,25 @@ const (
 
 // ISO_639 Audio service type
 const (
-	AUDIO_UNDEFINED   int = 0	// 0000 0000 (0x00)
-	AUDIO_DESCRIPTION int = 3	// 0000 0011 (0x03)
-	AUDIO_PRIMARY     int = 128	// 1000 0000 (0x80)
+	AUDIO_UNDEFINED   int = 0   // 0000 0000 (0x00)
+	AUDIO_DESCRIPTION int = 3   // 0000 0011 (0x03)
+	AUDIO_PRIMARY     int = 128 // 1000 0000 (0x80)
 )
 
 // Descriptor tag extension
 const (
 	TTML_DESC_TAG_EXTENSION uint8 = 32 // 0010 0000 (0x20)
+)
+
+const (
+	TTML_PURPOSE_SAME_LANG_DIALOGUE                       uint8 = 0  // 0000 0000 (0x00)
+	TTML_PURPOSE_OTHER_LANG_DIALOGUE                      uint8 = 1  // 0000 0001 (0x01)
+	TTML_PURPOSE_ALL_DIALOGUE                             uint8 = 2  // 0000 0010 (0x02)
+	TTML_PURPOSE_HARD_OF_HEARING                          uint8 = 16 // 0001 0000 (0x10)
+	TTML_PURPOSE_OTHER_LANG_DIALOGUE_WITH_HARD_OF_HEARING uint8 = 17 // 0001 0001 (0x11)
+	TTML_PURPOSE_ALL_DIALOGUE_WITH_HARD_OF_HEARING        uint8 = 18 // 0001 0010 (0x12)
+	TTML_PURPOSE_AUDIO_DESCRIPTION                        uint8 = 48 // 0011 0000 (0x30)
+	TTML_PURPOSE_CONTENT_RELATED_COMMENTARY               uint8 = 49 // 0011 0001 (0x31)
 )
 
 // PmtDescriptor represents operations currently necessary on descriptors found in the PMT
@@ -78,7 +89,7 @@ type PmtDescriptor interface {
 	DecodeDolbyVisionCodec(string) string
 	IsTTMLSubtitlingDescriptor() bool
 	DecodeTTMLIso639LanguageCode() string
-	DecodeTTMLSubtitlePurpose() uint
+	DecodeTTMLSubtitlePurpose() uint8
 	IsTTMLDescTagExtension() bool
 }
 
@@ -195,10 +206,10 @@ func (descriptor *pmtDescriptor) DecodeTTMLIso639LanguageCode() string {
 	return ""
 }
 
-func (descriptor *pmtDescriptor) DecodeTTMLSubtitlePurpose() uint {
+func (descriptor *pmtDescriptor) DecodeTTMLSubtitlePurpose() uint8 {
 	if descriptor.tag == EXTENSION {
 		if len(descriptor.data) >= 5 {
-			return uint(descriptor.data[4] >> 2) // First 6 bits of the 5th bytes
+			return uint8(descriptor.data[4] >> 2) // First 6 bits of the 5th bytes
 		}
 	}
 	return 0xFF
