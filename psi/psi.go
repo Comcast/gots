@@ -69,11 +69,14 @@ func tableID(psi []byte) uint8 {
 	return uint8(psi[0])
 }
 
+// tableVersionAndCNI returns the table version_number and current_next_indicator
 func tableVersionAndCNI(psi []byte) (uint8, bool, error) {
 	if len(psi) < 6 {
 		return 0, false, gots.ErrShortPayload
 	}
 
+	// extract the 3rd-7th bits for version and bit immediately following for
+	// current_next_indicator
 	return uint8(psi[5]&0x3E) >> 1, (psi[5] & 0x1) == 0x01, nil
 }
 
