@@ -51,16 +51,20 @@ const (
 // PMT is a Program Map Table.
 type PMT interface {
 	Pids() []int
-	IsPidForStreamWherePresentationLagsEbp(pid int) bool
+	VersionNumber() uint8
+	CurrentNextIndicator() bool
 	ElementaryStreams() []PmtElementaryStream
 	RemoveElementaryStreams(pids []int)
+	IsPidForStreamWherePresentationLagsEbp(pid int) bool
 	String() string
 	PIDExists(pid int) bool
 }
 
 type pmt struct {
-	pids              []int
-	elementaryStreams []PmtElementaryStream
+	pids                 []int
+	elementaryStreams    []PmtElementaryStream
+	versionNumber        uint8
+	currentNextIndicator bool
 }
 
 // PmtAccumulatorDoneFunc is a doneFunc that can be used for packet accumulation
@@ -125,6 +129,12 @@ func (p *pmt) parsePMTSection(pmtBytes []byte) error {
 		return gots.ErrPMTParse
 	}
 
+	var err error
+	p.versionNumber, p.currentNextIndicator, err = tableVersionAndCNI(pmtBytes)
+	if err != nil {
+		return err
+	}
+
 	programInfoLength := uint16(pmtBytes[programInfoLengthOffset]&0x0f)<<8 |
 		uint16(pmtBytes[programInfoLengthOffset+1])
 
@@ -166,10 +176,22 @@ func (p *pmt) parsePMTSection(pmtBytes []byte) error {
 	return nil
 }
 
+// Pids returns a slice of Pids
 func (p *pmt) Pids() []int {
 	return p.pids
 }
 
+// VersionNumber returns the version number of the PMT
+func (p *pmt) VersionNumber() uint8 {
+	return p.versionNumber
+}
+
+// CurrentNextIndicator provides a bool for if this PMT is in use yet
+func (p *pmt) CurrentNextIndicator() bool {
+	return p.currentNextIndicator
+}
+
+// ElementaryStreams returns a slice of PMT Elementary Streams
 func (p *pmt) ElementaryStreams() []PmtElementaryStream {
 	return p.elementaryStreams
 }
@@ -248,7 +270,6 @@ func ExtractCRC(payload []byte) (uint32, error) {
 
 func CanBuildPMT(payload []byte, sectionLength uint16) bool {
 	if len(payload) < int(sectionLength) {
-		fmt.Println("payload short?", len(payload), sectionLength)
 		return false
 	}
 	return true
@@ -317,7 +338,7 @@ func FilterPMTPacketsToPids(packets []*packet.Packet, pids []int) ([]*packet.Pac
 	filteredPMT.Write(pmtPayload[:programInfoLengthOffset+2])
 
 	// Get the section length
-	sectionLength := uint16(pmtPayload[1]&0x0f)<<8 + uint16(pmtPayload[2])
+	sectionLength := sectionLength(pmtPayload)
 
 	// Get program info length
 	programInfoLength := uint16(pmtPayload[programInfoLengthOffset]&0x0f)<<8 | uint16(pmtPayload[programInfoLengthOffset+1])
