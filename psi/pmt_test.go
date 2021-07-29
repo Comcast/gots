@@ -429,7 +429,7 @@ func TestStringFormat(t *testing.T) {
 		t.Error(err)
 	}
 
-	want := "PMT[ElementaryStream[pid=101,streamType=27,descriptor0='Maximum Bit-Rate (1200)'],ElementaryStream[pid=102,streamType=15,descriptor0='ISO 639 Language (code=eng, audioType=0)'],ElementaryStream[pid=110,streamType=134]]"
+	want := "PMT[ElementaryStream[pid=101,streamType=27,descriptor0='Maximum Bit-Rate (1200)'],ElementaryStream[pid=102,streamType=15,descriptor0='ISO 639 Language (code=eng, audioType=0x00)'],ElementaryStream[pid=110,streamType=134]]"
 	got := fmt.Sprintf("%v", pmt)
 	if want != got {
 		t.Errorf("String format for PMT failed. Want: %s: Got %s", want, got)
