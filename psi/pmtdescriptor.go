@@ -26,6 +26,7 @@ package psi
 
 import (
 	"encoding/binary"
+	"encoding/hex"
 	"fmt"
 	"strconv"
 )
@@ -121,8 +122,8 @@ func (descriptor *pmtDescriptor) Format() string {
 func (descriptor *pmtDescriptor) decode() string {
 	switch descriptor.tag {
 	case LANGUAGE:
-		return fmt.Sprintf("ISO 639 Language (code=%s, audioType=%b)",
-			descriptor.DecodeIso639LanguageCode(), descriptor.DecodeIso639AudioType())
+		return fmt.Sprintf("ISO 639 Language (code=%s, audioType=0x%s)",
+			descriptor.DecodeIso639LanguageCode(), hex.EncodeToString([]byte{descriptor.DecodeIso639AudioType()}))
 	case MAXIMUM_BITRATE:
 		return fmt.Sprintf("Maximum Bit-Rate (%d)", descriptor.DecodeMaximumBitRate())
 	case VIDEO_STREAM:
