@@ -25,7 +25,7 @@ SOFTWARE.
 package psi
 
 import (
-	"github.com/Comcast/gots"
+	"github.com/Comcast/gots/v2"
 )
 
 // TableHeader struct represents operations available on all PSI
