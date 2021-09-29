@@ -1,4 +1,4 @@
-module github.com/Comcast/gots/v2
+module github.com/Comcast/gots
 
 go 1.16
 
