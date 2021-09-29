@@ -29,8 +29,8 @@ import (
 	"encoding/binary"
 	"fmt"
 
-	"github.com/Comcast/gots/v2"
-	"github.com/Comcast/gots/v2/psi"
+	"github.com/Comcast/gots"
+	"github.com/Comcast/gots/psi"
 )
 
 // Descriptor tag types and identifiers - only segmentation descriptors are used for now
