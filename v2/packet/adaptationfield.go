@@ -25,7 +25,7 @@ SOFTWARE.
 package packet
 
 import (
-	"github.com/Comcast/gots/"
+	"github.com/Comcast/gots/v2/"
 )
 
 const (

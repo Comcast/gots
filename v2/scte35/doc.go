@@ -26,8 +26,8 @@ SOFTWARE.
 package scte35
 
 import (
-	"github.com/Comcast/gots/"
-	"github.com/Comcast/gots/psi"
+	"github.com/Comcast/gots/v2/"
+	"github.com/Comcast/gots/v2/psi"
 )
 
 // SpliceCommandType is a type used to describe the types of splice commands.

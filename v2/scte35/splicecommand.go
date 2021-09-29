@@ -28,7 +28,7 @@ import (
 	"bytes"
 	"encoding/binary"
 
-	"github.com/Comcast/gots/"
+	"github.com/Comcast/gots/v2/"
 )
 
 // timeSignal is a struct that represents a time signal splice command in SCTE35
