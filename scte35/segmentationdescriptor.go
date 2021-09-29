@@ -29,7 +29,7 @@ import (
 	"encoding/binary"
 	"strings"
 
-	"github.com/Comcast/gots/v2"
+	"github.com/Comcast/gots"
 )
 
 // upidSt is the struct used for creating a Multiple UPID (MID)

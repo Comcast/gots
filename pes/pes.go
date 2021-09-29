@@ -24,7 +24,7 @@ SOFTWARE.
 
 package pes
 
-import "github.com/Comcast/gots/v2/packet"
+import "github.com/Comcast/gots/packet"
 
 // AlignedPUSI checks for a PUSI with aligned flag set and returns a bool
 // indicating a match when true, as well as the bytes for the PES data

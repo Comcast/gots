@@ -28,7 +28,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/Comcast/gots/v2"
+	"github.com/Comcast/gots"
 )
 
 // All signal data generated with scte_creator: https://github.comcast.com/mniebu200/scte_creator

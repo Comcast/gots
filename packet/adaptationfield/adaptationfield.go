@@ -1,8 +1,8 @@
 package adaptationfield
 
 import (
-	"github.com/Comcast/gots/v2"
-	"github.com/Comcast/gots/v2/packet"
+	"github.com/Comcast/gots"
+	"github.com/Comcast/gots/packet"
 )
 
 // Length returns the length of the adaptation field in bytes

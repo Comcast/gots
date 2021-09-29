@@ -27,7 +27,7 @@ package packet
 import (
 	"io"
 
-	"github.com/Comcast/gots/v2"
+	"github.com/Comcast/gots"
 )
 
 // PacketWriter is subject to all rules governing implementations of io.Writer

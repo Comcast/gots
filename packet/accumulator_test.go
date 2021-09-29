@@ -28,7 +28,7 @@ import (
 	"encoding/hex"
 	"testing"
 
-	"github.com/Comcast/gots/v2"
+	"github.com/Comcast/gots"
 )
 
 // PacketAccumulator is not thread safe
