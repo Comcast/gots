@@ -24,6 +24,10 @@ SOFTWARE.
 
 package psi
 
+import (
+	"github.com/Comcast/gots"
+)
+
 // TableHeader struct represents operations available on all PSI
 type TableHeader struct {
 	TableID                uint8
@@ -53,12 +57,27 @@ func PrivateIndicator(psi []byte) bool {
 
 // SectionLength returns the psi section length
 func SectionLength(psi []byte) uint16 {
-	return sectionLength(psi[1+PointerField(psi):])
+	offset := int(1 + PointerField(psi))
+	if offset >= len(psi) {
+		return 0
+	}
+	return sectionLength(psi[offset:])
 }
 
 // tableID returns the table id from the header of a section
 func tableID(psi []byte) uint8 {
 	return uint8(psi[0])
+}
+
+// tableVersionAndCNI returns the table version_number and current_next_indicator
+func tableVersionAndCNI(psi []byte) (uint8, bool, error) {
+	if len(psi) < 6 {
+		return 0, false, gots.ErrShortPayload
+	}
+
+	// extract the 3rd-7th bits for version and bit immediately following for
+	// current_next_indicator
+	return uint8(psi[5]&0x3E) >> 1, (psi[5] & 0x1) == 0x01, nil
 }
 
 func sectionSyntaxIndicator(psi []byte) bool {
@@ -84,15 +103,19 @@ func NewPointerField(size int) []byte {
 }
 
 // PSIFromBytes returns the PSI struct from a byte slice
-func TableHeaderFromBytes(data []byte) TableHeader {
+func TableHeaderFromBytes(data []byte) (TableHeader, error) {
 	th := TableHeader{}
+
+	if len(data) < 3 {
+		return th, gots.ErrShortPayload
+	}
 
 	th.TableID = data[0]
 	th.SectionSyntaxIndicator = data[1]&0x80 != 0
 	th.PrivateIndicator = data[1]&0x40 != 0
 	th.SectionLength = uint16(data[1]&0x03 /* 0000 0011 */)<<8 | uint16(data[2])
 
-	return th
+	return th, nil
 }
 
 // Data returns the byte representation of the PSI struct.

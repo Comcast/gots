@@ -34,6 +34,8 @@ import (
 	"github.com/Comcast/gots/packet"
 )
 
+const PidNotFound int = 1<<16 - 1
+
 const (
 	programInfoLengthOffset         = 10 // includes PSIHeaderLen
 	pmtEsDescriptorStaticLen uint16 = 5
@@ -48,17 +50,21 @@ const (
 
 // PMT is a Program Map Table.
 type PMT interface {
-	Pids() []uint16
-	IsPidForStreamWherePresentationLagsEbp(pid uint16) bool
+	Pids() []int
+	VersionNumber() uint8
+	CurrentNextIndicator() bool
 	ElementaryStreams() []PmtElementaryStream
-	RemoveElementaryStreams(pids []uint16)
+	RemoveElementaryStreams(pids []int)
+	IsPidForStreamWherePresentationLagsEbp(pid int) bool
 	String() string
-	PIDExists(pid uint16) bool
+	PIDExists(pid int) bool
 }
 
 type pmt struct {
-	pids              []uint16
-	elementaryStreams []PmtElementaryStream
+	pids                 []int
+	elementaryStreams    []PmtElementaryStream
+	versionNumber        uint8
+	currentNextIndicator bool
 }
 
 // PmtAccumulatorDoneFunc is a doneFunc that can be used for packet accumulation
@@ -115,12 +121,18 @@ func (p *pmt) parseTables(pmtBytes []byte) error {
 }
 
 func (p *pmt) parsePMTSection(pmtBytes []byte) error {
-	var pids []uint16
+	var pids []int
 	var elementaryStreams []PmtElementaryStream
 	sectionLength := sectionLength(pmtBytes)
 
-	if len(pmtBytes) < programInfoLengthOffset {
-		return gots.ErrParsePMTDescriptor
+	if len(pmtBytes) <= programInfoLengthOffset+1 {
+		return gots.ErrPMTParse
+	}
+
+	var err error
+	p.versionNumber, p.currentNextIndicator, err = tableVersionAndCNI(pmtBytes)
+	if err != nil {
+		return err
 	}
 
 	programInfoLength := uint16(pmtBytes[programInfoLengthOffset]&0x0f)<<8 |
@@ -129,7 +141,7 @@ func (p *pmt) parsePMTSection(pmtBytes []byte) error {
 	// start at the stream descriptors, parse until the CRC
 	for offset := programInfoLengthOffset + 2 + programInfoLength; offset < PSIHeaderLen+sectionLength-pmtEsDescriptorStaticLen-CrcLen; {
 		elementaryStreamType := uint8(pmtBytes[offset])
-		elementaryPid := uint16(pmtBytes[offset+1]&0x1f)<<8 | uint16(pmtBytes[offset+2])
+		elementaryPid := int(pmtBytes[offset+1]&0x1f)<<8 | int(pmtBytes[offset+2])
 		pids = append(pids, elementaryPid)
 		infoLength := uint16(pmtBytes[offset+3]&0x0f)<<8 | uint16(pmtBytes[offset+4])
 
@@ -164,16 +176,28 @@ func (p *pmt) parsePMTSection(pmtBytes []byte) error {
 	return nil
 }
 
-func (p *pmt) Pids() []uint16 {
+// Pids returns a slice of Pids
+func (p *pmt) Pids() []int {
 	return p.pids
 }
 
+// VersionNumber returns the version number of the PMT
+func (p *pmt) VersionNumber() uint8 {
+	return p.versionNumber
+}
+
+// CurrentNextIndicator provides a bool for if this PMT is in use yet
+func (p *pmt) CurrentNextIndicator() bool {
+	return p.currentNextIndicator
+}
+
+// ElementaryStreams returns a slice of PMT Elementary Streams
 func (p *pmt) ElementaryStreams() []PmtElementaryStream {
 	return p.elementaryStreams
 }
 
 // RemoveElementaryStreams removes elementary streams in the pmt of the given pids
-func (p *pmt) RemoveElementaryStreams(removePids []uint16) {
+func (p *pmt) RemoveElementaryStreams(removePids []int) {
 	for _, pid := range removePids {
 		for j, s := range p.elementaryStreams {
 			if pid == s.ElementaryPid() {
@@ -183,7 +207,7 @@ func (p *pmt) RemoveElementaryStreams(removePids []uint16) {
 		}
 	}
 
-	var filteredPids []uint16
+	var filteredPids []int
 
 	for _, es := range p.elementaryStreams {
 		filteredPids = append(filteredPids, es.ElementaryPid())
@@ -192,7 +216,7 @@ func (p *pmt) RemoveElementaryStreams(removePids []uint16) {
 	p.pids = filteredPids
 }
 
-func (p *pmt) IsPidForStreamWherePresentationLagsEbp(pid uint16) bool {
+func (p *pmt) IsPidForStreamWherePresentationLagsEbp(pid int) bool {
 	for _, s := range p.elementaryStreams {
 		if pid == s.ElementaryPid() {
 			return s.IsStreamWherePresentationLagsEbp()
@@ -217,7 +241,7 @@ func (p *pmt) String() string {
 	return buf.String()
 }
 
-func (p *pmt) PIDExists(pid uint16) bool {
+func (p *pmt) PIDExists(pid int) bool {
 	for _, pmtPid := range p.Pids() {
 		if pmtPid == pid {
 			return true
@@ -226,13 +250,38 @@ func (p *pmt) PIDExists(pid uint16) bool {
 	return false
 }
 
+func ExtractCRC(payload []byte) (uint32, error) {
+	if len(payload) < 4 {
+		return 0, gots.ErrShortPayload
+	}
+
+	sectionLength := SectionLength(payload)
+
+	if !CanBuildPMT(payload, sectionLength) {
+		return 0, gots.ErrPMTParse
+	}
+
+	end := PSIHeaderLen + sectionLength
+
+	// The CRC is the last 4-bytes of the PSI Table.
+	data := payload[end-4 : end]
+	return binary.BigEndian.Uint32(data), nil
+}
+
+func CanBuildPMT(payload []byte, sectionLength uint16) bool {
+	if len(payload) < int(sectionLength) {
+		return false
+	}
+	return true
+}
+
 // FilterPMTPacketsToPids filters the PMT contents of the provided packet to the PIDs provided and returns a new packet(s).
 // For example: if the provided PMT has PIDs 101, 102, and 103 and the provided PIDs are 101 and 102,
 //     the new PMT will have only descriptors for PID 101 and 102. The descriptor for PID 103 will be stripped from the new PMT packet.
 // Returns packets and nil error if all pids are present in the PMT.
 // Returns packets and non-nil error if some pids are present in the PMT.
 // Returns nil packets and non-nil error if none of the pids are present in the PMT.
-func FilterPMTPacketsToPids(packets []*packet.Packet, pids []uint16) ([]*packet.Packet, error) {
+func FilterPMTPacketsToPids(packets []*packet.Packet, pids []int) ([]*packet.Packet, error) {
 	// make sure we have packets
 	if len(packets) == 0 {
 		return nil, nil
@@ -258,7 +307,7 @@ func FilterPMTPacketsToPids(packets []*packet.Packet, pids []uint16) ([]*packet.
 	unfilteredPMT, _ := NewPMT(pmtPayload)
 
 	pmtPid := packet.Pid(packets[0])
-	var missingPids []uint16
+	var missingPids []int
 	for _, pid := range pids {
 		// Ignore PAT and PMT PIDS if they are included.
 		if !unfilteredPMT.PIDExists(pid) && pid != PatPid && pid != pmtPid {
@@ -289,7 +338,7 @@ func FilterPMTPacketsToPids(packets []*packet.Packet, pids []uint16) ([]*packet.
 	filteredPMT.Write(pmtPayload[:programInfoLengthOffset+2])
 
 	// Get the section length
-	sectionLength := uint16(pmtPayload[1]&0x0f)<<8 + uint16(pmtPayload[2])
+	sectionLength := sectionLength(pmtPayload)
 
 	// Get program info length
 	programInfoLength := uint16(pmtPayload[programInfoLengthOffset]&0x0f)<<8 | uint16(pmtPayload[programInfoLengthOffset+1])
@@ -298,7 +347,7 @@ func FilterPMTPacketsToPids(packets []*packet.Packet, pids []uint16) ([]*packet.
 	}
 
 	for offset := programInfoLengthOffset + 2 + programInfoLength; offset < PSIHeaderLen+sectionLength-pmtEsDescriptorStaticLen-CrcLen; {
-		elementaryPid := uint16(pmtPayload[offset+1]&0x1f)<<8 | uint16(pmtPayload[offset+2])
+		elementaryPid := int(pmtPayload[offset+1]&0x1f)<<8 | int(pmtPayload[offset+2])
 		infoLength := uint16(pmtPayload[offset+3]&0x0f)<<8 | uint16(pmtPayload[offset+4])
 
 		// This is an ES PID we want to keep
@@ -383,7 +432,7 @@ func padPacket(buf *bytes.Buffer) *packet.Packet {
 	return &pkt
 }
 
-func pidIn(pids []uint16, target uint16) bool {
+func pidIn(pids []int, target int) bool {
 	for _, pid := range pids {
 		if pid == target {
 			return true
@@ -397,8 +446,8 @@ func pidIn(pids []uint16, target uint16) bool {
 // packet(s) are found or EOF is reached.
 // It returns a new PMT object parsed from the packet(s), if found, and
 // otherwise returns an error.
-func ReadPMT(r io.Reader, pid uint16) (PMT, error) {
-	var pkt packet.Packet
+func ReadPMT(r io.Reader, pid int) (PMT, error) {
+	var pkt = &packet.Packet{}
 	var err error
 	var pmt PMT
 
@@ -412,28 +461,26 @@ func ReadPMT(r io.Reader, pid uint16) (PMT, error) {
 			}
 			return nil, err
 		}
-		currPid := packet.Pid(&pkt)
+		currPid := pkt.PID()
 		if currPid != pid {
 			continue
 		}
-		done, err = pmtAcc.Add(pkt[:])
-		if err != nil {
-			return nil, err
-		}
-		if done {
-			b, err := pmtAcc.Parse()
-			if err != nil {
-				return nil, err
-			}
-			pmt, err = NewPMT(b)
+		_, err = pmtAcc.WritePacket(pkt)
+		if err == gots.ErrAccumulatorDone {
+			pmt, err = NewPMT(pmtAcc.Bytes())
 			if err != nil {
 				return nil, err
 			}
 			if len(pmt.Pids()) == 0 {
 				done = false
 				pmtAcc = packet.NewAccumulator(PmtAccumulatorDoneFunc)
+				continue
 			}
+			done = true
+		} else if err != nil {
+			return nil, err
 		}
+
 	}
 	return pmt, nil
 }

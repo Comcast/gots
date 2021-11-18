@@ -26,6 +26,7 @@ package psi
 
 import (
 	"encoding/binary"
+	"encoding/hex"
 	"fmt"
 	"strconv"
 )
@@ -43,7 +44,7 @@ const (
 	MAXIMUM_BITRATE    uint8 = 14  // 0000 1110 (0x0E)
 	AVC_VIDEO          uint8 = 40  // 0010 1000 (0x28)
 	STREAM_IDENTIFIER  uint8 = 82  // 0101 0010 (0x52)
-	TTML_SUBTITLING    uint8 = 127 // 0111 1111 (0x7F)
+	EXTENSION          uint8 = 127 // 0111 1111 (0x7F)
 	SCTE_ADAPTATION    uint8 = 151 // 1001 0111 (0x97)
 	DOLBY_VISION       uint8 = 176 // 1011 0000 (0xB0)
 	EBP                uint8 = 233 // 1110 1001 (0xE9)
@@ -56,6 +57,22 @@ const (
 	AUDIO_CLEAN_EFFECTS int = 1   // 0000 0001 (0x01)
 	AUDIO_DESCRIPTION   int = 3   // 0000 0011 (0x03)
 	AUDIO_PRIMARY       int = 128 // 1000 0000 (0x80)
+)
+
+// Descriptor tag extension
+const (
+	TTML_DESC_TAG_EXTENSION uint8 = 32 // 0010 0000 (0x20)
+)
+
+const (
+	TTML_PURPOSE_SAME_LANG_DIALOGUE                       uint8 = 0  // 0000 0000 (0x00)
+	TTML_PURPOSE_OTHER_LANG_DIALOGUE                      uint8 = 1  // 0000 0001 (0x01)
+	TTML_PURPOSE_ALL_DIALOGUE                             uint8 = 2  // 0000 0010 (0x02)
+	TTML_PURPOSE_HARD_OF_HEARING                          uint8 = 16 // 0001 0000 (0x10)
+	TTML_PURPOSE_OTHER_LANG_DIALOGUE_WITH_HARD_OF_HEARING uint8 = 17 // 0001 0001 (0x11)
+	TTML_PURPOSE_ALL_DIALOGUE_WITH_HARD_OF_HEARING        uint8 = 18 // 0001 0010 (0x12)
+	TTML_PURPOSE_AUDIO_DESCRIPTION                        uint8 = 48 // 0011 0000 (0x30)
+	TTML_PURPOSE_CONTENT_RELATED_COMMENTARY               uint8 = 49 // 0011 0001 (0x31)
 )
 
 // PmtDescriptor represents operations currently necessary on descriptors found in the PMT
@@ -74,7 +91,8 @@ type PmtDescriptor interface {
 	DecodeDolbyVisionCodec(string) string
 	IsTTMLSubtitlingDescriptor() bool
 	DecodeTTMLIso639LanguageCode() string
-	DecodeTTMLSubtitlePurpose() uint
+	DecodeTTMLSubtitlePurpose() uint8
+	IsTTMLDescTagExtension() bool
 }
 
 type pmtDescriptor struct {
@@ -105,8 +123,8 @@ func (descriptor *pmtDescriptor) Format() string {
 func (descriptor *pmtDescriptor) decode() string {
 	switch descriptor.tag {
 	case LANGUAGE:
-		return fmt.Sprintf("ISO 639 Language (code=%s, audioType=%b)",
-			descriptor.DecodeIso639LanguageCode(), descriptor.DecodeIso639AudioType())
+		return fmt.Sprintf("ISO 639 Language (code=%s, audioType=0x%s)",
+			descriptor.DecodeIso639LanguageCode(), hex.EncodeToString([]byte{descriptor.DecodeIso639AudioType()}))
 	case MAXIMUM_BITRATE:
 		return fmt.Sprintf("Maximum Bit-Rate (%d)", descriptor.DecodeMaximumBitRate())
 	case VIDEO_STREAM:
@@ -133,9 +151,8 @@ func (descriptor *pmtDescriptor) decode() string {
 		return fmt.Sprintf("EBP (%d)", descriptor.tag)
 	case STREAM_IDENTIFIER:
 		return fmt.Sprintf("Stream Identifier (%d): %v", descriptor.tag, descriptor.data[0])
-	case TTML_SUBTITLING:
-		return fmt.Sprintf("TTML Subtitling (tagExt=0x%X, code=%s)",
-			descriptor.DecodeTTMLDescTagExtension(), descriptor.DecodeTTMLIso639LanguageCode())
+	case EXTENSION:
+		return fmt.Sprintf("TTML Subtitling (language code=%s)", descriptor.DecodeTTMLIso639LanguageCode())
 	}
 	return "unknown tag (" + strconv.Itoa(int(descriptor.tag)) + ")"
 }
@@ -168,29 +185,35 @@ func (descriptor *pmtDescriptor) DecodeIso639LanguageCode() string {
 }
 
 func (descriptor *pmtDescriptor) DecodeIso639AudioType() byte {
-	return descriptor.data[3]
+	if len(descriptor.data) >= 4 {
+		return descriptor.data[3]
+	}
+	return 0
 }
 
-func (descriptor *pmtDescriptor) DecodeTTMLDescTagExtension() byte {
-	return descriptor.data[0]
+func (descriptor *pmtDescriptor) IsTTMLDescTagExtension() bool {
+	return len(descriptor.data) >= 1 && uint8(descriptor.data[0]) == TTML_DESC_TAG_EXTENSION
 }
 
 func (descriptor *pmtDescriptor) IsTTMLSubtitlingDescriptor() bool {
-	return descriptor.tag == TTML_SUBTITLING
+	return descriptor.tag == EXTENSION
 }
 
 func (descriptor *pmtDescriptor) DecodeTTMLIso639LanguageCode() string {
-	if descriptor.tag == TTML_SUBTITLING {
-		return string(descriptor.data[1:4])
+	if descriptor.tag == EXTENSION {
+		if len(descriptor.data) >= 4 {
+			return string(descriptor.data[1:4])
+		}
 	}
 	return ""
 }
 
-func (descriptor *pmtDescriptor) DecodeTTMLSubtitlePurpose() uint {
-	if descriptor.tag == TTML_SUBTITLING {
-		return uint(descriptor.data[4] >> 2) // First 6 bits of the 5th bytes
+func (descriptor *pmtDescriptor) DecodeTTMLSubtitlePurpose() uint8 {
+	if descriptor.tag == EXTENSION {
+		if len(descriptor.data) >= 5 {
+			return uint8(descriptor.data[4] >> 2) // First 6 bits of the 5th bytes
+		}
 	}
-
 	return 0xFF
 }
 

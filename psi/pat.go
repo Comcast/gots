@@ -34,14 +34,14 @@ import (
 
 const (
 	// PatPid is the PID of a PAT. By definition this value is zero.
-	PatPid = uint16(0)
+	PatPid = 0
 )
 
 // PAT interface represents operations on a Program Association Table. Currently only single program transport streams (SPTS)are supported
 type PAT interface {
 	NumPrograms() int
-	ProgramMap() map[uint16]uint16
-	SPTSpmtPID() (uint16, error)
+	ProgramMap() map[int]int
+	SPTSpmtPID() (int, error)
 }
 
 // The Program Association Table (PAT) lists the programs available in transport
@@ -89,16 +89,16 @@ func (pat pat) NumPrograms() int {
 }
 
 // ProgramMap returns a map of program numbers and PIDs of the PMTs
-func (pat pat) ProgramMap() map[uint16]uint16 {
-	m := make(map[uint16]uint16)
+func (pat pat) ProgramMap() map[int]int {
+	m := make(map[int]int)
 
 	counter := 8 // skip table id et al
 
 	for i := 0; i < pat.NumPrograms(); i++ {
-		pn := (uint16(pat[counter+1]) << 8) | uint16(pat[counter+2])
+		pn := (int(pat[counter+1]) << 8) | int(pat[counter+2])
 
 		// ignore the top three (reserved) bits
-		pid := uint16(pat[counter+3])&0x1f<<8 | uint16(pat[counter+4])
+		pid := int(pat[counter+3])&0x1f<<8 | int(pat[counter+4])
 
 		// A value of 0 is reserved for a NIT packet identifier.
 		if pn > 0 {
@@ -112,7 +112,7 @@ func (pat pat) ProgramMap() map[uint16]uint16 {
 }
 
 // SPTSpmtPID returns the PMT PID if and only if this pat is for a single program transport stream. If this pat is for a multiprogram transport stream, an error is returned.
-func (pat pat) SPTSpmtPID() (uint16, error) {
+func (pat pat) SPTSpmtPID() (int, error) {
 	if pat.NumPrograms() > 1 {
 		return 0, errors.New("Not a single program transport stream")
 	}
