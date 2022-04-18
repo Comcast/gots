@@ -173,6 +173,8 @@ func init() {
 		0x3D: {0x3C: segCloseEventID},
 		0x40: {0x40: segCloseNormal},
 		0x41: {0x40: segCloseEventID},
+		0x42: {0x20: segCloseNormal, 0x22: segCloseNormal, 0x24: segCloseNormal, 0x26: segCloseNormal, 0x30: segCloseNormal, 0x34: segCloseNormal, 0x36: segCloseNormal, 0x3C: segCloseNormal, 0x44: segCloseNormal, 0x44: segCloseNormal},
+		0x43: {0x20: segCloseNormal, 0x22: segCloseNormal, 0x24: segCloseNormal, 0x26: segCloseNormal, 0x30: segCloseNormal, 0x34: segCloseNormal, 0x36: segCloseNormal, 0x3C: segCloseNormal, 0x42: segCloseEventID, 0x44: segCloseNormal},
 		0x50: {0x10: segCloseNormal, 0x14: segCloseNormal, 0x17: segCloseNormal, 0x19: segCloseNormal, 0x20: segCloseNormal, 0x30: segCloseNormal, 0x32: segCloseNormal, 0x34: segCloseNormal, 0x36: segCloseNormal, 0x40: segCloseUnconditional, 0x50: segCloseNormal},
 		0x51: {0x10: segCloseNormal, 0x14: segCloseNormal, 0x17: segCloseNormal, 0x19: segCloseNormal, 0x20: segCloseNormal, 0x30: segCloseNormal, 0x32: segCloseNormal, 0x34: segCloseNormal, 0x36: segCloseNormal, 0x40: segCloseUnconditional, 0x50: segCloseEventID},
 	}
