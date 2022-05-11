@@ -290,33 +290,30 @@ func TestOutOutIn(t *testing.T) {
 
 func TestOutOut(t *testing.T) {
 	state := NewState()
-
-	// 0x36 - event_id:0 - seg_num: 0 - seg_expected: 0
-	outSignalBytes, _ := base64.StdEncoding.DecodeString("/DBLAAFztMbuAP/wBQb+AAAAAAA1AjNDVUVJAAAAAH//AACky4AJH1NJR05BTDozR1NOajNnb01sb0FBQUFBQUFBQkFRPT02AADO/OgI")
-	outSignal, err := NewSCTE35(append([]byte{0x0}, outSignalBytes...))
+	// 0x30 - Out signal 1
+	padOpenSignalBytes, _ := base64.StdEncoding.DecodeString("/DBsAAH/7m1eAAKQBQb+sX6o+wBWAlRDVUVJAAAAJ3//AAApMuANQAwOQU1DTiBMMDAxMjM0NTYJCFBPOjEyMzQ1DiRiY2IxZGQ4ZS1kMzIzLTQ1ODktOWQ3OC1hM2QxMzYyYWJiYjYwAQGtc8xr")
+	padOpenSignal, err := NewSCTE35(append([]byte{0x0}, padOpenSignalBytes...))
 	if err != nil {
 		t.Errorf("Error creating SCTE-35 signal: %s", err.Error())
 	}
 
-	closed, err := state.ProcessDescriptor(outSignal.Descriptors()[0])
+	_, err = state.ProcessDescriptor(padOpenSignal.Descriptors()[0])
 	if err != nil {
-		t.Errorf("ProcessDescriptor returned an error: %s", err.Error())
-	}
-	if len(closed) != 0 {
-		t.Errorf("No events should have been closed (%d were)", len(closed))
+		t.Error("ProcessDescriptor of out returned unexpected err:", err)
 	}
 	if len(state.Open()) != 1 {
-		t.Errorf("There should be one open signal (%d)", len(state.Open()))
+		t.Error("Unexpected number of open signals after padOpenSignal processed.")
 	}
 
 	// 0x36 - event_id: 1342177266 - seg_num: 0 - seg_expected: 0
+	// Should close the earlier Out
 	secondOutSignalBytes, _ := base64.StdEncoding.DecodeString("/DBLAAF0QXOWAP/wBQb+AAAAAAA1AjNDVUVJT///8n//AACky4AJH1NJR05BTDozR1NOanl3cE1sb0FBQUFBQUFBQkFRPT02AAA9gIK2")
 	secondOutSignal, err := NewSCTE35(append([]byte{0x0}, secondOutSignalBytes...))
 	if err != nil {
 		t.Errorf("Error creating SCTE-35 signal: %s", err.Error())
 	}
 
-	closed, err = state.ProcessDescriptor(secondOutSignal.Descriptors()[0])
+	closed, err := state.ProcessDescriptor(secondOutSignal.Descriptors()[0])
 	if err != nil {
 		t.Errorf("ProcessDescriptor returned an error: %s", err.Error())
 	}
