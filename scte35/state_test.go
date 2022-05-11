@@ -44,25 +44,6 @@ var poClose1 = []byte{
 	0x7f, 0xbf, 0x09, 0x0a, 0x54, 0x65, 0x73, 0x74, 0x31, 0x43, 0x6c, 0x6f, 0x73, 0x65, 0x35, 0x01,
 	0x01, 0x00, 0x00, 0xfc, 0x53, 0xaf, 0x44,
 }
-var poOpen12 = []byte{
-	0x00, 0xfc, 0x30, 0x33, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x05, 0x06, 0xfe,
-	0x00, 0x02, 0xbf, 0xd4, 0x00, 0x1d, 0x02, 0x1b, 0x43, 0x55, 0x45, 0x49, 0x00, 0x00, 0x00, 0x01,
-	0x7f, 0xff, 0x00, 0x00, 0x0d, 0xbb, 0xa0, 0x09, 0x05, 0x54, 0x65, 0x73, 0x74, 0x32, 0x34, 0x01,
-	0x02, 0x00, 0x00, 0xf9, 0x48, 0xd2, 0x4b,
-}
-var poOpen22 = []byte{
-	0x00, 0xfc, 0x30, 0x33, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x05, 0x06, 0xfe,
-	0x00, 0x05, 0x7f, 0xa8, 0x00, 0x1d, 0x02, 0x1b, 0x43, 0x55, 0x45, 0x49, 0x00, 0x00, 0x00, 0x02,
-	0x7f, 0xff, 0x00, 0x00, 0x05, 0x7f, 0xa8, 0x09, 0x05, 0x54, 0x65, 0x73, 0x74, 0x32, 0x34, 0x02,
-	0x02, 0x00, 0x00, 0xfd, 0x82, 0x54, 0x6b,
-}
-var poClose1and2 = []byte{
-	0x00, 0xfc, 0x30, 0x4c, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x05, 0x06, 0xfe,
-	0x00, 0x0d, 0xbf, 0x24, 0x00, 0x36, 0x02, 0x19, 0x43, 0x55, 0x45, 0x49, 0x00, 0x00, 0x00, 0x02,
-	0x7f, 0xbf, 0x09, 0x0a, 0x54, 0x65, 0x73, 0x74, 0x43, 0x6c, 0x6f, 0x73, 0x65, 0x32, 0x35, 0x01,
-	0x01, 0x02, 0x19, 0x43, 0x55, 0x45, 0x49, 0x00, 0x00, 0x00, 0x01, 0x7f, 0xbf, 0x09, 0x0a, 0x54,
-	0x65, 0x73, 0x74, 0x43, 0x6c, 0x6f, 0x73, 0x65, 0x31, 0x35, 0x01, 0x01, 0xfb, 0x7e, 0xde, 0xce,
-}
 
 var poClose12 = []byte{
 	0x00, 0xfc, 0x30, 0x33, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x05, 0x06, 0xfe,
@@ -253,48 +234,50 @@ func TestDuplicateOut(t *testing.T) {
 func TestOutOutIn(t *testing.T) {
 	st := NewState()
 
-	// 0x34 - 1 - (1/2)
-	open12, e := NewSCTE35(poOpen12)
-	if e != nil {
-		t.Error("NewSCTE35(poOpen12) returned err:", e)
-		t.FailNow()
+	// 0x30
+	padOpenSignalBytes, _ := base64.StdEncoding.DecodeString("/DBsAAH/7m1eAAKQBQb+sX6o+wBWAlRDVUVJAAAAJ3//AAApMuANQAwOQU1DTiBMMDAxMjM0NTYJCFBPOjEyMzQ1DiRiY2IxZGQ4ZS1kMzIzLTQ1ODktOWQ3OC1hM2QxMzYyYWJiYjYwAQGtc8xr")
+	padOpenSignal, err := NewSCTE35(append([]byte{0x0}, padOpenSignalBytes...))
+	if err != nil {
+		t.Errorf("Error creating SCTE-35 signal: %s", err.Error())
 	}
 
-	_, e = st.ProcessDescriptor(open12.Descriptors()[0])
-	if e != nil {
-		t.Error("ProcessDescriptor of out returned unexpected err:", e)
+	_, err = st.ProcessDescriptor(padOpenSignal.Descriptors()[0])
+	if err != nil {
+		t.Error("ProcessDescriptor of out returned unexpected err:", err)
 	}
 	if len(st.Open()) != 1 {
-		t.Error("Unexpected number of open signals after open12 processed.")
+		t.Error("Unexpected number of open signals after padOpenSignal processed.")
 	}
 
-	// 0x34 - 2 - (2/2)
-	open22, e := NewSCTE35(poOpen22)
-	if e != nil {
-		t.Error("NewSCTE35(poOpen22) return err:", e)
+	// 0x34
+	ppoStartSignalBytes, _ := base64.StdEncoding.DecodeString("/DA0AAG3wyKO///wBQb/yRLo+gAeAhxDVUVJQAAAZH/PAAEOFNwICAAAAAArJkYdNAAAMcFkEw==")
+	ppoStartSignal, err := NewSCTE35(append([]byte{0x0}, ppoStartSignalBytes...))
+	if err != nil {
+		t.Error("NewSCTE35(ppoStartSignal) return err:", err)
 		t.FailNow()
 	}
 
-	c, e := st.ProcessDescriptor(open22.Descriptors()[0])
-	if e != nil {
-		t.Error("ProcessDescriptor of out 2 returned unexpected err:", e)
+	c, err := st.ProcessDescriptor(ppoStartSignal.Descriptors()[0])
+	if err != nil {
+		t.Error("ProcessDescriptor of out 2 returned unexpected err:", err)
 	}
 	if len(c) != 1 {
-		t.Error("poOpen22 unexpectedly did not close the first signal")
+		t.Error("ppoStartSignal unexpectedly did not close the first signal")
 	}
 	if len(st.Open()) != 1 {
 		t.Error("state has unexpected number of signals open")
 	}
-	// now pass through the close signals and check
-	// 0x35 - 2 - (1/1) && 0x35 - 1 - (1/1)
-	close, e := NewSCTE35(poClose1and2)
-	if e != nil {
-		t.Error("NewSCTE35(poClose1and2) return unexpected err:", e)
+	// now pass through the close signal and check
+	// 0x35 - close the 0x34
+	closeSignalBytes, _ := base64.StdEncoding.DecodeString("/DAvAAG2uS3c///wBQb/yiD8XAAZAhdDVUVJQAAAZH+fCAgAAAAAKyZGHTUAAMzqBnE=")
+	close, err := NewSCTE35(append([]byte{0x0},closeSignalBytes...))
+	if err != nil {
+		t.Error("NewSCTE35(closeSignalBytes) return unexpected err:", err)
 	}
 
-	c, e = st.ProcessDescriptor(close.Descriptors()[0])
-	if e != nil {
-		t.Error("Processing first desc of close returned unexpected err:", e)
+	c, err = st.ProcessDescriptor(close.Descriptors()[0])
+	if err != nil {
+		t.Error("Processing first desc of close returned unexpected err:", err)
 	}
 
 	if len(c) != 1 {
@@ -302,17 +285,6 @@ func TestOutOutIn(t *testing.T) {
 	}
 	if len(st.Open()) != 0 {
 		t.Error("Unexpected number of open decriptors found")
-	}
-
-	c, e = st.ProcessDescriptor(close.Descriptors()[1])
-	if e != gots.ErrSCTE35MissingOut {
-		t.Error("Processing second desc of close return unexpected err:", e)
-	}
-	if len(c) != 0 {
-		t.Error("Processing second desc of close did not close outer signal")
-	}
-	if len(st.Open()) != 0 {
-		t.Error("Open signals remain after processing close signal")
 	}
 }
 
@@ -363,7 +335,7 @@ func TestSubsegments(t *testing.T) {
 	// 0x34
 	ppoStart, err := NewSCTE35(ppoStartSubsegments)
 	if err != nil {
-		t.Error("NewSCTE35(poOpen22) return err:", err.Error())
+		t.Error("NewSCTE35(ppoStartSubsegments) return err:", err.Error())
 		t.FailNow()
 	}
 
@@ -678,7 +650,7 @@ func printState(s State, header string) {
 	println()
 }
 
-func TestOutInInOutIn36_37_35_37_37(t *testing.T) {
+func TestOutInInOutIn36_37_10_37_37(t *testing.T) {
 	state := NewState()
 
 	// 0x36 - event_id:0 - seg_num: 0 - seg_expected: 0
@@ -717,8 +689,8 @@ func TestOutInInOutIn36_37_35_37_37(t *testing.T) {
 		t.Errorf("There should be one open signal (%d)", len(state.Open()))
 	}
 
-	// 0x35 closes 36
-	In35SignalBytes, _ := base64.StdEncoding.DecodeString("/DAvAAD5dbEbAP/wBQb+M+6KUwAZAhdDVUVJQAAAPn+fCAgAAAAALecjUzUAALuiqds=")
+	// 0x10 closes 36 as per the SCTE35-2020 spec
+	In35SignalBytes, _ := base64.StdEncoding.DecodeString("/DBFAAAAABeOAP/wBQb+WxdHNQAvAi1DVUVJACSqm3/9ABNP17wMGURJU0MyMjA1NjVfMDAyXzAxXzU3MUEtMDEQAQEeP8NH")
 	In35Signal, err := NewSCTE35(append([]byte{0x0}, In35SignalBytes...))
 	if err != nil {
 		t.Errorf("Error creating SCTE-35 signal: %s", err.Error())
@@ -743,8 +715,8 @@ func TestOutInInOutIn36_37_35_37_37(t *testing.T) {
 	}
 
 	closed, err = state.ProcessDescriptor(secondInSignal.Descriptors()[0])
-	// ErrSCTE35MissingOut expected as 0x35 closed 0x36
-	if err != gots.ErrSCTE35MissingOut {
+	// ErrSCTE35MissingOut expected as 0x30 closed 0x36
+	if err != nil && err != gots.ErrSCTE35MissingOut {
 		t.Errorf("ProcessDescriptor returned an error: %s", err.Error())
 	}
 	if len(closed) != 0 {
@@ -763,7 +735,7 @@ func TestOutInInOutIn36_37_35_37_37(t *testing.T) {
 	}
 
 	closed, err = state.ProcessDescriptor(thirdInSignal.Descriptors()[0])
-	// ErrSCTE35MissingOut expected as 0x35 closed 0x36
+	// ErrSCTE35MissingOut expected as 0x30 closed 0x36
 	if err != gots.ErrSCTE35MissingOut {
 		t.Error("ProcessDescriptor of out returned unexpected err:", err)
 	}
