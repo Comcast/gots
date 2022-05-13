@@ -420,8 +420,9 @@ func TestSubsegments(t *testing.T) {
 }
 
 // Test the logic for when a closing IN signal occurs after another OUT signal.
-// 0x36 -> 0x37 (1/3) -> 0x37 (2/3) -> 0x36 -> 0x37 (3/3)
-// End state should be just the second 0x36.
+// 0x36 -> 0x37 (1/3) -> 0x37 (2/3) -> 0x36 -> 0x37 (3/3) // REMOVEß
+// 0x36 -> 0x37 (1/3) -> 0x37 (2/3) -> 0x30 -> 0x37 (3/3)
+// End state should be just 0x30.
 func TestOutInInOutIn(t *testing.T) {
 	state := NewState()
 
@@ -479,27 +480,26 @@ func TestOutInInOutIn(t *testing.T) {
 		t.Errorf("There should be one open signal (%d)", len(state.Open()))
 	}
 
-	// 0x36 - event_id: 1342177266 - seg_num: 0 - seg_expected: 0
-	// This signal will close the previous 0x36.
-	secondOutSignalBytes, _ := base64.StdEncoding.DecodeString("/DBLAAF0QXOWAP/wBQb+AAAAAAA1AjNDVUVJT///8n//AACky4AJH1NJR05BTDozR1NOanl3cE1sb0FBQUFBQUFBQkFRPT02AAA9gIK2")
-	secondOutSignal, err := NewSCTE35(append([]byte{0x0}, secondOutSignalBytes...))
+	// 0x30 Another Out
+	padOpenSignalBytes, _ := base64.StdEncoding.DecodeString("/DBsAAH/7m1eAAKQBQb+sX6o+wBWAlRDVUVJAAAAJ3//AAApMuANQAwOQU1DTiBMMDAxMjM0NTYJCFBPOjEyMzQ1DiRiY2IxZGQ4ZS1kMzIzLTQ1ODktOWQ3OC1hM2QxMzYyYWJiYjYwAQGtc8xr")
+	padOpenSignal, err := NewSCTE35(append([]byte{0x0}, padOpenSignalBytes...))
 	if err != nil {
 		t.Errorf("Error creating SCTE-35 signal: %s", err.Error())
 	}
 
-	closed, err = state.ProcessDescriptor(secondOutSignal.Descriptors()[0])
+	closed, err = state.ProcessDescriptor(padOpenSignal.Descriptors()[0])
 	if err != nil {
 		t.Errorf("ProcessDescriptor returned an error: %s", err.Error())
 	}
-	if len(closed) != 1 {
-		t.Errorf("One event should have been closed (%d were)", len(closed))
+	if len(closed) != 0 {
+		t.Errorf("No events should have been closed (%d were)", len(closed))
 	}
-	if len(state.Open()) != 1 {
+	if len(state.Open()) != 2 {
 		t.Errorf("There should be one open signals (%d)", len(state.Open()))
 	}
 
 	// 0x37 = event_id: 0 - seg_num: 3 - seg_expected: 3
-	// This will return ErrMissingOut when processed since the previous 0x36 closed the 0x36 this 0x37 belongs to.
+	// This closed the 0x30 and the 0x36
 	thirdInSignalBytes, _ := base64.StdEncoding.DecodeString("/DBGAAF0WZJuAP/wBQb+AAAAAAAwAi5DVUVJAAAAAH+/CR9TSUdOQUw6M0dTTmozZ29NbG9BQUFBQUFBQUJCQT09NwMDFkn/Gw==")
 	thirdInSignal, err := NewSCTE35(append([]byte{0x0}, thirdInSignalBytes...))
 	if err != nil {
@@ -507,20 +507,14 @@ func TestOutInInOutIn(t *testing.T) {
 	}
 
 	closed, err = state.ProcessDescriptor(thirdInSignal.Descriptors()[0])
-	if err != gots.ErrSCTE35MissingOut {
+	if err != nil {
 		t.Error("ProcessDescriptor of out returned unexpected err:", err)
 	}
-	if len(closed) != 0 {
-		t.Errorf("No events should have been closed (%d were)", len(closed))
+	if len(closed) != 2 {
+		t.Errorf("One event should have been closed (%d were)", len(closed))
 	}
-	if len(state.Open()) != 1 {
-		t.Errorf("There should be one open signal (%d)", len(state.Open()))
-	}
-	if state.Open()[0].TypeID() != SegDescDistributorPOStart {
-		t.Errorf("Expected segmentation_type_id 0x36 but got %x", state.Open()[0].TypeID())
-	}
-	if state.Open()[0].EventID() != 1342177266 {
-		t.Errorf("Expected event_id 1342177266 but got %d", state.Open()[0].EventID())
+	if len(state.Open()) != 0 {
+		t.Errorf("There should be no open signal (%d)", len(state.Open()))
 	}
 }
 
@@ -686,7 +680,7 @@ func TestOutInInOutIn36_37_10_37_37(t *testing.T) {
 		t.Errorf("There should be one open signal (%d)", len(state.Open()))
 	}
 
-	// 0x10 closes 36 as per the SCTE35-2020 spec
+	// 0x10 closes 0x36 as per the SCTE-35 2020 spec
 	In35SignalBytes, _ := base64.StdEncoding.DecodeString("/DBFAAAAABeOAP/wBQb+WxdHNQAvAi1DVUVJACSqm3/9ABNP17wMGURJU0MyMjA1NjVfMDAyXzAxXzU3MUEtMDEQAQEeP8NH")
 	In35Signal, err := NewSCTE35(append([]byte{0x0}, In35SignalBytes...))
 	if err != nil {
@@ -700,8 +694,8 @@ func TestOutInInOutIn36_37_10_37_37(t *testing.T) {
 	if len(closed) != 1 {
 		t.Errorf("1 event should have been closed (%d were)", len(closed))
 	}
-	if len(state.Open()) != 0 {
-		t.Errorf("There should be 0 open signal (%d)", len(state.Open()))
+	if len(state.Open()) != 1 {
+		t.Errorf("There should be 1 signal (%d)", len(state.Open()))
 	}
 
 	// 0x37 - event_id: 0 - seg_num: 2 - seg_expected: 3
@@ -712,34 +706,14 @@ func TestOutInInOutIn36_37_10_37_37(t *testing.T) {
 	}
 
 	closed, err = state.ProcessDescriptor(secondInSignal.Descriptors()[0])
-	// ErrSCTE35MissingOut expected as 0x30 closed 0x36
+	// ErrSCTE35MissingOut expected as 0x30 closed the 0x36, the 0x37 has nothing to close.
 	if err != nil && err != gots.ErrSCTE35MissingOut {
 		t.Errorf("ProcessDescriptor returned an error: %s", err.Error())
 	}
 	if len(closed) != 0 {
 		t.Errorf("No events should have been closed (%d were)", len(closed))
 	}
-	if len(state.Open()) != 0 {
-		t.Errorf("There should be 0 open signal (%d)", len(state.Open()))
-	}
-
-	// 0x37 = event_id: 0 - seg_num: 3 - seg_expected: 3
-	// This will return ErrMissingOut when processed since the previous 0x36 closed the 0x36 this 0x37 belongs to.
-	thirdInSignalBytes, _ := base64.StdEncoding.DecodeString("/DBGAAEtofiUAP/wBQb+AAAAAAAwAi5DVUVJT///9X+/CR9TSUdOQUw6MllEVngrUis5VnNBQUFBQUFBQUJCQT09NwMDJVJ1Mg==")
-	thirdInSignal, err := NewSCTE35(append([]byte{0x0}, thirdInSignalBytes...))
-	if err != nil {
-		t.Errorf("Error creating SCTE-35 signal: %s", err.Error())
-	}
-
-	closed, err = state.ProcessDescriptor(thirdInSignal.Descriptors()[0])
-	// ErrSCTE35MissingOut expected as 0x30 closed 0x36
-	if err != gots.ErrSCTE35MissingOut {
-		t.Error("ProcessDescriptor of out returned unexpected err:", err)
-	}
-	if len(closed) != 0 {
-		t.Errorf("No events should have been closed (%d were)", len(closed))
-	}
-	if len(state.Open()) != 0 {
+	if len(state.Open()) != 1 {
 		t.Errorf("There should be 0 open signal (%d)", len(state.Open()))
 	}
 }
