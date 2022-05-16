@@ -227,7 +227,7 @@ func TestDuplicateOut(t *testing.T) {
 		t.Error("ProcessDescriptor of out returned unexpected err:", e)
 	}
 	if len(st.Open()) != 1 {
-		t.Error("Unexpected number of open signals")
+		t.Error("There should have been 1 open signal, but we saw %d open signals instead.", len(st.Open()))
 	}
 }
 
@@ -246,7 +246,7 @@ func TestOutOutIn(t *testing.T) {
 		t.Error("ProcessDescriptor of out returned unexpected err:", err)
 	}
 	if len(st.Open()) != 1 {
-		t.Error("Unexpected number of open signals after padOpenSignal processed.")
+		t.Error("There should have been 1 open signal,but we saw %d open signals instead.", len(st.Open()))
 	}
 
 	// 0x34
@@ -284,7 +284,7 @@ func TestOutOutIn(t *testing.T) {
 		t.Error("First desc unexpectedly did not close inner out")
 	}
 	if len(st.Open()) != 0 {
-		t.Error("Unexpected number of open decriptors found")
+		t.Error("Unexpected number of open descriptors found")
 	}
 }
 
@@ -495,7 +495,7 @@ func TestOutInInOutIn(t *testing.T) {
 		t.Errorf("No events should have been closed (%d were)", len(closed))
 	}
 	if len(state.Open()) != 2 {
-		t.Errorf("There should be one open signals (%d)", len(state.Open()))
+		t.Errorf("There should be two open signals (%d)", len(state.Open()))
 	}
 
 	// 0x37 = event_id: 0 - seg_num: 3 - seg_expected: 3
