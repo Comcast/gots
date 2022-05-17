@@ -79,65 +79,85 @@ var DeviceRestrictionsNames = map[DeviceRestrictions]string{
 type SegDescType uint8
 
 const (
-	SegDescNotIndicated                  SegDescType = 0x00
-	SegDescContentIdentification                     = 0x01
-	SegDescProgramStart                              = 0x10
-	SegDescProgramEnd                                = 0x11
-	SegDescProgramEarlyTermination                   = 0x12
-	SegDescProgramBreakaway                          = 0x13
-	SegDescProgramResumption                         = 0x14
-	SegDescProgramRunoverPlanned                     = 0x15
-	SegDescProgramRunoverUnplanned                   = 0x16
-	SegDescProgramOverlapStart                       = 0x17
-	SegDescProgramBlackoutOverride                   = 0x18
-	SegDescProgramStartInProgress                    = 0x19
-	SegDescChapterStart                              = 0x20
-	SegDescChapterEnd                                = 0x21
-	SegDescBreakStart                                = 0x22
-	SegDescBreakEnd                                  = 0x23
-	SegDescProviderAdvertisementStart                = 0x30
-	SegDescProviderAdvertisementEnd                  = 0x31
-	SegDescDistributorAdvertisementStart             = 0x32
-	SegDescDistributorAdvertisementEnd               = 0x33
-	SegDescProviderPOStart                           = 0x34
-	SegDescProviderPOEnd                             = 0x35
-	SegDescDistributorPOStart                        = 0x36
-	SegDescDistributorPOEnd                          = 0x37
-	SegDescUnscheduledEventStart                     = 0x40
-	SegDescUnscheduledEventEnd                       = 0x41
-	SegDescNetworkStart                              = 0x50
-	SegDescNetworkEnd                                = 0x51
+	SegDescNotIndicated                     SegDescType = 0x00
+	SegDescContentIdentification                        = 0x01
+	SegDescProgramStart                                 = 0x10
+	SegDescProgramEnd                                   = 0x11
+	SegDescProgramEarlyTermination                      = 0x12
+	SegDescProgramBreakaway                             = 0x13
+	SegDescProgramResumption                            = 0x14
+	SegDescProgramRunoverPlanned                        = 0x15
+	SegDescProgramRunoverUnplanned                      = 0x16
+	SegDescProgramOverlapStart                          = 0x17
+	SegDescProgramBlackoutOverride                      = 0x18
+	SegDescProgramStartInProgress                       = 0x19
+	SegDescChapterStart                                 = 0x20
+	SegDescChapterEnd                                   = 0x21
+	SegDescBreakStart                                   = 0x22
+	SegDescBreakEnd                                     = 0x23
+	SegDescOpeningCreditStart                           = 0x24
+	SegDescOpeningCreditEnd                             = 0x25
+	SegDescClosingCreditStart                           = 0x26
+	SegDescClosingCreditEnd                             = 0x27
+	SegDescProviderAdvertisementStart                   = 0x30
+	SegDescProviderAdvertisementEnd                     = 0x31
+	SegDescDistributorAdvertisementStart                = 0x32
+	SegDescDistributorAdvertisementEnd                  = 0x33
+	SegDescProviderPOStart                              = 0x34
+	SegDescProviderPOEnd                                = 0x35
+	SegDescDistributorPOStart                           = 0x36
+	SegDescDistributorPOEnd                             = 0x37
+	SegDescProviderPromoStart                           = 0x3C
+	SegDescProviderPromoEnd                             = 0x3D
+	SegDescUnscheduledEventStart                        = 0x40
+	SegDescUnscheduledEventEnd                          = 0x41
+	SegDescAlternateContentOpportunityStart             = 0x42
+	SegDescAlternateContentOpportunityEnd               = 0x43
+	SegDescProviderAdBlockStart                         = 0x44
+	SegDescProviderAdBlockEnd                           = 0x45
+	SegDescNetworkStart                                 = 0x50
+	SegDescNetworkEnd                                   = 0x51
 )
 
 var SegDescTypeNames = map[SegDescType]string{
-	SegDescNotIndicated:                  "SegDescNotIndicated",
-	SegDescContentIdentification:         "SegDescContentIdentification",
-	SegDescProgramStart:                  "SegDescProgramStart",
-	SegDescProgramEnd:                    "SegDescProgramEnd",
-	SegDescProgramEarlyTermination:       "SegDescProgramEarlyTermination",
-	SegDescProgramBreakaway:              "SegDescProgramBreakaway",
-	SegDescProgramResumption:             "SegDescProgramResumption",
-	SegDescProgramRunoverPlanned:         "SegDescProgramRunoverPlanned",
-	SegDescProgramRunoverUnplanned:       "SegDescProgramRunoverUnplanned",
-	SegDescProgramOverlapStart:           "SegDescProgramOverlapStart",
-	SegDescProgramBlackoutOverride:       "SegDescProgramBlackoutOverride",
-	SegDescProgramStartInProgress:        "SegDescProgramStartInProgress",
-	SegDescChapterStart:                  "SegDescChapterStart",
-	SegDescChapterEnd:                    "SegDescChapterEnd",
-	SegDescBreakStart:                    "SegDescBreakStart",
-	SegDescBreakEnd:                      "SegDescBreakEnd",
-	SegDescProviderAdvertisementStart:    "SegDescProviderAdvertisementStar",
-	SegDescProviderAdvertisementEnd:      "SegDescProviderAdvertisementEn",
-	SegDescDistributorAdvertisementStart: "SegDescDistributorAdvertisementStar",
-	SegDescDistributorAdvertisementEnd:   "SegDescDistributorAdvertisementEn",
-	SegDescProviderPOStart:               "SegDescProviderPOStart",
-	SegDescProviderPOEnd:                 "SegDescProviderPOEnd",
-	SegDescDistributorPOStart:            "SegDescDistributorPOStart",
-	SegDescDistributorPOEnd:              "SegDescDistributorPOEnd",
-	SegDescUnscheduledEventStart:         "SegDescUnscheduledEventStart",
-	SegDescUnscheduledEventEnd:           "SegDescUnscheduledEventEnd",
-	SegDescNetworkStart:                  "SegDescNetworkStart",
-	SegDescNetworkEnd:                    "SegDescNetworkEnd",
+	SegDescNotIndicated:                     "SegDescNotIndicated",
+	SegDescContentIdentification:            "SegDescContentIdentification",
+	SegDescProgramStart:                     "SegDescProgramStart",
+	SegDescProgramEnd:                       "SegDescProgramEnd",
+	SegDescProgramEarlyTermination:          "SegDescProgramEarlyTermination",
+	SegDescProgramBreakaway:                 "SegDescProgramBreakaway",
+	SegDescProgramResumption:                "SegDescProgramResumption",
+	SegDescProgramRunoverPlanned:            "SegDescProgramRunoverPlanned",
+	SegDescProgramRunoverUnplanned:          "SegDescProgramRunoverUnplanned",
+	SegDescProgramOverlapStart:              "SegDescProgramOverlapStart",
+	SegDescProgramBlackoutOverride:          "SegDescProgramBlackoutOverride",
+	SegDescProgramStartInProgress:           "SegDescProgramStartInProgress",
+	SegDescChapterStart:                     "SegDescChapterStart",
+	SegDescChapterEnd:                       "SegDescChapterEnd",
+	SegDescBreakStart:                       "SegDescBreakStart",
+	SegDescBreakEnd:                         "SegDescBreakEnd",
+	SegDescProviderAdvertisementStart:       "SegDescProviderAdvertisementStart",
+	SegDescProviderAdvertisementEnd:         "SegDescProviderAdvertisementEnd",
+	SegDescOpeningCreditStart:               "SegDescOpeningCreditStart",
+	SegDescOpeningCreditEnd:                 "SegDescOpeningCreditEnd",
+	SegDescClosingCreditStart:               "SegDescClosingCreditStart",
+	SegDescClosingCreditEnd:                 "SegDescClosingCreditEnd",
+	SegDescDistributorAdvertisementStart:    "SegDescDistributorAdvertisementStart",
+	SegDescDistributorAdvertisementEnd:      "SegDescDistributorAdvertisementEnd",
+	SegDescProviderPOStart:                  "SegDescProviderPOStart",
+	SegDescProviderPOEnd:                    "SegDescProviderPOEnd",
+	SegDescDistributorPOStart:               "SegDescDistributorPOStart",
+	SegDescDistributorPOEnd:                 "SegDescDistributorPOEnd",
+	SegDescProviderPromoStart:               "SegDescProviderPromoStart",
+	SegDescProviderPromoEnd:                 "SegDescProviderPromoEnd",
+	SegDescUnscheduledEventStart:            "SegDescUnscheduledEventStart",
+	SegDescUnscheduledEventEnd:              "SegDescUnscheduledEventEnd",
+	SegDescAlternateContentOpportunityStart: "SegDescAlternateContentOpportunityStart",
+	SegDescAlternateContentOpportunityEnd:   "SegDescAlternateContentOpportunityEnd",
+	SegDescProviderAdBlockStart:             "SegDescProviderAdBlockStart",
+	SegDescProviderAdBlockEnd:               "SegDescProviderAdBlockEnd",
+	SegDescNetworkStart:                     "SegDescNetworkStart",
+	SegDescNetworkEnd:                       "SegDescNetworkEnd",
 }
 
 // SegUPIDType is the Segmentation UPID Types - Only type that really needs to be checked is

@@ -44,25 +44,6 @@ var poClose1 = []byte{
 	0x7f, 0xbf, 0x09, 0x0a, 0x54, 0x65, 0x73, 0x74, 0x31, 0x43, 0x6c, 0x6f, 0x73, 0x65, 0x35, 0x01,
 	0x01, 0x00, 0x00, 0xfc, 0x53, 0xaf, 0x44,
 }
-var poOpen12 = []byte{
-	0x00, 0xfc, 0x30, 0x33, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x05, 0x06, 0xfe,
-	0x00, 0x02, 0xbf, 0xd4, 0x00, 0x1d, 0x02, 0x1b, 0x43, 0x55, 0x45, 0x49, 0x00, 0x00, 0x00, 0x01,
-	0x7f, 0xff, 0x00, 0x00, 0x0d, 0xbb, 0xa0, 0x09, 0x05, 0x54, 0x65, 0x73, 0x74, 0x32, 0x34, 0x01,
-	0x02, 0x00, 0x00, 0xf9, 0x48, 0xd2, 0x4b,
-}
-var poOpen22 = []byte{
-	0x00, 0xfc, 0x30, 0x33, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x05, 0x06, 0xfe,
-	0x00, 0x05, 0x7f, 0xa8, 0x00, 0x1d, 0x02, 0x1b, 0x43, 0x55, 0x45, 0x49, 0x00, 0x00, 0x00, 0x02,
-	0x7f, 0xff, 0x00, 0x00, 0x05, 0x7f, 0xa8, 0x09, 0x05, 0x54, 0x65, 0x73, 0x74, 0x32, 0x34, 0x02,
-	0x02, 0x00, 0x00, 0xfd, 0x82, 0x54, 0x6b,
-}
-var poClose1and2 = []byte{
-	0x00, 0xfc, 0x30, 0x4c, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x05, 0x06, 0xfe,
-	0x00, 0x0d, 0xbf, 0x24, 0x00, 0x36, 0x02, 0x19, 0x43, 0x55, 0x45, 0x49, 0x00, 0x00, 0x00, 0x02,
-	0x7f, 0xbf, 0x09, 0x0a, 0x54, 0x65, 0x73, 0x74, 0x43, 0x6c, 0x6f, 0x73, 0x65, 0x32, 0x35, 0x01,
-	0x01, 0x02, 0x19, 0x43, 0x55, 0x45, 0x49, 0x00, 0x00, 0x00, 0x01, 0x7f, 0xbf, 0x09, 0x0a, 0x54,
-	0x65, 0x73, 0x74, 0x43, 0x6c, 0x6f, 0x73, 0x65, 0x31, 0x35, 0x01, 0x01, 0xfb, 0x7e, 0xde, 0xce,
-}
 
 var poClose12 = []byte{
 	0x00, 0xfc, 0x30, 0x33, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x05, 0x06, 0xfe,
@@ -142,8 +123,7 @@ func TestOutIn(t *testing.T) {
 	st := NewState()
 	open, e := NewSCTE35(poOpen1)
 	if e != nil {
-		t.Error("NewSCTE35(poOpen1) returned err:", e)
-		t.FailNow()
+		t.Fatal("NewSCTE35(poOpen1) returned err:", e)
 	}
 	c, e := st.ProcessDescriptor(open.Descriptors()[0])
 	if e != nil {
@@ -159,8 +139,7 @@ func TestOutIn(t *testing.T) {
 	}
 	close, e := NewSCTE35(poClose1)
 	if e != nil {
-		t.Error("NewSCTE35(poClose1) returned err:", e)
-		t.FailNow()
+		t.Fatal("NewSCTE35(poClose1) returned err:", e)
 	}
 	c, e = st.ProcessDescriptor(close.Descriptors()[0])
 	if e != nil {
@@ -180,8 +159,7 @@ func TestOutInIn(t *testing.T) {
 	st := NewState()
 	open, e := NewSCTE35(poOpen1)
 	if e != nil {
-		t.Error("NewSCTE35(poOpen1) returned err:", e)
-		t.FailNow()
+		t.Fatal("NewSCTE35(poOpen1) returned err:", e)
 	}
 	c, e := st.ProcessDescriptor(open.Descriptors()[0])
 	if e != nil {
@@ -197,15 +175,14 @@ func TestOutInIn(t *testing.T) {
 	}
 	close1, e := NewSCTE35(poClose12)
 	if e != nil {
-		t.Error("NewSCTE35(poClose12) returned unexpected err:", e)
+		t.Fatal("NewSCTE35(poClose12) returned unexpected err:", e)
 	}
 	c, e = st.ProcessDescriptor(close1.Descriptors()[0])
 	if e != nil {
 		t.Error("ProcessDescriptor of in 1 returned unexpected err:", e)
 	}
 	if len(c) != 0 {
-		t.Error("Close 1/2 closed open, which is not correct behavior")
-		t.FailNow()
+		t.Fatal("Close 1/2 closed open, which is not correct behavior")
 	}
 	if len(st.Open()) != 1 {
 		t.Error("Open() returned unexpected number of descriptors")
@@ -214,7 +191,7 @@ func TestOutInIn(t *testing.T) {
 	}
 	close2, e := NewSCTE35(poClose22)
 	if e != nil {
-		t.Error("NewSCTE35(poClose22) returned unexpected err:", e)
+		t.Fatal("NewSCTE35(poClose22) returned unexpected err:", e)
 	}
 	c, e = st.ProcessDescriptor(close2.Descriptors()[0])
 	if e != nil {
@@ -234,8 +211,7 @@ func TestDuplicateOut(t *testing.T) {
 	st := NewState()
 	open, e := NewSCTE35(poOpen1)
 	if e != nil {
-		t.Error("NewSCTE35(poOpen1) returned err:", e)
-		t.FailNow()
+		t.Fatal("NewSCTE35(poOpen1) returned err:", e)
 	}
 	_, e = st.ProcessDescriptor(open.Descriptors()[0])
 	if e != nil {
@@ -246,105 +222,92 @@ func TestDuplicateOut(t *testing.T) {
 		t.Error("ProcessDescriptor of out returned unexpected err:", e)
 	}
 	if len(st.Open()) != 1 {
-		t.Error("Unexpected number of open signals")
+		t.Error("There should have been 1 open signal, instead num(open):", len(st.Open()))
 	}
 }
 
 func TestOutOutIn(t *testing.T) {
 	st := NewState()
 
-	// 0x34 - 1 - (1/2)
-	open12, e := NewSCTE35(poOpen12)
-	if e != nil {
-		t.Error("NewSCTE35(poOpen12) returned err:", e)
-		t.FailNow()
+	// 0x30
+	padOpenSignalBytes, _ := base64.StdEncoding.DecodeString("/DBsAAH/7m1eAAKQBQb+sX6o+wBWAlRDVUVJAAAAJ3//AAApMuANQAwOQU1DTiBMMDAxMjM0NTYJCFBPOjEyMzQ1DiRiY2IxZGQ4ZS1kMzIzLTQ1ODktOWQ3OC1hM2QxMzYyYWJiYjYwAQGtc8xr")
+	padOpenSignal, err := NewSCTE35(append([]byte{0x0}, padOpenSignalBytes...))
+	if err != nil {
+		t.Fatal("Error creating SCTE-35 signal, return err:", err.Error())
 	}
 
-	_, e = st.ProcessDescriptor(open12.Descriptors()[0])
-	if e != nil {
-		t.Error("ProcessDescriptor of out returned unexpected err:", e)
+	_, err = st.ProcessDescriptor(padOpenSignal.Descriptors()[0])
+	if err != nil {
+		t.Error("ProcessDescriptor of out returned unexpected err:", err)
 	}
 	if len(st.Open()) != 1 {
-		t.Error("Unexpected number of open signals after open12 processed.")
+		t.Error("There should have been 1 open signal, instead num(open):", len(st.Open()))
 	}
 
-	// 0x34 - 2 - (2/2)
-	open22, e := NewSCTE35(poOpen22)
-	if e != nil {
-		t.Error("NewSCTE35(poOpen22) return err:", e)
-		t.FailNow()
+	// 0x34
+	ppoStartSignalBytes, _ := base64.StdEncoding.DecodeString("/DA0AAG3wyKO///wBQb/yRLo+gAeAhxDVUVJQAAAZH/PAAEOFNwICAAAAAArJkYdNAAAMcFkEw==")
+	ppoStartSignal, err := NewSCTE35(append([]byte{0x0}, ppoStartSignalBytes...))
+	if err != nil {
+		t.Fatal("NewSCTE35(ppoStartSignal) return err:", err)
 	}
 
-	c, e := st.ProcessDescriptor(open22.Descriptors()[0])
-	if e != nil {
-		t.Error("ProcessDescriptor of out 2 returned unexpected err:", e)
+	c, err := st.ProcessDescriptor(ppoStartSignal.Descriptors()[0])
+	if err != nil {
+		t.Error("ProcessDescriptor of out 2 returned unexpected err:", err)
 	}
 	if len(c) != 1 {
-		t.Error("poOpen22 unexpectedly did not close the first signal")
+		t.Error("ppoStartSignal unexpectedly did not close the first signal")
 	}
 	if len(st.Open()) != 1 {
-		t.Error("state has unexpected number of signals open")
+		t.Error("There should have been 1 open signal, instead num(open):", len(st.Open()))
 	}
-	// now pass through the close signals and check
-	// 0x35 - 2 - (1/1) && 0x35 - 1 - (1/1)
-	close, e := NewSCTE35(poClose1and2)
-	if e != nil {
-		t.Error("NewSCTE35(poClose1and2) return unexpected err:", e)
+	// now pass through the close signal and check
+	// 0x35 - close the 0x34
+	closeSignalBytes, _ := base64.StdEncoding.DecodeString("/DAvAAG2uS3c///wBQb/yiD8XAAZAhdDVUVJQAAAZH+fCAgAAAAAKyZGHTUAAMzqBnE=")
+	close, err := NewSCTE35(append([]byte{0x0},closeSignalBytes...))
+	if err != nil {
+		t.Fatal("NewSCTE35(closeSignalBytes) return unexpected err:", err)
 	}
 
-	c, e = st.ProcessDescriptor(close.Descriptors()[0])
-	if e != nil {
-		t.Error("Processing first desc of close returned unexpected err:", e)
+	c, err = st.ProcessDescriptor(close.Descriptors()[0])
+	if err != nil {
+		t.Error("Processing first desc of close returned unexpected err:", err)
 	}
 
 	if len(c) != 1 {
 		t.Error("First desc unexpectedly did not close inner out")
 	}
 	if len(st.Open()) != 0 {
-		t.Error("Unexpected number of open decriptors found")
-	}
-
-	c, e = st.ProcessDescriptor(close.Descriptors()[1])
-	if e != gots.ErrSCTE35MissingOut {
-		t.Error("Processing second desc of close return unexpected err:", e)
-	}
-	if len(c) != 0 {
-		t.Error("Processing second desc of close did not close outer signal")
-	}
-	if len(st.Open()) != 0 {
-		t.Error("Open signals remain after processing close signal")
+		t.Error("There should have been 0 open signals, instead num(open):", len(st.Open()))
 	}
 }
 
 func TestOutOut(t *testing.T) {
 	state := NewState()
-
-	// 0x36 - event_id:0 - seg_num: 0 - seg_expected: 0
-	outSignalBytes, _ := base64.StdEncoding.DecodeString("/DBLAAFztMbuAP/wBQb+AAAAAAA1AjNDVUVJAAAAAH//AACky4AJH1NJR05BTDozR1NOajNnb01sb0FBQUFBQUFBQkFRPT02AADO/OgI")
-	outSignal, err := NewSCTE35(append([]byte{0x0}, outSignalBytes...))
+	// 0x30 - Out signal 1
+	padOpenSignalBytes, _ := base64.StdEncoding.DecodeString("/DBsAAH/7m1eAAKQBQb+sX6o+wBWAlRDVUVJAAAAJ3//AAApMuANQAwOQU1DTiBMMDAxMjM0NTYJCFBPOjEyMzQ1DiRiY2IxZGQ4ZS1kMzIzLTQ1ODktOWQ3OC1hM2QxMzYyYWJiYjYwAQGtc8xr")
+	padOpenSignal, err := NewSCTE35(append([]byte{0x0}, padOpenSignalBytes...))
 	if err != nil {
-		t.Errorf("Error creating SCTE-35 signal: %s", err.Error())
+		t.Fatal("Error creating SCTE-35 signal, return err:", err.Error())
 	}
 
-	closed, err := state.ProcessDescriptor(outSignal.Descriptors()[0])
+	_, err = state.ProcessDescriptor(padOpenSignal.Descriptors()[0])
 	if err != nil {
-		t.Errorf("ProcessDescriptor returned an error: %s", err.Error())
-	}
-	if len(closed) != 0 {
-		t.Errorf("No events should have been closed (%d were)", len(closed))
+		t.Error("ProcessDescriptor of out returned unexpected err:", err)
 	}
 	if len(state.Open()) != 1 {
-		t.Errorf("There should be one open signal (%d)", len(state.Open()))
+		t.Error("There should have been 1 open signal, instead num(open):", len(state.Open()))
 	}
 
 	// 0x36 - event_id: 1342177266 - seg_num: 0 - seg_expected: 0
+	// Should close the earlier Out
 	secondOutSignalBytes, _ := base64.StdEncoding.DecodeString("/DBLAAF0QXOWAP/wBQb+AAAAAAA1AjNDVUVJT///8n//AACky4AJH1NJR05BTDozR1NOanl3cE1sb0FBQUFBQUFBQkFRPT02AAA9gIK2")
 	secondOutSignal, err := NewSCTE35(append([]byte{0x0}, secondOutSignalBytes...))
 	if err != nil {
-		t.Errorf("Error creating SCTE-35 signal: %s", err.Error())
+		t.Fatal("Error creating SCTE-35 signal, return err:", err.Error())
 	}
 
-	closed, err = state.ProcessDescriptor(secondOutSignal.Descriptors()[0])
+	closed, err := state.ProcessDescriptor(secondOutSignal.Descriptors()[0])
 	if err != nil {
 		t.Errorf("ProcessDescriptor returned an error: %s", err.Error())
 	}
@@ -352,7 +315,7 @@ func TestOutOut(t *testing.T) {
 		t.Errorf("One event should have been closed (%d were)", len(closed))
 	}
 	if len(state.Open()) != 1 {
-		t.Errorf("There should be one open signals (%d)", len(state.Open()))
+		t.Errorf("There should be one open signal (%d)", len(state.Open()))
 	}
 }
 
@@ -363,8 +326,7 @@ func TestSubsegments(t *testing.T) {
 	// 0x34
 	ppoStart, err := NewSCTE35(ppoStartSubsegments)
 	if err != nil {
-		t.Error("NewSCTE35(poOpen22) return err:", err.Error())
-		t.FailNow()
+		t.Fatal("NewSCTE35(ppoStartSubsegments) return err:", err.Error())
 	}
 
 	closed, err := state.ProcessDescriptor(ppoStart.Descriptors()[0])
@@ -381,8 +343,7 @@ func TestSubsegments(t *testing.T) {
 	// 0x36
 	dpoStart, err := NewSCTE35(dpoStartSubsegments)
 	if err != nil {
-		t.Error("NewSCTE35(dpoStartSubsegments) return err:", err.Error())
-		t.FailNow()
+		t.Fatal("NewSCTE35(dpoStartSubsegments) return err:", err.Error())
 	}
 
 	closed, err = state.ProcessDescriptor(dpoStart.Descriptors()[0])
@@ -399,8 +360,7 @@ func TestSubsegments(t *testing.T) {
 	// 0x37
 	dpoFirstEnd, err := NewSCTE35(dpoFirstEndSubsegments)
 	if err != nil {
-		t.Error("NewSCTE35(dpoFirstEndSubsegments) return err:", err.Error())
-		t.FailNow()
+		t.Fatal("NewSCTE35(dpoFirstEndSubsegments) return err:", err.Error())
 	}
 
 	closed, err = state.ProcessDescriptor(dpoFirstEnd.Descriptors()[0])
@@ -417,8 +377,7 @@ func TestSubsegments(t *testing.T) {
 	// 0x37
 	dpoSecondEnd, err := NewSCTE35(dpoSecondEndSubsegments)
 	if err != nil {
-		t.Error("NewSCTE35(dpoSecondEndSubsegments) return err:", err.Error())
-		t.FailNow()
+		t.Fatal("NewSCTE35(dpoSecondEndSubsegments) return err:", err.Error())
 	}
 
 	closed, err = state.ProcessDescriptor(dpoSecondEnd.Descriptors()[0])
@@ -435,8 +394,7 @@ func TestSubsegments(t *testing.T) {
 	// 0x35
 	ppoEnd, err := NewSCTE35(ppoEndSubsegments)
 	if err != nil {
-		t.Error("NewSCTE35(ppoEndSubsegments) return err:", err.Error())
-		t.FailNow()
+		t.Fatal("NewSCTE35(ppoEndSubsegments) return err:", err.Error())
 	}
 	closed, err = state.ProcessDescriptor(ppoEnd.Descriptors()[0])
 	if err != nil {
@@ -451,8 +409,8 @@ func TestSubsegments(t *testing.T) {
 }
 
 // Test the logic for when a closing IN signal occurs after another OUT signal.
-// 0x36 -> 0x37 (1/3) -> 0x37 (2/3) -> 0x36 -> 0x37 (3/3)
-// End state should be just the second 0x36.
+// 0x36 -> 0x37 (1/3) -> 0x37 (2/3) -> 0x30 -> 0x37 (3/3)
+// End state should be just 0x30.
 func TestOutInInOutIn(t *testing.T) {
 	state := NewState()
 
@@ -460,7 +418,7 @@ func TestOutInInOutIn(t *testing.T) {
 	outSignalBytes, _ := base64.StdEncoding.DecodeString("/DBLAAFztMbuAP/wBQb+AAAAAAA1AjNDVUVJAAAAAH//AACky4AJH1NJR05BTDozR1NOajNnb01sb0FBQUFBQUFBQkFRPT02AADO/OgI")
 	outSignal, err := NewSCTE35(append([]byte{0x0}, outSignalBytes...))
 	if err != nil {
-		t.Errorf("Error creating SCTE-35 signal: %s", err.Error())
+		t.Fatal("Error creating SCTE-35 signal, return err:", err.Error())
 	}
 
 	closed, err := state.ProcessDescriptor(outSignal.Descriptors()[0])
@@ -478,7 +436,7 @@ func TestOutInInOutIn(t *testing.T) {
 	firstInSignalBytes, _ := base64.StdEncoding.DecodeString("/DBGAAF0ByyuAP/wBQb+AAAAAAAwAi5DVUVJAAAAAH+/CR9TSUdOQUw6M0dTTmozZ29NbG9BQUFBQUFBQUJBZz09NwEDfTeSVQ==")
 	firstInSignal, err := NewSCTE35(append([]byte{0x0}, firstInSignalBytes...))
 	if err != nil {
-		t.Errorf("Error creating SCTE-35 signal: %s", err.Error())
+		t.Fatal("Error creating SCTE-35 signal, return err:", err.Error())
 	}
 
 	closed, err = state.ProcessDescriptor(firstInSignal.Descriptors()[0])
@@ -496,7 +454,7 @@ func TestOutInInOutIn(t *testing.T) {
 	secondInSignalBytes, _ := base64.StdEncoding.DecodeString("/DBGAAF0MF+OAP/wBQb+AAAAAAAwAi5DVUVJAAAAAH+/CR9TSUdOQUw6M0dTTmozZ29NbG9BQUFBQUFBQUJBdz09NwIDvefEqg==")
 	secondInSignal, err := NewSCTE35(append([]byte{0x0}, secondInSignalBytes...))
 	if err != nil {
-		t.Errorf("Error creating SCTE-35 signal: %s", err.Error())
+		t.Fatal("Error creating SCTE-35 signal, return err:", err.Error())
 	}
 
 	closed, err = state.ProcessDescriptor(secondInSignal.Descriptors()[0])
@@ -510,48 +468,41 @@ func TestOutInInOutIn(t *testing.T) {
 		t.Errorf("There should be one open signal (%d)", len(state.Open()))
 	}
 
-	// 0x36 - event_id: 1342177266 - seg_num: 0 - seg_expected: 0
-	// This signal will close the previous 0x36.
-	secondOutSignalBytes, _ := base64.StdEncoding.DecodeString("/DBLAAF0QXOWAP/wBQb+AAAAAAA1AjNDVUVJT///8n//AACky4AJH1NJR05BTDozR1NOanl3cE1sb0FBQUFBQUFBQkFRPT02AAA9gIK2")
-	secondOutSignal, err := NewSCTE35(append([]byte{0x0}, secondOutSignalBytes...))
+	// 0x30 Another Out
+	padOpenSignalBytes, _ := base64.StdEncoding.DecodeString("/DBsAAH/7m1eAAKQBQb+sX6o+wBWAlRDVUVJAAAAJ3//AAApMuANQAwOQU1DTiBMMDAxMjM0NTYJCFBPOjEyMzQ1DiRiY2IxZGQ4ZS1kMzIzLTQ1ODktOWQ3OC1hM2QxMzYyYWJiYjYwAQGtc8xr")
+	padOpenSignal, err := NewSCTE35(append([]byte{0x0}, padOpenSignalBytes...))
 	if err != nil {
-		t.Errorf("Error creating SCTE-35 signal: %s", err.Error())
+		t.Fatal("Error creating SCTE-35 signal, return err:", err.Error())
 	}
 
-	closed, err = state.ProcessDescriptor(secondOutSignal.Descriptors()[0])
+	closed, err = state.ProcessDescriptor(padOpenSignal.Descriptors()[0])
 	if err != nil {
 		t.Errorf("ProcessDescriptor returned an error: %s", err.Error())
-	}
-	if len(closed) != 1 {
-		t.Errorf("One event should have been closed (%d were)", len(closed))
-	}
-	if len(state.Open()) != 1 {
-		t.Errorf("There should be one open signals (%d)", len(state.Open()))
-	}
-
-	// 0x37 = event_id: 0 - seg_num: 3 - seg_expected: 3
-	// This will return ErrMissingOut when processed since the previous 0x36 closed the 0x36 this 0x37 belongs to.
-	thirdInSignalBytes, _ := base64.StdEncoding.DecodeString("/DBGAAF0WZJuAP/wBQb+AAAAAAAwAi5DVUVJAAAAAH+/CR9TSUdOQUw6M0dTTmozZ29NbG9BQUFBQUFBQUJCQT09NwMDFkn/Gw==")
-	thirdInSignal, err := NewSCTE35(append([]byte{0x0}, thirdInSignalBytes...))
-	if err != nil {
-		t.Errorf("Error creating SCTE-35 signal: %s", err.Error())
-	}
-
-	closed, err = state.ProcessDescriptor(thirdInSignal.Descriptors()[0])
-	if err != gots.ErrSCTE35MissingOut {
-		t.Error("ProcessDescriptor of out returned unexpected err:", err)
 	}
 	if len(closed) != 0 {
 		t.Errorf("No events should have been closed (%d were)", len(closed))
 	}
-	if len(state.Open()) != 1 {
-		t.Errorf("There should be one open signal (%d)", len(state.Open()))
+	if len(state.Open()) != 2 {
+		t.Errorf("There should be two open signals (%d)", len(state.Open()))
 	}
-	if state.Open()[0].TypeID() != SegDescDistributorPOStart {
-		t.Errorf("Expected segmentation_type_id 0x36 but got %x", state.Open()[0].TypeID())
+
+	// 0x37 = event_id: 0 - seg_num: 3 - seg_expected: 3
+	// This closed the 0x30 and the 0x36
+	thirdInSignalBytes, _ := base64.StdEncoding.DecodeString("/DBGAAF0WZJuAP/wBQb+AAAAAAAwAi5DVUVJAAAAAH+/CR9TSUdOQUw6M0dTTmozZ29NbG9BQUFBQUFBQUJCQT09NwMDFkn/Gw==")
+	thirdInSignal, err := NewSCTE35(append([]byte{0x0}, thirdInSignalBytes...))
+	if err != nil {
+		t.Fatal("Error creating SCTE-35 signal, return err:", err.Error())
 	}
-	if state.Open()[0].EventID() != 1342177266 {
-		t.Errorf("Expected event_id 1342177266 but got %d", state.Open()[0].EventID())
+
+	closed, err = state.ProcessDescriptor(thirdInSignal.Descriptors()[0])
+	if err != nil {
+		t.Error("ProcessDescriptor of out returned unexpected err:", err)
+	}
+	if len(closed) != 2 {
+		t.Errorf("Two events should have been closed (%d were)", len(closed))
+	}
+	if len(state.Open()) != 0 {
+		t.Errorf("There should be no open signal (%d)", len(state.Open()))
 	}
 }
 
@@ -562,7 +513,7 @@ func TestVSS(t *testing.T) {
 	outSignalBytes, _ := base64.StdEncoding.DecodeString("/DB7AAFe1ms7AP/wBQb+AAAAAABlAlJDVUVJAABeT3+XDUMJIUJMQUNLT1VUOlEza2dMYmx4UzlhTmh4S24wY1N0MlE9PQ4eY29tY2FzdDpsaW5lYXI6bGljZW5zZXJvdGF0aW9uQAAAAg9DVUVJAABeT3+XAABBAAC9uy+v")
 	outSignal, err := NewSCTE35(append([]byte{0x0}, outSignalBytes...))
 	if err != nil {
-		t.Errorf("Error creating SCTE-35 signal: %s", err.Error())
+		t.Fatal("Error creating SCTE-35 signal, return err:", err.Error())
 	}
 
 	// 0x40
@@ -608,7 +559,7 @@ func TestVSSSameSignalIdBackToBack(t *testing.T) {
 	outSignalBytes1, _ := base64.StdEncoding.DecodeString(vss_1)
 	outSignal1, err := NewSCTE35(append([]byte{0x0}, outSignalBytes1...))
 	if err != nil {
-		t.Errorf("Error creating SCTE-35 signal: %s", err.Error())
+		t.Fatal("Error creating SCTE-35 signal, return err:", err.Error())
 	}
 
 	// 0x40
@@ -646,7 +597,7 @@ func TestVSSSameSignalIdBackToBack(t *testing.T) {
 	outSignalBytes2, _ := base64.StdEncoding.DecodeString(vss_2)
 	outSignal2, err := NewSCTE35(append([]byte{0x0}, outSignalBytes2...))
 	if err != nil {
-		t.Errorf("Error creating SCTE-35 signal: %s", err.Error())
+		t.Fatal("Error creating SCTE-35 signal, return err:", err.Error())
 	}
 
 	// 0x40
@@ -678,14 +629,14 @@ func printState(s State, header string) {
 	println()
 }
 
-func TestOutInInOutIn36_37_35_37_37(t *testing.T) {
+func TestOutInInOutIn36_37_10_37_37(t *testing.T) {
 	state := NewState()
 
 	// 0x36 - event_id:0 - seg_num: 0 - seg_expected: 0
 	outSignalBytes, _ := base64.StdEncoding.DecodeString("/DBLAAEs/S0UAP/wBQb+AAAAAAA1AjNDVUVJT///9X//AACky4AJH1NJR05BTDoyWURWeCtSKzlWc0FBQUFBQUFBQkFRPT02AAD9DXQ/")
 	outSignal, err := NewSCTE35(append([]byte{0x0}, outSignalBytes...))
 	if err != nil {
-		t.Errorf("Error creating SCTE-35 signal: %s", err.Error())
+		t.Fatal("Error creating SCTE-35 signal, return err:", err.Error())
 	}
 
 	closed, err := state.ProcessDescriptor(outSignal.Descriptors()[0])
@@ -703,7 +654,7 @@ func TestOutInInOutIn36_37_35_37_37(t *testing.T) {
 	firstInSignalBytes, _ := base64.StdEncoding.DecodeString("/DBGAAEtT5LUAP/wBQb+AAAAAAAwAi5DVUVJT///9X+/CR9TSUdOQUw6MllEVngrUis5VnNBQUFBQUFBQUJBZz09NwEDU/ktPg==")
 	firstInSignal, err := NewSCTE35(append([]byte{0x0}, firstInSignalBytes...))
 	if err != nil {
-		t.Errorf("Error creating SCTE-35 signal: %s", err.Error())
+		t.Fatal("Error creating SCTE-35 signal, return err:", err.Error())
 	}
 
 	closed, err = state.ProcessDescriptor(firstInSignal.Descriptors()[0])
@@ -717,11 +668,11 @@ func TestOutInInOutIn36_37_35_37_37(t *testing.T) {
 		t.Errorf("There should be one open signal (%d)", len(state.Open()))
 	}
 
-	// 0x35 closes 36
-	In35SignalBytes, _ := base64.StdEncoding.DecodeString("/DAvAAD5dbEbAP/wBQb+M+6KUwAZAhdDVUVJQAAAPn+fCAgAAAAALecjUzUAALuiqds=")
+	// 0x10 closes 0x36 as per the SCTE-35 2020 spec
+	In35SignalBytes, _ := base64.StdEncoding.DecodeString("/DBFAAAAABeOAP/wBQb+WxdHNQAvAi1DVUVJACSqm3/9ABNP17wMGURJU0MyMjA1NjVfMDAyXzAxXzU3MUEtMDEQAQEeP8NH")
 	In35Signal, err := NewSCTE35(append([]byte{0x0}, In35SignalBytes...))
 	if err != nil {
-		t.Errorf("Error creating SCTE-35 signal: %s", err.Error())
+		t.Fatal("Error creating SCTE-35 signal, return err:", err.Error())
 	}
 
 	closed, err = state.ProcessDescriptor(In35Signal.Descriptors()[0])
@@ -731,46 +682,26 @@ func TestOutInInOutIn36_37_35_37_37(t *testing.T) {
 	if len(closed) != 1 {
 		t.Errorf("1 event should have been closed (%d were)", len(closed))
 	}
-	if len(state.Open()) != 0 {
-		t.Errorf("There should be 0 open signal (%d)", len(state.Open()))
+	if len(state.Open()) != 1 {
+		t.Errorf("There should be 1 signal (%d)", len(state.Open()))
 	}
 
 	// 0x37 - event_id: 0 - seg_num: 2 - seg_expected: 3
 	secondInSignalBytes, _ := base64.StdEncoding.DecodeString("/DBGAAEteMW0AP/wBQb+AAAAAAAwAi5DVUVJT///9X+/CR9TSUdOQUw6MllEVngrUis5VnNBQUFBQUFBQUJBdz09NwID1nPQRg==")
 	secondInSignal, err := NewSCTE35(append([]byte{0x0}, secondInSignalBytes...))
 	if err != nil {
-		t.Errorf("Error creating SCTE-35 signal: %s", err.Error())
+		t.Fatal("Error creating SCTE-35 signal, return err:", err.Error())
 	}
 
 	closed, err = state.ProcessDescriptor(secondInSignal.Descriptors()[0])
-	// ErrSCTE35MissingOut expected as 0x35 closed 0x36
-	if err != gots.ErrSCTE35MissingOut {
+	// ErrSCTE35MissingOut expected as 0x30 closed the 0x36, the 0x37 has nothing to close.
+	if err != nil && err != gots.ErrSCTE35MissingOut {
 		t.Errorf("ProcessDescriptor returned an error: %s", err.Error())
 	}
 	if len(closed) != 0 {
 		t.Errorf("No events should have been closed (%d were)", len(closed))
 	}
-	if len(state.Open()) != 0 {
-		t.Errorf("There should be 0 open signal (%d)", len(state.Open()))
-	}
-
-	// 0x37 = event_id: 0 - seg_num: 3 - seg_expected: 3
-	// This will return ErrMissingOut when processed since the previous 0x36 closed the 0x36 this 0x37 belongs to.
-	thirdInSignalBytes, _ := base64.StdEncoding.DecodeString("/DBGAAEtofiUAP/wBQb+AAAAAAAwAi5DVUVJT///9X+/CR9TSUdOQUw6MllEVngrUis5VnNBQUFBQUFBQUJCQT09NwMDJVJ1Mg==")
-	thirdInSignal, err := NewSCTE35(append([]byte{0x0}, thirdInSignalBytes...))
-	if err != nil {
-		t.Errorf("Error creating SCTE-35 signal: %s", err.Error())
-	}
-
-	closed, err = state.ProcessDescriptor(thirdInSignal.Descriptors()[0])
-	// ErrSCTE35MissingOut expected as 0x35 closed 0x36
-	if err != gots.ErrSCTE35MissingOut {
-		t.Error("ProcessDescriptor of out returned unexpected err:", err)
-	}
-	if len(closed) != 0 {
-		t.Errorf("No events should have been closed (%d were)", len(closed))
-	}
-	if len(state.Open()) != 0 {
-		t.Errorf("There should be 0 open signal (%d)", len(state.Open()))
+	if len(state.Open()) != 1 {
+		t.Errorf("There should have been 1 open signal, but we saw (%d) open signals instead.", len(state.Open()))
 	}
 }
