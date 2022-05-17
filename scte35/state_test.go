@@ -125,18 +125,19 @@ var scteDesc10Signal = "/DBFAAAAABeOAP/wBQb+WxdHNQAvAi1DVUVJACSqm3/9ABNP17wMGURJ
 var scteDesc11Signal = "/DBAAAAAABeOAP/wBQb+bmg4eQAqAihDVUVJACSqm3+9DBlESVNDMjIwNTY1XzAwMl8wMV81NzFBLTA2EQEB/G8f5w=="
 // 0x20 ChapterStart
 var scteDesc20Signal = "/DBAAAAAAtaWAAAABQb/d5cVcgAqAihDVUVJ/////3//AALEr24BFGJyYXZvX0VQMDExMzQ0MTkwMTIyIAEA4BXDFw=="
+var scteDesc20Signal1= "/DA/AAB6tBn0AP/wBQb/+aPMhwApAh1DVUVJYh5C/n+fAQ5FUDAxMjMxOTU3MDk1MCABZAAIQ1VFSQAAAABYSAjC"
 // 0x21 ChapterEnd
 var scteDesc21Signal = "/DBAAAAAAtaWAAAABQb/elu5JQAqAihDVUVJ/////3//AALEr24BFGJyYXZvX0VQMDExMzQ0MTkwMTIyIQEA1Kv4MQ=="
 // 0x22 BreakStart
 var scteDesc22Signal = "/DBAAAAAAtaWAAAABQb/elu5JQAqAihDVUVJ/////3//AAEgZ5IBFGJyYXZvX0VQMDExMzQ0MTkwMTIyIgIERTkzgA=="
 var scteDesc22Signal1  ="/DAsAAAAAAAAAP/wBQb+Uq7jaQAWAhRDVUVJAAABAH//AAGhbPAAACIAAL5jGRA="
-// 0x23 BreakStart
+// 0x23 BreakEnd
 var scteDesc23Signal = "/DBAAAAAAtaWAAAABQb/e3rvuQAqAihDVUVJ/////3//AAEgZ5IBFGJyYXZvX0VQMDExMzQ0MTkwMTIyIwIEzcrAYA=="
 // 0x30 ProviderAdStart
-var scteDesc30Signal = "/DBIAAAAAtaWAAAABQb/elu5JQAyAjBDVUVJ/////3//AAApJfYPHHVybjpuYmN1bmkuY29tOmJyYzo1MjE1NDkxMTkwAgS9D8Yj"
-var scteDesc30Signal1 ="/DBPAAAAAAAAAP/wBQb/xHJKjwA5AAVTQVBTCwIwQ1VFSf////9//wAAKSd/Dxx1cm46bmJjdW5pLmNvbTpicmM6NTM5NjM4MjY2MAYCNMFiCw=="
+var scteDesc30Signal = "/DBPAAAAAAAAAP/wBQb/xHJKjwA5AAVTQVBTCwIwQ1VFSf////9//wAAKSd/Dxx1cm46bmJjdW5pLmNvbTpicmM6NTM5NjM4MjY2MAYCNMFiCw=="
+var scteDesc30Signal1 = "/DA2AAB6tBn0AP/wBQb//bDBCQAgAhRDVUVJYh5C/n+fAQVDMjQ3MDABAQAIQ1VFSQAAAACc3JW8"
 // 0x31 ProviderAdEnd
-var scteDesc31Signal = "/DBIAAAAAtaWAAAABQb/elu5JQAyAjBDVUVJ/////3//AAApJfYPHHVybjpuYmN1bmkuY29tOmJyYzo1MjE1NDkxMTkwAgS9D8Yj"
+var scteDesc31Signal = "/DBPAAAAAAAAAP/wBQb/xJt8QAA5AAVTQVBTCwIwQ1VFSf////9//wAAKSd/Dxx1cm46bmJjdW5pLmNvbTpicmM6NTM5NjM4MjY2MQYCW++KKQ=="
 // 0x34 ProviderPlacementOpportunityStart
 var scteDesc34Signal = "/DBfAAAAAAAA///wBQb/iRp43QBJAhxDVUVJ6tzJ0n//AAEhrJQICAAFH4Lq3MnSNAIDAilDVUVJAAAAAH+/DBpWTU5VAWCXNGVv9BHsmxsOQM8vwoUB+olIUQEAAKn6Lds="
 // 0x35 ProviderPlacementOpportunityEnd
@@ -775,7 +776,7 @@ func Test11ClosingLogic(t *testing.T) {
 		t.Errorf("No events should have been closed (%d were)", len(closed))
 	}
 	if len(state.Open()) != 2 {
-		t.Errorf("There should be two open signals (%d)", len(state.Open()))
+		t.Errorf("There should be two open signals (have %d)", len(state.Open()))
 	}
 
 	// 0x30
@@ -793,7 +794,7 @@ func Test11ClosingLogic(t *testing.T) {
 		t.Errorf("No event should have been closed (%d were)", len(closed))
 	}
 	if len(state.Open()) != 3 {
-		t.Errorf("There should be three open signals (%d)", len(state.Open()))
+		t.Errorf("There should be three open signals (have %d)", len(state.Open()))
 	}
 
 	// 0x11, it should close the open 0x10, 0x20 ,0x30
@@ -888,7 +889,7 @@ func Test11Closing34_36_40_44(t *testing.T) {
 		t.Errorf("No event should have been closed (%d were)", len(closed))
 	}
 	if len(state.Open()) != 2 {
-		t.Errorf("There should be 2 open signals (%d)", len(state.Open()))
+		t.Errorf("There should be 2 open signals (have %d)", len(state.Open()))
 	}
 
 	// 0x40
@@ -906,7 +907,7 @@ func Test11Closing34_36_40_44(t *testing.T) {
 		t.Errorf("No event should have been closed (%d were)", len(closed))
 	}
 	if len(state.Open()) != 3 {
-		t.Errorf("There should be 3 open signals (%d)", len(state.Open()))
+		t.Errorf("There should be 3 open signals (have %d)", len(state.Open()))
 	}
 
 	// 0x44
@@ -924,7 +925,7 @@ func Test11Closing34_36_40_44(t *testing.T) {
 		t.Errorf("No event should have been closed (%d were)", len(closed))
 	}
 	if len(state.Open()) != 4 {
-		t.Errorf("There should be 4 open signals (%d)", len(state.Open()))
+		t.Errorf("There should be 4 open signals (have %d)", len(state.Open()))
 	}
 
 	// 0x11 - it should close the open 0x34, 0x36, 0x40, 0x44
@@ -983,7 +984,7 @@ func Test45ClosingLogic(t *testing.T) {
 		t.Errorf("No event should have been closed (%d were)", len(closed))
 	}
 	if len(state.Open()) != 2 {
-		t.Errorf("There should be 2 open signals (%d)", len(state.Open()))
+		t.Errorf("There should be 2 open signals (have %d)", len(state.Open()))
 	}
 
 	// 0x45 - closes 0x44 and 0x30
@@ -1001,7 +1002,7 @@ func Test45ClosingLogic(t *testing.T) {
 		t.Errorf("2 events should have been closed (%d were)", len(closed))
 	}
 	if len(state.Open()) != 0 {
-		t.Errorf("There should be no open signals (%d)", len(state.Open()))
+		t.Errorf("There should be no open signals (have %d)", len(state.Open()))
 	}
 }
 // Tests closing logic of 0x44
@@ -1041,7 +1042,7 @@ func Test44ClosingLogic(t *testing.T) {
 		t.Errorf("No event should have been closed (%d were)", len(closed))
 	}
 	if len(state.Open()) != 2 {
-		t.Errorf("There should be 2 open signals (%d)", len(state.Open()))
+		t.Errorf("There should be 2 open signals (have %d)", len(state.Open()))
 	}
 
 	// Different 0x44 - closes the earlier 0x44 and 0x30
@@ -1059,7 +1060,7 @@ func Test44ClosingLogic(t *testing.T) {
 		t.Errorf("2 events should have been closed (%d were)", len(closed))
 	}
 	if len(state.Open()) != 1 { // the last 0x44 sent should still be open
-		t.Errorf("There should be 1 open signals (%d)", len(state.Open()))
+		t.Errorf("There should be 1 open signal (have %d)", len(state.Open()))
 	}
 }
 
@@ -1094,13 +1095,13 @@ func Test23ClosingLogic_30_34_36_44(t *testing.T) {
 
 	closed, err = state.ProcessDescriptor(inSignal.Descriptors()[0])
 	if err != nil {
-		t.Errorf("ProcessDescriptor returned an error: %s", err.Error())
+		t.Errorf("ProcessDescriptor returned an error unexpectedly: %s", err.Error())
 	}
 	if len(closed) != 0 {
 		t.Errorf("No event should have been closed (%d were)", len(closed))
 	}
 	if len(state.Open()) != 2 {
-		t.Errorf("There should be 2 open signals (%d)", len(state.Open()))
+		t.Errorf("There should be 2 open signals (have %d)", len(state.Open()))
 	}
 
 	// 0x44
@@ -1112,13 +1113,13 @@ func Test23ClosingLogic_30_34_36_44(t *testing.T) {
 
 	closed, err = state.ProcessDescriptor(inSignal.Descriptors()[0])
 	if err != nil {
-		t.Errorf("ProcessDescriptor returned an error: %s", err.Error())
+		t.Errorf("ProcessDescriptor returned an error unexpectedly: %s", err.Error())
 	}
 	if len(closed) != 0 {
 		t.Errorf("No event should have been closed (%d were)", len(closed))
 	}
 	if len(state.Open()) != 3 {
-		t.Errorf("There should be 3 open signals (%d)", len(state.Open()))
+		t.Errorf("There should be 3 open signals (have %d)", len(state.Open()))
 	}
 
 	// 0x30
@@ -1130,13 +1131,13 @@ func Test23ClosingLogic_30_34_36_44(t *testing.T) {
 
 	closed, err = state.ProcessDescriptor(inSignal.Descriptors()[0])
 	if err != nil {
-		t.Errorf("ProcessDescriptor returned an error: %s", err.Error())
+		t.Errorf("ProcessDescriptor returned an error unexpectedly: %s", err.Error())
 	}
 	if len(closed) != 0 {
 		t.Errorf("No event should have been closed (%d were)", len(closed))
 	}
 	if len(state.Open()) != 4 {
-		t.Errorf("There should be 4 open signals (%d)", len(state.Open()))
+		t.Errorf("There should be 4 open signals (have %d)", len(state.Open()))
 	}
 
 	// 0x23 - This should close 0x30, 0x34, 0x36, 0x44
@@ -1148,13 +1149,13 @@ func Test23ClosingLogic_30_34_36_44(t *testing.T) {
 
 	closed, err = state.ProcessDescriptor(inSignal.Descriptors()[0])
 	if err != nil {
-		t.Errorf("ProcessDescriptor returned an error: %s", err.Error())
+		t.Errorf("ProcessDescriptor returned an error unexpectedly: %s", err.Error())
 	}
 	if len(closed) != 4 {
 		t.Errorf("4 events should have been closed (%d were)", len(closed))
 	}
 	if len(state.Open()) != 0 {
-		t.Errorf("There should be 0 open signals (%d)", len(state.Open()))
+		t.Errorf("There should be 0 open signals (have %d)", len(state.Open()))
 	}
 }
 
@@ -1170,7 +1171,7 @@ func Test23Closing22Logic(t *testing.T){
 
 	closed, err := state.ProcessDescriptor(inSignal.Descriptors()[0])
 	if err != nil {
-		t.Errorf("ProcessDescriptor returned an error: %s", err.Error())
+		t.Errorf("ProcessDescriptor returned an error unexpectedly: %s", err.Error())
 	}
 	if len(closed) != 0 {
 		t.Errorf("No event should have been closed (%d were)", len(closed))
@@ -1188,13 +1189,13 @@ func Test23Closing22Logic(t *testing.T){
 
 	closed, err = state.ProcessDescriptor(inSignal.Descriptors()[0])
 	if err != nil {
-		t.Errorf("ProcessDescriptor returned an error: %s", err.Error())
+		t.Errorf("ProcessDescriptor returned an error unexpectedly: %s", err.Error())
 	}
 	if len(closed) != 1 {
 		t.Errorf("1 event should have been closed (%d were)", len(closed))
 	}
 	if len(state.Open()) != 0 {
-		t.Errorf("There should be 0 open signals (%d)", len(state.Open()))
+		t.Errorf("There should be 0 open signals (have %d)", len(state.Open()))
 	}
 }
 
@@ -1210,7 +1211,7 @@ func Test22ClosingLogic_30_34_36_44_22(t *testing.T){
 
 	closed, err := state.ProcessDescriptor(inSignal.Descriptors()[0])
 	if err != nil {
-		t.Errorf("ProcessDescriptor returned an error: %s", err.Error())
+		t.Errorf("ProcessDescriptor returned an error unexpectedly: %s", err.Error())
 	}
 	if len(closed) != 0 {
 		t.Errorf("No event should have been closed (%d were)", len(closed))
@@ -1228,13 +1229,13 @@ func Test22ClosingLogic_30_34_36_44_22(t *testing.T){
 
 	closed, err = state.ProcessDescriptor(inSignal.Descriptors()[0])
 	if err != nil {
-		t.Errorf("ProcessDescriptor returned an error: %s", err.Error())
+		t.Errorf("ProcessDescriptor returned an error unexpectedly: %s", err.Error())
 	}
 	if len(closed) != 0 {
 		t.Errorf("No event should have been closed (%d were)", len(closed))
 	}
 	if len(state.Open()) != 2 {
-		t.Errorf("There should be 2 open signals (%d)", len(state.Open()))
+		t.Errorf("There should be 2 open signals (have %d)", len(state.Open()))
 	}
 
 	// 0x44
@@ -1246,13 +1247,13 @@ func Test22ClosingLogic_30_34_36_44_22(t *testing.T){
 
 	closed, err = state.ProcessDescriptor(inSignal.Descriptors()[0])
 	if err != nil {
-		t.Errorf("ProcessDescriptor returned an error: %s", err.Error())
+		t.Errorf("ProcessDescriptor returned an error unexpectedly: %s", err.Error())
 	}
 	if len(closed) != 0 {
 		t.Errorf("No event should have been closed (%d were)", len(closed))
 	}
 	if len(state.Open()) != 3 {
-		t.Errorf("There should be 3 open signals (%d)", len(state.Open()))
+		t.Errorf("There should be 3 open signals (have %d)", len(state.Open()))
 	}
 
 	// 0x30
@@ -1264,13 +1265,13 @@ func Test22ClosingLogic_30_34_36_44_22(t *testing.T){
 
 	closed, err = state.ProcessDescriptor(inSignal.Descriptors()[0])
 	if err != nil {
-		t.Errorf("ProcessDescriptor returned an error: %s", err.Error())
+		t.Errorf("ProcessDescriptor returned an error unexpectedly: %s", err.Error())
 	}
 	if len(closed) != 0 {
 		t.Errorf("No event should have been closed (%d were)", len(closed))
 	}
 	if len(state.Open()) != 4 {
-		t.Errorf("There should be 4 open signals (%d)", len(state.Open()))
+		t.Errorf("There should be 4 open signals (have %d)", len(state.Open()))
 	}
 
 	// 0x22 - should close 0x30, 0x34, 0x36, 0x44
@@ -1282,7 +1283,7 @@ func Test22ClosingLogic_30_34_36_44_22(t *testing.T){
 
 	closed, err = state.ProcessDescriptor(inSignal.Descriptors()[0])
 	if err != nil {
-		t.Errorf("ProcessDescriptor returned an error: %s", err.Error())
+		t.Errorf("ProcessDescriptor returned an error unexpectedly: %s", err.Error())
 	}
 	if len(closed) != 4 {
 		t.Errorf("4 events should have been closed (%d were)", len(closed))
@@ -1300,7 +1301,7 @@ func Test22ClosingLogic_30_34_36_44_22(t *testing.T){
 
 	closed, err = state.ProcessDescriptor(inSignal.Descriptors()[0])
 	if err != nil {
-		t.Errorf("ProcessDescriptor returned an error: %s", err.Error())
+		t.Errorf("ProcessDescriptor returned an error unexpectedly: %s", err.Error())
 	}
 	if len(closed) != 1 {
 		t.Errorf("1 event should have been closed (%d were)", len(closed))
@@ -1322,7 +1323,7 @@ func Test31ClosingLogic(t *testing.T){
 
 	closed, err := state.ProcessDescriptor(inSignal.Descriptors()[0])
 	if err != nil {
-		t.Errorf("ProcessDescriptor returned an error: %s", err.Error())
+		t.Errorf("ProcessDescriptor returned an error unexpectedly: %s", err.Error())
 	}
 	if len(closed) != 0 {
 		t.Errorf("No event should have been closed (%d were)", len(closed))
@@ -1340,7 +1341,7 @@ func Test31ClosingLogic(t *testing.T){
 
 	closed, err = state.ProcessDescriptor(inSignal.Descriptors()[0])
 	if err != nil {
-		t.Errorf("ProcessDescriptor returned an error: %s", err.Error())
+		t.Errorf("ProcessDescriptor returned an error unexpectedly: %s", err.Error())
 	}
 	if len(closed) != 1 {
 		t.Errorf("No event should have been closed (%d were)", len(closed))
@@ -1350,7 +1351,7 @@ func Test31ClosingLogic(t *testing.T){
 	}
 }
 
-func Test30ClosingLogic(t *testing.T){
+func Test30Closing30Logic(t *testing.T){
 	state := NewState()
 
 	// 0x30
@@ -1362,7 +1363,7 @@ func Test30ClosingLogic(t *testing.T){
 
 	closed, err := state.ProcessDescriptor(inSignal.Descriptors()[0])
 	if err != nil {
-		t.Errorf("ProcessDescriptor returned an error: %s", err.Error())
+		t.Errorf("ProcessDescriptor returned an error unexpectedly: %s", err.Error())
 	}
 	if len(closed) != 0 {
 		t.Errorf("No event should have been closed (%d were)", len(closed))
@@ -1380,12 +1381,222 @@ func Test30ClosingLogic(t *testing.T){
 
 	closed, err = state.ProcessDescriptor(inSignal.Descriptors()[0])
 	if err != nil {
-		t.Errorf("ProcessDescriptor returned an error: %s", err.Error())
+		t.Errorf("ProcessDescriptor returned an error unexpectedly: %s", err.Error())
 	}
 	if len(closed) != 1 {
 		t.Errorf("1 event should have been closed (%d were)", len(closed))
 	}
 	if len(state.Open()) != 1 {
 		t.Errorf("There should be 1 open signal (%d)", len(state.Open()))
+	}
+}
+
+func Test21ClosingLogic_30_34_36(t *testing.T){
+	state := NewState()
+
+	// 0x34
+	scteDesc34SignalBytes , _ := base64.StdEncoding.DecodeString(scteDesc34Signal)
+	inSignal, err := NewSCTE35(append([]byte{0x0}, scteDesc34SignalBytes...))
+	if err != nil {
+		t.Fatal("Error creating SCTE-35 signal, return err:", err.Error())
+	}
+
+	closed, err := state.ProcessDescriptor(inSignal.Descriptors()[0])
+	if err != nil {
+		t.Errorf("ProcessDescriptor returned an error unexpectedly: %s", err.Error())
+	}
+	if len(closed) != 0 {
+		t.Errorf("No event should have been closed (%d were)", len(closed))
+	}
+	if len(state.Open()) != 1 {
+		t.Errorf("There should be 1 open signal (have %d)", len(state.Open()))
+	}
+
+	// 0x36
+	scteDesc36SignalBytes , _ := base64.StdEncoding.DecodeString(scteDesc36Signal)
+	inSignal, err = NewSCTE35(append([]byte{0x0}, scteDesc36SignalBytes...))
+	if err != nil {
+		t.Fatal("Error creating SCTE-35 signal, return err:", err.Error())
+	}
+
+	closed, err = state.ProcessDescriptor(inSignal.Descriptors()[0])
+	if err != nil {
+		t.Errorf("ProcessDescriptor returned an error unexpectedly: %s", err.Error())
+	}
+	if len(closed) != 0 {
+		t.Errorf("No event should have been closed (%d were)", len(closed))
+	}
+	if len(state.Open()) != 2 {
+		t.Errorf("There should be 2 open signals (have %d)", len(state.Open()))
+	}
+
+	// 0x30
+	scteDesc30SignalBytes , _ := base64.StdEncoding.DecodeString(scteDesc30Signal)
+	inSignal, err = NewSCTE35(append([]byte{0x0}, scteDesc30SignalBytes...))
+	if err != nil {
+		t.Fatal("Error creating SCTE-35 signal, return err:", err.Error())
+	}
+
+	closed, err = state.ProcessDescriptor(inSignal.Descriptors()[0])
+	if err != nil {
+		t.Errorf("ProcessDescriptor returned an error unexpectedly: %s", err.Error())
+	}
+	if len(closed) != 0 {
+		t.Errorf("No event should have been closed (%d were)", len(closed))
+	}
+	if len(state.Open()) != 3 {
+		t.Errorf("There should be 3 open signals (have %d)", len(state.Open()))
+	}
+
+	// 0x21 - This should close 0x30, 0x34, 0x36
+	scteDesc21SignalBytes , _ := base64.StdEncoding.DecodeString(scteDesc21Signal)
+	inSignal, err = NewSCTE35(append([]byte{0x0}, scteDesc21SignalBytes...))
+	if err != nil {
+		t.Fatal("Error creating SCTE-35 signal, return err:", err.Error())
+	}
+
+	closed, err = state.ProcessDescriptor(inSignal.Descriptors()[0])
+	if err != nil {
+		t.Errorf("ProcessDescriptor returned an error unexpectedly: %s", err.Error())
+	}
+	if len(closed) != 3 {
+		t.Errorf("3 events should have been closed (%d were)", len(closed))
+	}
+	if len(state.Open()) != 0 {
+		t.Errorf("There should be 0 open signals (have %d)", len(state.Open()))
+	}
+}
+
+func Test21Closing20Logic(t *testing.T){
+	state := NewState()
+
+	// 0x20
+	scteDesc20SignalBytes , _ := base64.StdEncoding.DecodeString(scteDesc20Signal)
+	inSignal, err := NewSCTE35(append([]byte{0x0}, scteDesc20SignalBytes...))
+	if err != nil {
+		t.Fatal("Error creating SCTE-35 signal, return err:", err.Error())
+	}
+
+	closed, err := state.ProcessDescriptor(inSignal.Descriptors()[0])
+	if err != nil {
+		t.Errorf("ProcessDescriptor returned an error unexpectedly: %s", err.Error())
+	}
+	if len(closed) != 0 {
+		t.Errorf("No event should have been closed (%d were)", len(closed))
+	}
+	if len(state.Open()) != 1 {
+		t.Errorf("There should be 1 open signal (have %d)", len(state.Open()))
+	}
+
+	// 0x21 - This should close 0x20
+	scteDesc21SignalBytes , _ := base64.StdEncoding.DecodeString(scteDesc21Signal)
+	inSignal, err = NewSCTE35(append([]byte{0x0}, scteDesc21SignalBytes...))
+	if err != nil {
+		t.Fatal("Error creating SCTE-35 signal, return err:", err.Error())
+	}
+
+	closed, err = state.ProcessDescriptor(inSignal.Descriptors()[0])
+	if err != nil {
+		t.Errorf("ProcessDescriptor returned an error unexpectedly: %s", err.Error())
+	}
+	if len(closed) != 1 {
+		t.Errorf("1 event should have been closed (%d were)", len(closed))
+	}
+	if len(state.Open()) != 0 {
+		t.Errorf("There should be 0 open signals (have %d)", len(state.Open()))
+	}
+}
+
+func Test20ClosingLogic_20_30_34_36(t *testing.T){
+	state := NewState()
+
+	// 0x36
+	scteDesc36SignalBytes , _ := base64.StdEncoding.DecodeString(scteDesc36Signal)
+	inSignal, err := NewSCTE35(append([]byte{0x0}, scteDesc36SignalBytes...))
+	if err != nil {
+		t.Fatal("Error creating SCTE-35 signal, return err:", err.Error())
+	}
+
+	closed, err := state.ProcessDescriptor(inSignal.Descriptors()[0])
+	if err != nil {
+		t.Errorf("ProcessDescriptor returned an error unexpectedly: %s", err.Error())
+	}
+	if len(closed) != 0 {
+		t.Errorf("No event should have been closed (%d were)", len(closed))
+	}
+	if len(state.Open()) != 1 {
+		t.Errorf("There should be 1 open signal (have %d)", len(state.Open()))
+	}
+
+	// 0x34
+	scteDesc34SignalBytes , _ := base64.StdEncoding.DecodeString(scteDesc34Signal)
+	inSignal, err = NewSCTE35(append([]byte{0x0}, scteDesc34SignalBytes...))
+	if err != nil {
+		t.Fatal("Error creating SCTE-35 signal, return err:", err.Error())
+	}
+
+	closed, err = state.ProcessDescriptor(inSignal.Descriptors()[0])
+	if err != nil {
+		t.Errorf("ProcessDescriptor returned an error unexpectedly: %s", err.Error())
+	}
+	if len(closed) != 0 {
+		t.Errorf("No event should have been closed (%d were)", len(closed))
+	}
+	if len(state.Open()) != 2 {
+		t.Errorf("There should be 2 open signals (have %d)", len(state.Open()))
+	}
+
+	// 0x30
+	scteDesc30SignalBytes , _ := base64.StdEncoding.DecodeString(scteDesc30Signal)
+	inSignal, err = NewSCTE35(append([]byte{0x0}, scteDesc30SignalBytes...))
+	if err != nil {
+		t.Fatal("Error creating SCTE-35 signal, return err:", err.Error())
+	}
+
+	closed, err = state.ProcessDescriptor(inSignal.Descriptors()[0])
+	if err != nil {
+		t.Errorf("ProcessDescriptor returned an error unexpectedly: %s", err.Error())
+	}
+	if len(closed) != 0 {
+		t.Errorf("No event should have been closed (%d were)", len(closed))
+	}
+	if len(state.Open()) != 3 {
+		t.Errorf("There should be 3 open signals (have %d)", len(state.Open()))
+	}
+
+	// 0x20 - should close 0x30, 0x34, 0x36
+	scteDesc20SignalBytes , _ := base64.StdEncoding.DecodeString(scteDesc20Signal)
+	inSignal, err = NewSCTE35(append([]byte{0x0}, scteDesc20SignalBytes...))
+	if err != nil {
+		t.Fatal("Error creating SCTE-35 signal, return err:", err.Error())
+	}
+
+	closed, err = state.ProcessDescriptor(inSignal.Descriptors()[0])
+	if err != nil {
+		t.Errorf("ProcessDescriptor returned an error unexpectedly: %s", err.Error())
+	}
+	if len(closed) != 3 {
+		t.Errorf("3 events should have been closed (%d were)", len(closed))
+	}
+	if len(state.Open()) != 1 {
+		t.Errorf("There should be 1 open signal (have %d)", len(state.Open()))
+	}
+
+	// New 0x20 - should close the last 0x20
+	scteDesc20SignalBytes1 , _ := base64.StdEncoding.DecodeString(scteDesc20Signal1)
+	inSignal, err = NewSCTE35(append([]byte{0x0}, scteDesc20SignalBytes1...))
+	if err != nil {
+		t.Fatal("Error creating SCTE-35 signal, return err:", err.Error())
+	}
+
+	closed, err = state.ProcessDescriptor(inSignal.Descriptors()[0])
+	if err != nil {
+		t.Errorf("ProcessDescriptor returned an error unexpectedly: %s", err.Error())
+	}
+	if len(closed) != 1 {
+		t.Errorf("1 event should have been closed (%d were)", len(closed))
+	}
+	if len(state.Open()) != 1 {
+		t.Errorf("There should be 1 open signal (have %d)", len(state.Open()))
 	}
 }
