@@ -122,6 +122,7 @@ func (s *state) ProcessDescriptor(desc SegmentationDescriptor) ([]SegmentationDe
 	}
 	// remove all closed descriptors
 	s.open = s.open[0 : len(s.open)-len(closed)]
+
 	// validation logic
 	switch desc.TypeID() {
 	// breakaway handling

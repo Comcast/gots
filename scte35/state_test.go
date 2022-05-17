@@ -923,7 +923,7 @@ func Test11Closing34_36_40_44(t *testing.T) {
 	if len(state.Open()) != 4 {
 		t.Errorf("There should be 4 open signals (%d)", len(state.Open()))
 	}
-	
+
 	// 0x11 - it should close the open 0x34, 0x36, 0x40, 0x44
 	scteDesc11SignalBytes, _ := base64.StdEncoding.DecodeString(scteDesc11Signal)
 	inSignal, err = NewSCTE35(append([]byte{0x0}, scteDesc11SignalBytes...))
