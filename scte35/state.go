@@ -122,7 +122,6 @@ func (s *state) ProcessDescriptor(desc SegmentationDescriptor) ([]SegmentationDe
 	}
 	// remove all closed descriptors
 	s.open = s.open[0 : len(s.open)-len(closed)]
-
 	// validation logic
 	switch desc.TypeID() {
 	// breakaway handling
@@ -144,16 +143,17 @@ func (s *state) ProcessDescriptor(desc SegmentationDescriptor) ([]SegmentationDe
 	// out signals
 	case SegDescProgramStart,
 		SegDescChapterStart,
+		SegDescBreakStart,
 		SegDescProviderAdvertisementStart,
 		SegDescDistributorAdvertisementStart,
 		SegDescProviderPOStart,
 		SegDescDistributorPOStart,
+		SegDescProviderAdBlockStart,
 		SegDescUnscheduledEventStart,
 		SegDescNetworkStart,
 		SegDescProgramOverlapStart,
 		SegDescProgramStartInProgress:
 		s.open = append(s.open, desc)
-
 	// in signals
 	// SegDescProgramEnd treated individually since it is expected to normally
 	// close program resumption AND program start
@@ -161,13 +161,6 @@ func (s *state) ProcessDescriptor(desc SegmentationDescriptor) ([]SegmentationDe
 		if len(closed) == 0 {
 			err = gots.ErrSCTE35MissingOut
 			break
-		}
-		for _, d := range closed {
-			if d.TypeID() != SegDescProgramStart &&
-				d.TypeID() != SegDescProgramResumption {
-				err = gots.ErrSCTE35MissingOut
-				break
-			}
 		}
 	case SegDescChapterEnd,
 		SegDescProviderAdvertisementEnd,
