@@ -119,6 +119,11 @@ var ppoEndSubsegments = []byte{
 	0x72, 0x50, 0x4f, 0x53, 0x74, 0x61, 0x72, 0x74, 0x35, 0x00, 0x00, 0xfa, 0x0b, 0x30, 0xf0,
 }
 
+// 0x10
+var programStartSignal = "/DBFAAAAABeOAP/wBQb+WxdHNQAvAi1DVUVJACSqm3/9ABNP17wMGURJU0MyMjA1NjVfMDAyXzAxXzU3MUEtMDEQAQEeP8NH"
+// 0x11
+var programEndSignal = "/DBAAAAAABeOAP/wBQb+bmg4eQAqAihDVUVJACSqm3+9DBlESVNDMjIwNTY1XzAwMl8wMV81NzFBLTA2EQEB/G8f5w=="
+
 func TestOutIn(t *testing.T) {
 	st := NewState()
 	open, e := NewSCTE35(poOpen1)
@@ -703,5 +708,46 @@ func TestOutInInOutIn36_37_10_37_37(t *testing.T) {
 	}
 	if len(state.Open()) != 1 {
 		t.Errorf("There should have been 1 open signal, but we saw (%d) open signals instead.", len(state.Open()))
+	}
+}
+
+// Tests for checking SCTE35 2020 support
+func Test0x11closes0x10(t *testing.T) {
+	state := NewState()
+
+	// 0x10
+	programStartSignalBytes, _ := base64.StdEncoding.DecodeString(programStartSignal)
+	outSignal, err := NewSCTE35(append([]byte{0x0}, programStartSignalBytes...))
+	if err != nil {
+		t.Errorf("Error creating SCTE-35 signal: %s", err.Error())
+	}
+
+	closed, err := state.ProcessDescriptor(outSignal.Descriptors()[0])
+	if err != nil {
+		t.Errorf("ProcessDescriptor returned an error: %s", err.Error())
+	}
+	if len(closed) != 0 {
+		t.Errorf("No events should have been closed (%d were)", len(closed))
+	}
+	if len(state.Open()) != 1 {
+		t.Errorf("There should be one open signal (%d)", len(state.Open()))
+	}
+
+	// 0x11, it should close the open 0x10
+	programCloseSignalBytes, _ := base64.StdEncoding.DecodeString(programEndSignal)
+	inSignal, err := NewSCTE35(append([]byte{0x0}, programCloseSignalBytes...))
+	if err != nil {
+		t.Errorf("Error creating SCTE-35 signal: %s", err.Error())
+	}
+
+	closed, err = state.ProcessDescriptor(inSignal.Descriptors()[0])
+	if err != nil {
+		t.Errorf("ProcessDescriptor returned an error: %s", err.Error())
+	}
+	if len(closed) != 1 {
+		t.Errorf("One event should have been closed (%d were)", len(closed))
+	}
+	if len(state.Open()) != 0 {
+		t.Errorf("There should be no open signal (%d)", len(state.Open()))
 	}
 }
