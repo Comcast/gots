@@ -903,7 +903,7 @@ func Test11Closing34_36_40_44(t *testing.T) {
 		t.Errorf("No events should have been closed (%d were)", len(closed))
 	}
 	if len(state.Open()) != 3 {
-		t.Errorf("There should be 3 open signals (%d)", len(state.Open()))
+		t.Errorf("There should be 3 open signals (have %d)", len(state.Open()))
 	}
 
 	// 0x44
