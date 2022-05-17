@@ -134,6 +134,7 @@ var scteDesc22Signal1  ="/DAsAAAAAAAAAP/wBQb+Uq7jaQAWAhRDVUVJAAABAH//AAGhbPAAACI
 var scteDesc23Signal = "/DBAAAAAAtaWAAAABQb/e3rvuQAqAihDVUVJ/////3//AAEgZ5IBFGJyYXZvX0VQMDExMzQ0MTkwMTIyIwIEzcrAYA=="
 // 0x30 ProviderAdStart
 var scteDesc30Signal = "/DBIAAAAAtaWAAAABQb/elu5JQAyAjBDVUVJ/////3//AAApJfYPHHVybjpuYmN1bmkuY29tOmJyYzo1MjE1NDkxMTkwAgS9D8Yj"
+var scteDesc30Signal1 ="/DBPAAAAAAAAAP/wBQb/xHJKjwA5AAVTQVBTCwIwQ1VFSf////9//wAAKSd/Dxx1cm46bmJjdW5pLmNvbTpicmM6NTM5NjM4MjY2MAYCNMFiCw=="
 // 0x31 ProviderAdEnd
 var scteDesc31Signal = "/DBIAAAAAtaWAAAABQb/elu5JQAyAjBDVUVJ/////3//AAApJfYPHHVybjpuYmN1bmkuY29tOmJyYzo1MjE1NDkxMTkwAgS9D8Yj"
 // 0x34 ProviderPlacementOpportunityStart
@@ -1293,6 +1294,86 @@ func Test22ClosingLogic_30_34_36_44_22(t *testing.T){
 	// New 0x22 - should close the last 0x22
 	scteDesc22SignalBytes1 , _ := base64.StdEncoding.DecodeString(scteDesc22Signal1)
 	inSignal, err = NewSCTE35(append([]byte{0x0}, scteDesc22SignalBytes1...))
+	if err != nil {
+		t.Fatal("Error creating SCTE-35 signal, return err:", err.Error())
+	}
+
+	closed, err = state.ProcessDescriptor(inSignal.Descriptors()[0])
+	if err != nil {
+		t.Errorf("ProcessDescriptor returned an error: %s", err.Error())
+	}
+	if len(closed) != 1 {
+		t.Errorf("1 event should have been closed (%d were)", len(closed))
+	}
+	if len(state.Open()) != 1 {
+		t.Errorf("There should be 1 open signal (%d)", len(state.Open()))
+	}
+}
+
+func Test31ClosingLogic(t *testing.T){
+	state := NewState()
+
+	// 0x30
+	scteDesc30SignalBytes , _ := base64.StdEncoding.DecodeString(scteDesc30Signal)
+	inSignal, err := NewSCTE35(append([]byte{0x0}, scteDesc30SignalBytes...))
+	if err != nil {
+		t.Fatal("Error creating SCTE-35 signal, return err:", err.Error())
+	}
+
+	closed, err := state.ProcessDescriptor(inSignal.Descriptors()[0])
+	if err != nil {
+		t.Errorf("ProcessDescriptor returned an error: %s", err.Error())
+	}
+	if len(closed) != 0 {
+		t.Errorf("No event should have been closed (%d were)", len(closed))
+	}
+	if len(state.Open()) != 1 {
+		t.Errorf("There should be 1 open signal (%d)", len(state.Open()))
+	}
+
+	// 0x31
+	scteDesc31SignalBytes , _ := base64.StdEncoding.DecodeString(scteDesc31Signal)
+	inSignal, err = NewSCTE35(append([]byte{0x0}, scteDesc31SignalBytes...))
+	if err != nil {
+		t.Fatal("Error creating SCTE-35 signal, return err:", err.Error())
+	}
+
+	closed, err = state.ProcessDescriptor(inSignal.Descriptors()[0])
+	if err != nil {
+		t.Errorf("ProcessDescriptor returned an error: %s", err.Error())
+	}
+	if len(closed) != 1 {
+		t.Errorf("No event should have been closed (%d were)", len(closed))
+	}
+	if len(state.Open()) != 0 {
+		t.Errorf("There should be 1 open signal (%d)", len(state.Open()))
+	}
+}
+
+func Test30ClosingLogic(t *testing.T){
+	state := NewState()
+
+	// 0x30
+	scteDesc30SignalBytes , _ := base64.StdEncoding.DecodeString(scteDesc30Signal)
+	inSignal, err := NewSCTE35(append([]byte{0x0}, scteDesc30SignalBytes...))
+	if err != nil {
+		t.Fatal("Error creating SCTE-35 signal, return err:", err.Error())
+	}
+
+	closed, err := state.ProcessDescriptor(inSignal.Descriptors()[0])
+	if err != nil {
+		t.Errorf("ProcessDescriptor returned an error: %s", err.Error())
+	}
+	if len(closed) != 0 {
+		t.Errorf("No event should have been closed (%d were)", len(closed))
+	}
+	if len(state.Open()) != 1 {
+		t.Errorf("There should be 1 open signal (%d)", len(state.Open()))
+	}
+
+	// 0x30 - new one, will close the old 0x30
+	scteDesc30SignalBytes1 , _ := base64.StdEncoding.DecodeString(scteDesc30Signal1)
+	inSignal, err = NewSCTE35(append([]byte{0x0}, scteDesc30SignalBytes1...))
 	if err != nil {
 		t.Fatal("Error creating SCTE-35 signal, return err:", err.Error())
 	}
