@@ -864,7 +864,7 @@ func Test11Closing34_36_40_44(t *testing.T) {
 		t.Errorf("ProcessDescriptor returned an error unexpectedly: %s", err.Error())
 	}
 	if len(closed) != 0 {
-		t.Errorf("No event should have been closed (%d were)", len(closed))
+		t.Errorf("No events should have been closed (%d were)", len(closed))
 	}
 	if len(state.Open()) != 1 {
 		t.Errorf("There should be 1 open signal (have %d)", len(state.Open()))
@@ -882,7 +882,7 @@ func Test11Closing34_36_40_44(t *testing.T) {
 		t.Errorf("ProcessDescriptor returned an error unexpectedly: %s", err.Error())
 	}
 	if len(closed) != 0 {
-		t.Errorf("No event should have been closed (%d were)", len(closed))
+		t.Errorf("No events should have been closed (%d were)", len(closed))
 	}
 	if len(state.Open()) != 2 {
 		t.Errorf("There should be 2 open signals (have %d)", len(state.Open()))
@@ -900,7 +900,7 @@ func Test11Closing34_36_40_44(t *testing.T) {
 		t.Errorf("ProcessDescriptor returned an error unexpectedly: %s", err.Error())
 	}
 	if len(closed) != 0 {
-		t.Errorf("No event should have been closed (%d were)", len(closed))
+		t.Errorf("No events should have been closed (%d were)", len(closed))
 	}
 	if len(state.Open()) != 3 {
 		t.Errorf("There should be 3 open signals (%d)", len(state.Open()))
@@ -918,7 +918,7 @@ func Test11Closing34_36_40_44(t *testing.T) {
 		t.Errorf("ProcessDescriptor returned an error unexpectedly: %s", err.Error())
 	}
 	if len(closed) != 0 {
-		t.Errorf("No event should have been closed (%d were)", len(closed))
+		t.Errorf("No events should have been closed (%d were)", len(closed))
 	}
 	if len(state.Open()) != 4 {
 		t.Errorf("There should be 4 open signals (have %d)", len(state.Open()))
