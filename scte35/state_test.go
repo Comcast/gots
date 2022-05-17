@@ -259,7 +259,7 @@ func TestOutOutIn(t *testing.T) {
 		t.Error("ppoStartSignal unexpectedly did not close the first signal")
 	}
 	if len(st.Open()) != 1 {
-		t.Error("state has unexpected number of signals open")
+		t.Error("There should have been 1 open signal, instead num(open):", len(st.Open()))
 	}
 	// now pass through the close signal and check
 	// 0x35 - close the 0x34
@@ -278,7 +278,7 @@ func TestOutOutIn(t *testing.T) {
 		t.Error("First desc unexpectedly did not close inner out")
 	}
 	if len(st.Open()) != 0 {
-		t.Error("Unexpected number of open descriptors found")
+		t.Error("There should have been 0 open signals, instead num(open):", len(st.Open()))
 	}
 }
 
@@ -409,7 +409,6 @@ func TestSubsegments(t *testing.T) {
 }
 
 // Test the logic for when a closing IN signal occurs after another OUT signal.
-// 0x36 -> 0x37 (1/3) -> 0x37 (2/3) -> 0x36 -> 0x37 (3/3) // REMOVEß
 // 0x36 -> 0x37 (1/3) -> 0x37 (2/3) -> 0x30 -> 0x37 (3/3)
 // End state should be just 0x30.
 func TestOutInInOutIn(t *testing.T) {
@@ -500,7 +499,7 @@ func TestOutInInOutIn(t *testing.T) {
 		t.Error("ProcessDescriptor of out returned unexpected err:", err)
 	}
 	if len(closed) != 2 {
-		t.Errorf("One event should have been closed (%d were)", len(closed))
+		t.Errorf("Two events should have been closed (%d were)", len(closed))
 	}
 	if len(state.Open()) != 0 {
 		t.Errorf("There should be no open signal (%d)", len(state.Open()))
