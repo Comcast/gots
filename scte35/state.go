@@ -61,7 +61,6 @@ func (s *state) Open() []SegmentationDescriptor {
 
 func (s *state) ProcessDescriptor(desc SegmentationDescriptor) ([]SegmentationDescriptor, error) {
 	var err error
-
 	var closed []SegmentationDescriptor
 	// check if desc has a pts because we can't handle if it doesn't
 	if !desc.SCTE35().HasPTS() {
