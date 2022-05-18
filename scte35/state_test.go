@@ -972,7 +972,7 @@ func Test45ClosingLogic(t *testing.T) {
 		t.Errorf("No events should have been closed (%d were)", len(closed))
 	}
 	if len(state.Open()) != 1 {
-		t.Errorf("There should be 1 open signal (%d)", len(state.Open()))
+		t.Errorf("There should be 1 open signal (have %d)", len(state.Open()))
 	}
 
 	// 0x30
@@ -1030,7 +1030,7 @@ func Test44ClosingLogic(t *testing.T) {
 		t.Errorf("No events should have been closed (%d were)", len(closed))
 	}
 	if len(state.Open()) != 1 {
-		t.Errorf("There should be 1 open signal (%d)", len(state.Open()))
+		t.Errorf("There should be 1 open signal (have %d)", len(state.Open()))
 	}
 
 	// 0x30
@@ -1089,7 +1089,7 @@ func Test23ClosingLogic_30_34_36_44(t *testing.T) {
 		t.Errorf("No events should have been closed (%d were)", len(closed))
 	}
 	if len(state.Open()) != 1 {
-		t.Errorf("There should be 1 open signal (%d)", len(state.Open()))
+		t.Errorf("There should be 1 open signal (have %d)", len(state.Open()))
 	}
 
 	// 0x36
@@ -1183,7 +1183,7 @@ func Test23Closing22Logic(t *testing.T){
 		t.Errorf("No events should have been closed (%d were)", len(closed))
 	}
 	if len(state.Open()) != 1 {
-		t.Errorf("There should be 1 open signal (%d)", len(state.Open()))
+		t.Errorf("There should be 1 open signal (have %d)", len(state.Open()))
 	}
 
 	// 0x23 - This should close 0x22
@@ -1223,7 +1223,7 @@ func Test22ClosingLogic_30_34_36_44_22(t *testing.T){
 		t.Errorf("No events should have been closed (%d were)", len(closed))
 	}
 	if len(state.Open()) != 1 {
-		t.Errorf("There should be 1 open signal (%d)", len(state.Open()))
+		t.Errorf("There should be 1 open signal (have %d)", len(state.Open()))
 	}
 
 	// 0x34
@@ -1295,7 +1295,7 @@ func Test22ClosingLogic_30_34_36_44_22(t *testing.T){
 		t.Errorf("4 events should have been closed (%d were)", len(closed))
 	}
 	if len(state.Open()) != 1 {
-		t.Errorf("There should be 1 open signal (%d)", len(state.Open()))
+		t.Errorf("There should be 1 open signal (have %d)", len(state.Open()))
 	}
 
 	// New 0x22 - should close the last 0x22
@@ -1313,7 +1313,7 @@ func Test22ClosingLogic_30_34_36_44_22(t *testing.T){
 		t.Errorf("1 event should have been closed (%d were)", len(closed))
 	}
 	if len(state.Open()) != 1 {
-		t.Errorf("There should be 1 open signal (%d)", len(state.Open()))
+		t.Errorf("There should be 1 open signal (have %d)", len(state.Open()))
 	}
 }
 
@@ -1335,7 +1335,7 @@ func Test31ClosingLogic(t *testing.T){
 		t.Errorf("No events should have been closed (%d were)", len(closed))
 	}
 	if len(state.Open()) != 1 {
-		t.Errorf("There should be 1 open signal (%d)", len(state.Open()))
+		t.Errorf("There should be 1 open signal (have %d)", len(state.Open()))
 	}
 
 	// 0x31
@@ -1353,7 +1353,7 @@ func Test31ClosingLogic(t *testing.T){
 		t.Errorf("No events should have been closed (%d were)", len(closed))
 	}
 	if len(state.Open()) != 0 {
-		t.Errorf("There should be 1 open signal (%d)", len(state.Open()))
+		t.Errorf("There should be 0 open signals (have %d)", len(state.Open()))
 	}
 }
 
@@ -1375,7 +1375,7 @@ func Test30Closing30Logic(t *testing.T){
 		t.Errorf("No events should have been closed (%d were)", len(closed))
 	}
 	if len(state.Open()) != 1 {
-		t.Errorf("There should be 1 open signal (%d)", len(state.Open()))
+		t.Errorf("There should be 1 open signal (have %d)", len(state.Open()))
 	}
 
 	// 0x30 - new one, will close the old 0x30
@@ -1393,7 +1393,7 @@ func Test30Closing30Logic(t *testing.T){
 		t.Errorf("1 event should have been closed (%d were)", len(closed))
 	}
 	if len(state.Open()) != 1 {
-		t.Errorf("There should be 1 open signal (%d)", len(state.Open()))
+		t.Errorf("There should be 1 open signal (have %d)", len(state.Open()))
 	}
 }
 
