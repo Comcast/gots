@@ -57,6 +57,7 @@ const (
 	AUDIO_CLEAN_EFFECTS int = 1   // 0000 0001 (0x01)
 	AUDIO_DESCRIPTION   int = 3   // 0000 0011 (0x03)
 	AUDIO_PRIMARY       int = 128 // 1000 0000 (0x80)
+	AUDIO_NATIVE        int = 129 // 1000 0001 (0x81)
 )
 
 // Descriptor tag extension
