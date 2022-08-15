@@ -146,10 +146,10 @@ func (ebp *baseEbp) SetIsEmpty(value bool) {
 // but Stream Sync and SCTE-35 were the only two ever to get implemented. MK was the only Transcoder to implement SCTE-35 within the
 // Grouping ID section and we never leveraged that data on any downstream devices.
 func (ebp *baseEbp) StreamSyncSignal() uint8 {
-	// The first byte is Grouping ID, the second byte is the sync signal
-	if len(ebp.Grouping) == 2 && ebp.Grouping[0] == 0x80 {
-		return ebp.Grouping[1]
+	for _, groupID := range ebp.Grouping {
+		if groupID == StreamSynchronized || groupID == StreamNotSynchronized {
+			return groupID
+		}
 	}
-
 	return InvalidStreamSyncSignal
 }
