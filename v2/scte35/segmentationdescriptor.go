@@ -29,7 +29,7 @@ import (
 	"encoding/binary"
 	"strings"
 
-	"github.com/Comcast/gots/v2/"
+	"github.com/Comcast/gots/v2"
 )
 
 // upidSt is the struct used for creating a Multiple UPID (MID)
@@ -147,26 +147,36 @@ var segCloseRules map[SegDescType]map[SegDescType]segCloseType
 // initialize the SegCloseRules map
 func init() {
 	segCloseRules = map[SegDescType]map[SegDescType]segCloseType{
-		0x10: {0x10: segCloseNoBreakaway, 0x14: segCloseNormal, 0x17: segCloseNoBreakaway, 0x19: segCloseNoBreakaway, 0x20: segCloseNormal, 0x30: segCloseNormal, 0x32: segCloseNormal, 0x34: segCloseNormal, 0x36: segCloseNormal},
-		0x11: {0x10: segCloseEventID, 0x14: segCloseEventID, 0x17: segCloseEventID, 0x19: segCloseEventID, 0x20: segCloseNormal, 0x30: segCloseNormal, 0x32: segCloseNormal, 0x34: segCloseNormal, 0x36: segCloseNormal},
+		0x10: {0x10: segCloseNoBreakaway, 0x14: segCloseNormal, 0x17: segCloseNoBreakaway, 0x19: segCloseNoBreakaway, 0x20: segCloseNormal, 0x22: segCloseNormal, 0x24: segCloseNormal, 0x26: segCloseNormal, 0x30: segCloseNormal, 0x34: segCloseNormal, 0x36: segCloseNormal, 0x3C: segCloseNormal, 0x40: segCloseNormal, 0x42: segCloseNormal, 0x44: segCloseNormal},
+		0x11: {0x10: segCloseEventID, 0x14: segCloseEventID, 0x17: segCloseEventID, 0x19: segCloseEventID, 0x20: segCloseNormal, 0x22: segCloseNormal, 0x24: segCloseNormal, 0x26: segCloseNormal, 0x30: segCloseNormal, 0x34: segCloseNormal, 0x36: segCloseNormal, 0x3C: segCloseNormal, 0x40: segCloseNormal, 0x42: segCloseNormal, 0x44: segCloseNormal},
 		0x12: {0x10: segCloseEventID, 0x14: segCloseEventID, 0x17: segCloseEventID, 0x19: segCloseEventID, 0x20: segCloseNormal, 0x30: segCloseNormal, 0x32: segCloseNormal, 0x34: segCloseNormal, 0x36: segCloseNormal},
 		0x13: {0x20: segCloseNormal, 0x30: segCloseNormal, 0x32: segCloseNormal, 0x34: segCloseNormal, 0x36: segCloseNormal},
 		0x14: {0x10: segCloseBreakaway, 0x17: segCloseBreakaway, 0x19: segCloseBreakaway, 0x20: segCloseNormal, 0x30: segCloseNormal, 0x32: segCloseNormal, 0x34: segCloseNormal, 0x36: segCloseNormal},
 		0x19: {0x10: segCloseNoBreakaway, 0x14: segCloseNormal, 0x17: segCloseNoBreakaway, 0x19: segCloseNoBreakaway, 0x20: segCloseNormal, 0x30: segCloseNormal, 0x32: segCloseNormal, 0x34: segCloseNormal, 0x36: segCloseNormal},
 		0x20: {0x20: segCloseNormal, 0x30: segCloseNormal, 0x32: segCloseNormal, 0x34: segCloseNormal, 0x36: segCloseNormal},
 		0x21: {0x20: segCloseEventID, 0x30: segCloseNormal, 0x32: segCloseNormal, 0x34: segCloseNormal, 0x36: segCloseNormal},
-		0x22: {0x22: segCloseNormal},
-		0x23: {0x22: segCloseEventID},
+		0x22: {0x20: segCloseNormal, 0x22: segCloseNormal, 0x24: segCloseNormal, 0x26: segCloseNormal, 0x30: segCloseNormal, 0x34: segCloseNormal, 0x36: segCloseNormal, 0x3C: segCloseNormal, 0x44: segCloseNormal},
+		0x23: {0x22: segCloseEventID, 0x30: segCloseNormal, 0x34: segCloseNormal, 0x36: segCloseNormal, 0x3C: segCloseNormal, 0x44: segCloseNormal},
+		0x24: {0x20: segCloseNormal, 0x22: segCloseNormal, 0x24: segCloseNormal, 0x26: segCloseNormal, 0x30: segCloseNormal, 0x34: segCloseNormal, 0x36: segCloseNormal, 0x3C: segCloseNormal, 0x44: segCloseNormal},
+		0x25: {0x24: segCloseEventID, 0x30: segCloseNormal, 0x34: segCloseNormal, 0x36: segCloseNormal, 0x3C: segCloseNormal, 0x44: segCloseNormal},
+		0x26: {0x20: segCloseNormal, 0x22: segCloseNormal, 0x24: segCloseNormal, 0x26: segCloseNormal, 0x30: segCloseNormal, 0x34: segCloseNormal, 0x36: segCloseNormal, 0x3C: segCloseNormal, 0x44: segCloseNormal},
+		0x27: {0x26: segCloseEventID, 0x30: segCloseNormal, 0x34: segCloseNormal, 0x36: segCloseNormal, 0x3C: segCloseNormal, 0x44: segCloseNormal},
 		0x30: {0x30: segCloseNormal, 0x32: segCloseNormal},
 		0x31: {0x30: segCloseEventID},
 		0x32: {0x30: segCloseNormal, 0x32: segCloseNormal},
 		0x33: {0x32: segCloseEventID},
-		0x34: {0x30: segCloseDiffPTS, 0x32: segCloseDiffPTS, 0x34: segCloseNotNested, 0x36: segCloseNormal},
-		0x35: {0x30: segCloseNormal, 0x32: segCloseNormal, 0x34: segCloseEventIDNotNested, 0x36: segCloseNormal},
-		0x36: {0x30: segCloseDiffPTS, 0x32: segCloseDiffPTS, 0x36: segCloseNotNested},
-		0x37: {0x30: segCloseNormal, 0x32: segCloseNormal, 0x36: segCloseEventIDNotNested},
+		0x34: {0x30: segCloseDiffPTS, 0x3C: segCloseDiffPTS, 0x44: segCloseDiffPTS},
+		0x35: {0x30: segCloseNormal, 0x34: segCloseEventIDNotNested, 0x3C: segCloseNormal, 0x44: segCloseNormal},
+		0x36: {0x30: segCloseDiffPTS, 0x3C: segCloseDiffPTS, 0x44: segCloseDiffPTS},
+		0x37: {0x30: segCloseNormal, 0x36: segCloseEventIDNotNested, 0x3C: segCloseNormal, 0x44: segCloseNormal},
+		0x3C: {0x30: segCloseNormal, 0x3C: segCloseNormal},
+		0x3D: {0x3C: segCloseEventID},
 		0x40: {0x40: segCloseNormal},
 		0x41: {0x40: segCloseEventID},
+		0x42: {0x20: segCloseNormal, 0x22: segCloseNormal, 0x24: segCloseNormal, 0x26: segCloseNormal, 0x30: segCloseNormal, 0x34: segCloseNormal, 0x36: segCloseNormal, 0x3C: segCloseNormal, 0x42: segCloseNormal, 0x44: segCloseNormal},
+		0x43: {0x20: segCloseNormal, 0x22: segCloseNormal, 0x24: segCloseNormal, 0x26: segCloseNormal, 0x30: segCloseNormal, 0x34: segCloseNormal, 0x36: segCloseNormal, 0x3C: segCloseNormal, 0x42: segCloseEventID, 0x44: segCloseNormal},
+		0x44: {0x30: segCloseDiffPTS, 0x3C: segCloseDiffPTS, 0x44: segCloseNormal},
+		0x45: {0x30: segCloseNormal, 0x3C: segCloseNormal, 0x44: segCloseEventID},
 		0x50: {0x10: segCloseNormal, 0x14: segCloseNormal, 0x17: segCloseNormal, 0x19: segCloseNormal, 0x20: segCloseNormal, 0x30: segCloseNormal, 0x32: segCloseNormal, 0x34: segCloseNormal, 0x36: segCloseNormal, 0x40: segCloseUnconditional, 0x50: segCloseNormal},
 		0x51: {0x10: segCloseNormal, 0x14: segCloseNormal, 0x17: segCloseNormal, 0x19: segCloseNormal, 0x20: segCloseNormal, 0x30: segCloseNormal, 0x32: segCloseNormal, 0x34: segCloseNormal, 0x36: segCloseNormal, 0x40: segCloseUnconditional, 0x50: segCloseEventID},
 	}

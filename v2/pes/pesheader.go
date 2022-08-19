@@ -28,7 +28,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/Comcast/gots/v2/"
+	"github.com/Comcast/gots/v2"
 )
 
 // stream_id possibilities
@@ -170,7 +170,7 @@ func NewPESHeader(pesBytes []byte) (PESHeader, error) {
 	pes := new(pESHeader)
 	var err error
 
-	if CheckLength(pesBytes, "PES", 6) {
+	if CheckLength(pesBytes, "PES", 7) {
 
 		pes.packetStartCodePrefix = uint32(pesBytes[0])<<16 | uint32(pesBytes[1])<<8 | uint32(pesBytes[2])
 

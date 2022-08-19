@@ -27,7 +27,7 @@ package packet
 import (
 	"bytes"
 
-	"github.com/Comcast/gots/v2/"
+	"github.com/Comcast/gots/v2"
 )
 
 // Iotas to track the state of the accumulator
@@ -61,9 +61,10 @@ type accumulator struct {
 // the provided function returns done as true.
 func NewAccumulator(f func(data []byte) (done bool, err error)) Accumulator {
 	return &accumulator{
-		f:     f,
-		buf:   &bytes.Buffer{},
-		state: stateStarting}
+		f:       f,
+		buf:     &bytes.Buffer{},
+		packets: []*Packet{},
+		state:   stateStarting}
 }
 
 // Add a packet to the accumulator. If the added packet completes
@@ -77,7 +78,8 @@ func (a *accumulator) WritePacket(pkt *Packet) (int, error) {
 			return PacketSize, gots.ErrNoPayloadUnitStartIndicator
 		}
 
-		a.packets = []*Packet{}
+		a.buf.Reset()
+		a.packets = a.packets[:0]
 		a.state = stateAccumulating
 
 	case stateAccumulating:
@@ -114,17 +116,24 @@ func (a *accumulator) WritePacket(pkt *Packet) (int, error) {
 
 // Bytes returns the payload bytes from the underlying buffer
 func (a *accumulator) Bytes() []byte {
-	return a.buf.Bytes()
+	b := make([]byte, a.buf.Len())
+	copy(b, a.buf.Bytes())
+
+	return b
 }
 
 // Packets returns the packets used to fill the payload buffer
 // NOTE: Not thread safe
 func (a *accumulator) Packets() []*Packet {
-	return a.packets
+	b := make([]*Packet, len(a.packets))
+	copy(b, a.packets)
+
+	return b
 }
 
 // Reset resets the accumulator state
 func (a *accumulator) Reset() {
 	a.state = stateStarting
 	a.buf.Reset()
+	a.packets = a.packets[:0]
 }

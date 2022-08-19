@@ -28,7 +28,7 @@ import (
 	"errors"
 	"io"
 
-	"github.com/Comcast/gots/v2/"
+	"github.com/Comcast/gots/v2"
 	"github.com/Comcast/gots/v2/packet"
 )
 
