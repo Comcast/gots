@@ -313,6 +313,7 @@ func (d *segmentationDescriptor) IsOut() bool {
 		SegDescProviderPOStart,
 		SegDescDistributorPOStart,
 		SegDescUnscheduledEventStart,
+		SegDescProviderAdBlockStart,
 		SegDescNetworkStart:
 		return true
 	default:
@@ -336,6 +337,7 @@ func (d *segmentationDescriptor) IsIn() bool {
 		SegDescProviderPOEnd,
 		SegDescDistributorPOEnd,
 		SegDescUnscheduledEventEnd,
+		SegDescProviderAdBlockEnd,
 		SegDescNetworkEnd:
 		return true
 	default:
