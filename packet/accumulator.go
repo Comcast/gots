@@ -27,7 +27,7 @@ package packet
 import (
 	"bytes"
 
-	"github.com/Comcast/gots"
+	"github.com/Comcast/gots/v2"
 )
 
 // Iotas to track the state of the accumulator
