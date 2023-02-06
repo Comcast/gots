@@ -25,8 +25,8 @@ SOFTWARE.
 package scte35
 
 import (
-	"github.com/Comcast/gots"
-	"github.com/Comcast/gots/psi"
+	"github.com/Comcast/gots/v2"
+	"github.com/Comcast/gots/v2/psi"
 )
 
 // CreateSCTE35 creates a default SCTE35 message and returns it.
