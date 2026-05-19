@@ -129,7 +129,7 @@ func InsertPTS(b []byte, pts uint64) {
 	b[4] = byte(pts&0xff) << 1    // PTS[7..0]
 
 	// Set the marker bits as appropriate
-	b[0] |= 0x21
+	b[0] |= 0x01
 	b[2] |= 0x01
 	b[4] |= 0x01
 }
