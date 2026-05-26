@@ -457,7 +457,7 @@ type SegmentationDescriptor interface {
 	SetSubSegmentsExpected(value uint8)
 	// StreamSwitchSignalID returns the signalID of streamswitch signal if
 	// present in the descriptor
-	StreamSwitchSignalId() (string, error)
+	StreamSwitchSignalId() (string, bool, error)
 	// IsOut returns true if a signal is an out
 	IsOut() bool
 	// IsIn returns true if a signal is an in
@@ -482,14 +482,15 @@ type SegmentationDescriptor interface {
 // example code is below.
 // s := scte35.NewState()
 // scte,_ := scte.ParseSCTE35(bytes)
-// for _,d := range(scte.Descriptors()) {
-//   closed = s.ProcessDescriptor(d)
-//   ...handle closed signals appropriately here
-//   if d.HasDuration() {
-//     time.AfterFunc(d.Duration() + someFudgeDelta,
-//                    func() { closed = s.Close(d) })
-//   }
-// }
+//
+//	for _,d := range(scte.Descriptors()) {
+//	  closed = s.ProcessDescriptor(d)
+//	  ...handle closed signals appropriately here
+//	  if d.HasDuration() {
+//	    time.AfterFunc(d.Duration() + someFudgeDelta,
+//	                   func() { closed = s.Close(d) })
+//	  }
+//	}
 type State interface {
 	// Open returns a list of open signals
 	Open() []SegmentationDescriptor

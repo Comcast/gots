@@ -25,8 +25,9 @@ SOFTWARE.
 package scte35
 
 import (
-	"github.com/Comcast/gots/v2"
 	"strings"
+
+	"github.com/Comcast/gots/v2"
 )
 
 const receivedRingLen = 10
@@ -85,19 +86,20 @@ func (s *state) ProcessDescriptor(desc SegmentationDescriptor) ([]SegmentationDe
 				// same eventId before.
 				if desc.EventID() == d.EventID() &&
 					d.TypeID() == SegDescUnscheduledEventStart && desc.TypeID() == SegDescUnscheduledEventStart {
-					descStreamSwitchSignalId, err := desc.StreamSwitchSignalId()
+					descStreamSwitchSignalId, descLicenseRotation, err := desc.StreamSwitchSignalId()
 					if err != nil {
 						return nil, err
 					}
 
-					dStreamSwitchSignalId, err := d.StreamSwitchSignalId()
+					dStreamSwitchSignalId, dLicenseRotation, err := d.StreamSwitchSignalId()
 					if err != nil {
 						return nil, err
 					}
 
 					if strings.Compare(descStreamSwitchSignalId, dStreamSwitchSignalId) == 0 &&
-						(d.EventID() == desc.EventID()) {
-						// desc and d contain same signalId and same eventID
+						(d.EventID() == desc.EventID()) &&
+						(descLicenseRotation == dLicenseRotation) {
+						// desc and d contain same signalId, same eventID, same license rotation UPID
 						// we should not be processing this desc.
 						return nil, gots.ErrSCTE35DuplicateDescriptor
 					}
