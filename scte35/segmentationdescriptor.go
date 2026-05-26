@@ -371,9 +371,7 @@ func (d *segmentationDescriptor) UPID() []byte {
 
 // StreamSwitchSignalId returns the signalID of streamswitch signal if
 // present in the descriptor
-func (d *segmentationDescriptor) StreamSwitchSignalId() (string, error) {
-	var signalId string
-	var err error
+func (d *segmentationDescriptor) StreamSwitchSignalId() (signalId string, licenseRotation bool, err error) {
 	// The VSS SignalId can be found either in the top level `segmentation_upid` when the UPID type is 0x09, or
 	// in the MID of len 2 when the first UPID has type 0x09 and the second UPID has type 0x0E.
 	if d.upidType == SegUPIDADI &&
@@ -387,10 +385,11 @@ func (d *segmentationDescriptor) StreamSwitchSignalId() (string, error) {
 		(d.mid[1].upidType == SegUPADSINFO) &&
 		(strings.Contains(string(d.mid[1].upid), "comcast:linear:licenserotation")) {
 		signalId = strings.TrimPrefix(string(d.mid[0].upid), "BLACKOUT:")
+		licenseRotation = true
 	} else {
 		err = gots.ErrVSSSignalIdNotFound
 	}
-	return signalId, err
+	return
 }
 
 // SegmentNum is deprecated, use SegmentNumber instead.

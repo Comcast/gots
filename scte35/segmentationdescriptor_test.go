@@ -1,7 +1,7 @@
 /*
 MIT License
 
-Copyright 2016 Comcast Cable Communications Management, LLC
+# Copyright 2016 Comcast Cable Communications Management, LLC
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -268,7 +268,7 @@ func TestVSSSignalId(t *testing.T) {
 		t.FailNow()
 	}
 
-	signalID, err := vssScte35.Descriptors()[0].StreamSwitchSignalId()
+	signalID, licenseRotation, err := vssScte35.Descriptors()[0].StreamSwitchSignalId()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -277,6 +277,9 @@ func TestVSSSignalId(t *testing.T) {
 	if strings.Compare(signalID, expectedSignalId) != 0 {
 		t.Error("SignalID parsed, not as expected")
 		t.FailNow()
+	}
+	if !licenseRotation {
+		t.Error("License rotation should be true")
 	}
 }
 
@@ -289,7 +292,7 @@ func TestVSSSignalIdSingleUPID(t *testing.T) {
 		t.FailNow()
 	}
 
-	signalID, err := vssScte35.Descriptors()[0].StreamSwitchSignalId()
+	signalID, licenseRotation, err := vssScte35.Descriptors()[0].StreamSwitchSignalId()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -298,5 +301,8 @@ func TestVSSSignalIdSingleUPID(t *testing.T) {
 	if strings.Compare(signalID, expectedSignalId) != 0 {
 		t.Error("SignalID parsed, not as expected")
 		t.FailNow()
+	}
+	if licenseRotation {
+		t.Error("License rotation should be false")
 	}
 }
