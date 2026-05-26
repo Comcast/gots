@@ -1,3 +1,3 @@
-module github.com/Comcast/gots/v2
+module github.com/Comcast/gots/v3
 
-go 1.18
+go 1.26

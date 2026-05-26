@@ -30,8 +30,8 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/Comcast/gots/v2"
-	"github.com/Comcast/gots/v2/packet"
+	"github.com/Comcast/gots/v3"
+	"github.com/Comcast/gots/v3/packet"
 )
 
 const PidNotFound int = 1<<16 - 1

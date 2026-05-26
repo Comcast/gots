@@ -27,7 +27,7 @@ package scte35
 import (
 	"strings"
 
-	"github.com/Comcast/gots/v2"
+	"github.com/Comcast/gots/v3"
 )
 
 const receivedRingLen = 10
