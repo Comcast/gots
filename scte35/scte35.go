@@ -225,7 +225,8 @@ func (s *scte35) Data() []byte {
 }
 
 func uint40(buf []byte) gots.PTS {
-	return (gots.PTS(buf[0]&0x1) << 32) | (gots.PTS(buf[1]) << 24) | (gots.PTS(buf[2]) << 16) | (gots.PTS(buf[3]) << 8) | (gots.PTS(buf[4]))
+	data := append([]byte{0, 0, 0}, buf[:5]...)
+	return gots.PTS(binary.BigEndian.Uint64(data))
 }
 
 // String returns a string representation of the SCTE35 message.
