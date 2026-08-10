@@ -30,16 +30,11 @@ import (
 	"github.com/Comcast/gots/v3"
 )
 
-const receivedRingLen = 10
-
-type receivedElem struct {
-	pts   gots.PTS
-	descs []SegmentationDescriptor
-}
+const receivedRingLen = 25
 
 type state struct {
 	open         []SegmentationDescriptor
-	received     []*receivedElem
+	received     []SegmentationDescriptor
 	receivedHead int
 	blackoutIdx  int
 	inBlackout   bool
@@ -47,7 +42,7 @@ type state struct {
 
 // NewState returns an initialized state object
 func NewState() State {
-	return &state{received: make([]*receivedElem, receivedRingLen)}
+	return &state{received: make([]SegmentationDescriptor, receivedRingLen)}
 }
 
 func (s *state) Open() []SegmentationDescriptor {
@@ -63,55 +58,50 @@ func (s *state) Open() []SegmentationDescriptor {
 func (s *state) ProcessDescriptor(desc SegmentationDescriptor) ([]SegmentationDescriptor, error) {
 	var err error
 	var closed []SegmentationDescriptor
+
 	// check if desc has a pts because we can't handle if it doesn't
 	if !desc.SCTE35().HasPTS() {
 		return nil, gots.ErrSCTE35UnsupportedSpliceCommand
 	}
-	// check if this is a duplicate - if not, add it to the received list and
-	// drop the old received if we're over the length limit
-	descAdded := false
-	pts := desc.SCTE35().PTS()
-	for _, e := range s.received {
-		if e != nil {
-			for _, d := range e.descs {
-				if e.pts == pts {
-					if desc.Equal(d) {
-						// Duplicate desc found
-						return nil, gots.ErrSCTE35DuplicateDescriptor
-					}
-					e.descs = append(e.descs, desc)
-					descAdded = true
-				}
-				// check if we have seen a VSS signal with the same signalId and
-				// same eventId before.
-				if desc.EventID() == d.EventID() &&
-					d.TypeID() == SegDescUnscheduledEventStart && desc.TypeID() == SegDescUnscheduledEventStart {
-					descStreamSwitchSignalId, descLicenseRotation, err := desc.StreamSwitchSignalId()
-					if err != nil {
-						return nil, err
-					}
 
-					dStreamSwitchSignalId, dLicenseRotation, err := d.StreamSwitchSignalId()
-					if err != nil {
-						return nil, err
-					}
+	// check if this is a duplicate
+	for _, d := range s.received {
+		// skip nil elements in the received ring buffer, which can occur if the buffer hasn't been fully populated yet
+		if d == nil {
+			continue
+		}
 
-					if strings.Compare(descStreamSwitchSignalId, dStreamSwitchSignalId) == 0 &&
-						(d.EventID() == desc.EventID()) &&
-						(descLicenseRotation == dLicenseRotation) {
-						// desc and d contain same signalId, same eventID, same license rotation UPID
-						// we should not be processing this desc.
-						return nil, gots.ErrSCTE35DuplicateDescriptor
-					}
-					descAdded = true
-				}
+		if desc.Equal(d) {
+			return nil, gots.ErrSCTE35DuplicateDescriptor
+		}
+
+		// check if we have seen a VSS signal with the same signalId and
+		// same eventId before.
+		if desc.EventID() == d.EventID() &&
+			d.TypeID() == SegDescUnscheduledEventStart && desc.TypeID() == SegDescUnscheduledEventStart {
+			descStreamSwitchSignalId, descLicenseRotation, err := desc.StreamSwitchSignalId()
+			if err != nil {
+				return nil, err
+			}
+
+			dStreamSwitchSignalId, dLicenseRotation, err := d.StreamSwitchSignalId()
+			if err != nil {
+				return nil, err
+			}
+
+			if strings.Compare(descStreamSwitchSignalId, dStreamSwitchSignalId) == 0 &&
+				(d.EventID() == desc.EventID()) &&
+				(descLicenseRotation == dLicenseRotation) {
+				// desc and d contain same signalId, same eventID, same license rotation UPID
+				// we should not be processing this desc.
+				return nil, gots.ErrSCTE35DuplicateDescriptor
 			}
 		}
 	}
-	if !descAdded {
-		s.received[s.receivedHead] = &receivedElem{pts: pts, descs: []SegmentationDescriptor{desc}}
-		s.receivedHead = (s.receivedHead + 1) % receivedRingLen
-	}
+
+	// if we haven't returned early, no duplicates were found, so we add this descriptor to the received ring buffer
+	s.received[s.receivedHead] = desc
+	s.receivedHead = (s.receivedHead + 1) % receivedRingLen
 
 	// first close signals until one returns false, then handle the breakaway
 	for i := len(s.open) - 1; i >= 0; i-- {

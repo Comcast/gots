@@ -480,6 +480,22 @@ func (d *segmentationDescriptor) Equal(c SegmentationDescriptor) bool {
 	if d.HasSubSegments() && c.HasSubSegments() && (d.SubSegmentsExpected() != c.SubSegmentsExpected()) {
 		return false
 	}
+	if !d.equalStreamSwitchSignalId(c) {
+		return false
+	}
+	return true
+}
+
+// equalStreamSwitchSignalId determines if the stream switch signal ID and licenseRotation bool are equal for two descriptors
+func (d *segmentationDescriptor) equalStreamSwitchSignalId(c SegmentationDescriptor) bool {
+	dStreamSwitchSignalId, dLicenseRotation, _ := d.StreamSwitchSignalId()
+	cStreamSwitchSignalId, cLicenseRotation, _ := c.StreamSwitchSignalId()
+	if dStreamSwitchSignalId != cStreamSwitchSignalId {
+		return false
+	}
+	if dLicenseRotation != cLicenseRotation {
+		return false
+	}
 	return true
 }
 

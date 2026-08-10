@@ -563,7 +563,7 @@ func TestVSS(t *testing.T) {
 	stateInterface := NewState()
 	state := stateInterface.(*state)
 
-	outSignalBytes, _ := base64.StdEncoding.DecodeString("/DB7AAFe1ms7AP/wBQb+AAAAAABlAlJDVUVJAABeT3+XDUMJIUJMQUNLT1VUOlEza2dMYmx4UzlhTmh4S24wY1N0MlE9PQ4eY29tY2FzdDpsaW5lYXI6bGljZW5zZXJvdGF0aW9uQAAAAg9DVUVJAABeT3+XAABBAAC9uy+v")
+	outSignalBytes, _ := base64.StdEncoding.DecodeString("/DB7AAAAAAAAAAAABQb+AAAAAABlAlJDVUVJAAAAGX+XDUMJIUJMQUNLT1VUOjQ2UHVCVjl2RWVpMzBYcmswcXN4cnc9PQ4eY29tY2FzdDpsaW5lYXI6bGljZW5zZXJvdGF0aW9uQAAAAg9DVUVJAAAAGX+XAABBAADOdiB3")
 	outSignal, err := NewSCTE35(append([]byte{0x0}, outSignalBytes...))
 	if err != nil {
 		t.Fatal("Error creating SCTE-35 signal, return err:", err.Error())
@@ -583,8 +583,8 @@ func TestVSS(t *testing.T) {
 	if state.Open()[0].TypeID() != SegDescUnscheduledEventStart {
 		t.Errorf("Expected segmentation_type_id 0x40 but got %x", state.Open()[0].TypeID())
 	}
-	if state.Open()[0].EventID() != 24143 {
-		t.Errorf("Expected event_id 24143 but got %d", state.Open()[0].EventID())
+	if state.Open()[0].EventID() != 25 {
+		t.Errorf("Expected event_id 25 but got %d", state.Open()[0].EventID())
 	}
 	numNonNilElems := 0
 	for _, e := range state.received {
@@ -593,10 +593,7 @@ func TestVSS(t *testing.T) {
 		}
 	}
 	if numNonNilElems != 1 {
-		t.Errorf("Expected 1 received element but got %d", numNonNilElems)
-	}
-	if len(state.received[0].descs) != 1 {
-		t.Errorf("Expected 1 descriptor in the first received element but got %d", len(state.received[0].descs))
+		t.Errorf("Expected 1 received descriptor but got %d", numNonNilElems)
 	}
 
 	// 0x41
@@ -616,11 +613,44 @@ func TestVSS(t *testing.T) {
 			numNonNilElems++
 		}
 	}
-	if numNonNilElems != 1 {
-		t.Errorf("Expected 1 received element but got %d", numNonNilElems)
+	if numNonNilElems != 2 {
+		t.Errorf("Expected 2 received descriptors but got %d", numNonNilElems)
 	}
-	if len(state.received[0].descs) != 2 {
-		t.Errorf("Expected 2 descriptors in the first received element but got %d", len(state.received[0].descs))
+
+	outSignalBytes, _ = base64.StdEncoding.DecodeString("/DB7AAAAAAAAAP/wBQb+AAAAAABlAlJDVUVJ3j3lPn+XDUMJIUJMQUNLT1VUOlVSU2REa0J1a3BhX3BNa1lNREF3TUFBQQ4eY29tY2FzdDpsaW5lYXI6bGljZW5zZXJvdGF0aW9uQAAAAg9DVUVJ3j3lPn+XAABBAAC74iqs")
+	outSignal, err = NewSCTE35(append([]byte{0x0}, outSignalBytes...))
+	if err != nil {
+		t.Fatal("Error creating SCTE-35 signal, return err:", err.Error())
+	}
+
+	closed, err = state.ProcessDescriptor(outSignal.Descriptors()[0])
+	if err != nil {
+		t.Errorf("ProcessDescriptor returned an error: %s", err.Error())
+	}
+
+	numNonNilElems = 0
+	for _, e := range state.received {
+		if e != nil {
+			numNonNilElems++
+		}
+	}
+	if numNonNilElems != 3 {
+		t.Errorf("Expected 3 received descriptors but got %d", numNonNilElems)
+	}
+
+	closed, err = state.ProcessDescriptor(outSignal.Descriptors()[1])
+	if err != nil {
+		t.Errorf("ProcessDescriptor returned an error: %s", err.Error())
+	}
+
+	numNonNilElems = 0
+	for _, e := range state.received {
+		if e != nil {
+			numNonNilElems++
+		}
+	}
+	if numNonNilElems != 4 {
+		t.Errorf("Expected 4 received descriptors but got %d", numNonNilElems)
 	}
 }
 
