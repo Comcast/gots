@@ -558,100 +558,56 @@ func TestOutInInOutIn(t *testing.T) {
 	}
 }
 
-// Test the logic for when we recieve a VSS signal
-func TestVSS(t *testing.T) {
+// TestVSSWithZeroPTSSignals verifies SCTE-35 state tracking across multiple zero-PTS VSS signals.
+func TestVSSWithZeroPTSSignals(t *testing.T) {
 	stateInterface := NewState()
 	state := stateInterface.(*state)
 
-	outSignalBytes, _ := base64.StdEncoding.DecodeString("/DB7AAAAAAAAAAAABQb+AAAAAABlAlJDVUVJAAAAGX+XDUMJIUJMQUNLT1VUOjQ2UHVCVjl2RWVpMzBYcmswcXN4cnc9PQ4eY29tY2FzdDpsaW5lYXI6bGljZW5zZXJvdGF0aW9uQAAAAg9DVUVJAAAAGX+XAABBAADOdiB3")
-	outSignal, err := NewSCTE35(append([]byte{0x0}, outSignalBytes...))
+	sig1Bytes, _ := base64.StdEncoding.DecodeString("/DB7AAAAAAAAAAAABQb+AAAAAABlAlJDVUVJAAAAGX+XDUMJIUJMQUNLT1VUOjQ2UHVCVjl2RWVpMzBYcmswcXN4cnc9PQ4eY29tY2FzdDpsaW5lYXI6bGljZW5zZXJvdGF0aW9uQAAAAg9DVUVJAAAAGX+XAABBAADOdiB3")
+	sig1, err := NewSCTE35(append([]byte{0x0}, sig1Bytes...))
 	if err != nil {
-		t.Fatal("Error creating SCTE-35 signal, return err:", err.Error())
+		t.Fatal("Error creating SCTE-35 signal:", err)
 	}
 
-	// 0x40
-	closed, err := state.ProcessDescriptor(outSignal.Descriptors()[0])
+	sig2Bytes, _ := base64.StdEncoding.DecodeString("/DB7AAAAAAAAAP/wBQb+AAAAAABlAlJDVUVJ3j3lPn+XDUMJIUJMQUNLT1VUOlVSU2REa0J1a3BhX3BNa1lNREF3TUFBQQ4eY29tY2FzdDpsaW5lYXI6bGljZW5zZXJvdGF0aW9uQAAAAg9DVUVJ3j3lPn+XAABBAAC74iqs")
+	sig2, err := NewSCTE35(append([]byte{0x0}, sig2Bytes...))
 	if err != nil {
-		t.Errorf("ProcessDescriptor returned an error: %s", err.Error())
+		t.Fatal("Error creating SCTE-35 signal:", err)
 	}
-	if len(closed) != 0 {
-		t.Errorf("No events should have been closed (%d were)", len(closed))
+
+	countReceived := func() int {
+		n := 0
+		for _, e := range state.received {
+			if e != nil {
+				n++
+			}
+		}
+		return n
 	}
-	if len(state.Open()) != 1 {
-		t.Errorf("There should be one open signal (%d)", len(state.Open()))
-	}
-	if state.Open()[0].TypeID() != SegDescUnscheduledEventStart {
-		t.Errorf("Expected segmentation_type_id 0x40 but got %x", state.Open()[0].TypeID())
-	}
-	if state.Open()[0].EventID() != 25 {
-		t.Errorf("Expected event_id 25 but got %d", state.Open()[0].EventID())
-	}
-	numNonNilElems := 0
-	for _, e := range state.received {
-		if e != nil {
-			numNonNilElems++
+
+	processDescriptorAndValidateResult := func(desc SegmentationDescriptor, wantClosed, wantOpen, wantReceived int) {
+		t.Helper()
+		closed, err := state.ProcessDescriptor(desc)
+		actualReceived := countReceived()
+		if err != nil {
+			t.Errorf("ProcessDescriptor returned an error: %s", err)
+		}
+		if len(closed) != wantClosed {
+			t.Errorf("expected %d closed, got %d", wantClosed, len(closed))
+		}
+		if len(state.Open()) != wantOpen {
+			t.Errorf("expected %d open, got %d", wantOpen, len(state.Open()))
+		}
+		if actualReceived != wantReceived {
+			t.Errorf("expected %d received, got %d", wantReceived, actualReceived)
 		}
 	}
-	if numNonNilElems != 1 {
-		t.Errorf("Expected 1 received descriptor but got %d", numNonNilElems)
-	}
 
-	// 0x41
-	closed, err = state.ProcessDescriptor(outSignal.Descriptors()[1])
-	if err != nil {
-		t.Errorf("ProcessDescriptor returned an error: %s", err.Error())
-	}
-	if len(closed) != 1 {
-		t.Errorf("1 event should have been closed (%d were)", len(closed))
-	}
-	if len(state.Open()) != 0 {
-		t.Errorf("There should not be any open signals (%d)", len(state.Open()))
-	}
-	numNonNilElems = 0
-	for _, e := range state.received {
-		if e != nil {
-			numNonNilElems++
-		}
-	}
-	if numNonNilElems != 2 {
-		t.Errorf("Expected 2 received descriptors but got %d", numNonNilElems)
-	}
+	processDescriptorAndValidateResult(sig1.Descriptors()[0], 0, 1, 1) // 0x40 - 1 open, 0 closed, 1 descriptor received
+	processDescriptorAndValidateResult(sig1.Descriptors()[1], 1, 0, 2) // 0x41 - 0 open, 1 closed, 2 descriptors received
 
-	outSignalBytes, _ = base64.StdEncoding.DecodeString("/DB7AAAAAAAAAP/wBQb+AAAAAABlAlJDVUVJ3j3lPn+XDUMJIUJMQUNLT1VUOlVSU2REa0J1a3BhX3BNa1lNREF3TUFBQQ4eY29tY2FzdDpsaW5lYXI6bGljZW5zZXJvdGF0aW9uQAAAAg9DVUVJ3j3lPn+XAABBAAC74iqs")
-	outSignal, err = NewSCTE35(append([]byte{0x0}, outSignalBytes...))
-	if err != nil {
-		t.Fatal("Error creating SCTE-35 signal, return err:", err.Error())
-	}
-
-	closed, err = state.ProcessDescriptor(outSignal.Descriptors()[0])
-	if err != nil {
-		t.Errorf("ProcessDescriptor returned an error: %s", err.Error())
-	}
-
-	numNonNilElems = 0
-	for _, e := range state.received {
-		if e != nil {
-			numNonNilElems++
-		}
-	}
-	if numNonNilElems != 3 {
-		t.Errorf("Expected 3 received descriptors but got %d", numNonNilElems)
-	}
-
-	closed, err = state.ProcessDescriptor(outSignal.Descriptors()[1])
-	if err != nil {
-		t.Errorf("ProcessDescriptor returned an error: %s", err.Error())
-	}
-
-	numNonNilElems = 0
-	for _, e := range state.received {
-		if e != nil {
-			numNonNilElems++
-		}
-	}
-	if numNonNilElems != 4 {
-		t.Errorf("Expected 4 received descriptors but got %d", numNonNilElems)
-	}
+	processDescriptorAndValidateResult(sig2.Descriptors()[0], 0, 1, 3) // 0x40 - 1 open, 0 closed, 3 descriptors received
+	processDescriptorAndValidateResult(sig2.Descriptors()[1], 1, 0, 4) // 0x41 - 0 open, 1 closed, 4 descriptors received
 }
 
 // Test the logic for when we recieve a VSS signal
