@@ -80,6 +80,7 @@ const (
 // PmtDescriptor represents operations currently necessary on descriptors found in the PMT
 type PmtDescriptor interface {
 	Tag() uint8
+	Data() []byte
 	Format() string
 	IsIso639LanguageDescriptor() bool
 	IsMaximumBitrateDescriptor() bool
@@ -112,6 +113,10 @@ func NewPmtDescriptor(tag uint8, data []byte) PmtDescriptor {
 
 func (descriptor *pmtDescriptor) Tag() uint8 {
 	return descriptor.tag
+}
+
+func (descriptor *pmtDescriptor) Data() []byte {
+	return descriptor.data
 }
 
 func (descriptor *pmtDescriptor) String() string {
