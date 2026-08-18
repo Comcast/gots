@@ -89,71 +89,89 @@ func readCableLabsEbp(data []byte) (ebp *cableLabsEbp, err error) {
 		return nil, gots.ErrNoPayload
 	}
 
-	index := uint8(0)
+	index := 0
 
 	ebp.DataFieldTag = data[index]
-	index += uint8(1)
+	index++
 
 	ebp.DataFieldLength = data[index]
-	index += uint8(1)
+	index++
 
 	// Check if the data is as advertised
 	if ebp.DataFieldLength > 0 {
 		if len(data) >= 7 {
 			ebp.FormatIdentifier = binary.BigEndian.Uint32(data[index : index+4])
-			index += uint8(4)
+			index += 4
 
 			ebp.DataFlags = data[index]
-			index += uint8(1)
+			index++
 		} else {
 			return nil, gots.ErrInvalidEBPLength
 		}
 	}
 
 	if ebp.ExtensionFlag() {
+		if index >= len(data) {
+			return nil, gots.ErrInvalidEBPLength
+		}
 		ebp.ExtensionFlags = data[index]
-		index += uint8(1)
+		index++
 	}
 
 	if ebp.SapFlag() {
+		if index >= len(data) {
+			return nil, gots.ErrInvalidEBPLength
+		}
 		ebp.SapType = data[index]
-		index += uint8(1)
+		index++
 	}
 
 	if ebp.GroupingFlag() {
 		var group byte
 		var groupExtFlag bool
+		if index >= len(data) {
+			return nil, gots.ErrInvalidEBPLength
+		}
 		groupExtFlag = data[index]&0x80 != 0
 		group = data[index] & 0x7F
 		ebp.Grouping = append(ebp.Grouping, group)
-		index += uint8(1)
+		index++
 
 		for groupExtFlag {
+			if index >= len(data) {
+				return nil, gots.ErrInvalidEBPLength
+			}
 			groupExtFlag = data[index]&0x80 != 0
 			group = data[index] & 0x7F
 			ebp.Grouping = append(ebp.Grouping, group)
-			index += uint8(1)
+			index++
 		}
 	}
 
 	if ebp.TimeFlag() {
+		if index+8 > len(data) {
+			return nil, gots.ErrInvalidEBPLength
+		}
 		ebp.TimeSeconds = binary.BigEndian.Uint32(data[index : index+4])
-		index += uint8(4)
+		index += 4
 
 		ebp.TimeFraction = binary.BigEndian.Uint32(data[index : index+4])
-		index += uint8(4)
+		index += 4
 	}
 
 	if ebp.PartitionFlag() {
-		ebp.PartitionFlags = data[index]
-		index += uint8(1)
-	}
-
-	if index < ebp.DataFieldLength+2 {
-		if int(ebp.DataFieldLength+2) > len(data) {
+		if index >= len(data) {
 			return nil, gots.ErrInvalidEBPLength
 		}
-		ebp.ReservedBytes = data[index : ebp.DataFieldLength+2]
+		ebp.PartitionFlags = data[index]
+		index++
+	}
+
+	if index < int(ebp.DataFieldLength)+2 {
+		if int(ebp.DataFieldLength)+2 > len(data) {
+			return nil, gots.ErrInvalidEBPLength
+		}
+		ebp.ReservedBytes = data[index : int(ebp.DataFieldLength)+2]
 	}
 
 	// update the successful read time
