@@ -82,6 +82,11 @@ func (s *scte35) parseTable(data []byte) error {
 		b, _ := buf.ReadByte()
 		return b
 	}
+	// PointerField reads data[0], so we need at least one byte before the
+	// length check below can trust it.
+	if len(data) < 1 {
+		return gots.ErrInvalidSCTE35Length
+	}
 	if buf.Len() < int(uint16(psi.PointerField(data))+psi.PSIHeaderLen+15) {
 		return gots.ErrInvalidSCTE35Length
 	}

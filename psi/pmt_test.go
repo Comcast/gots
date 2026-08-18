@@ -932,3 +932,20 @@ func TestIsDolbyATMOS(t *testing.T) {
 		t.Errorf("Positive Dolby ATMOS Stream failed. Supposed to be a Dolby ATMOS stream.")
 	}
 }
+
+// TestNewPMTTruncated makes sure malformed/truncated input returns an error
+// instead of panicking. A too-long section length used to slice past the end of
+// the buffer, and empty input panicked in PointerField.
+func TestNewPMTTruncated(t *testing.T) {
+	cases := [][]byte{
+		{},                       // empty, panicked in PointerField
+		{0x20},                   // pointer field points past the buffer
+		{0x00, 0x02, 0x0F, 0xFF}, // section length larger than the buffer
+	}
+	for i, data := range cases {
+		_, err := NewPMT(data)
+		if err != gots.ErrShortPayload {
+			t.Errorf("case %d (%v): expected ErrShortPayload, got %v", i, data, err)
+		}
+	}
+}

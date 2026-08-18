@@ -103,10 +103,20 @@ func NewPMT(pmtBytes []byte) (PMT, error) {
 }
 
 func (p *pmt) parseTables(pmtBytes []byte) error {
-	sectionBytes := pmtBytes[1+PointerField(pmtBytes):]
+	if len(pmtBytes) < 1 {
+		return gots.ErrShortPayload
+	}
+	start := 1 + int(PointerField(pmtBytes))
+	if len(pmtBytes) < start {
+		return gots.ErrShortPayload
+	}
+	sectionBytes := pmtBytes[start:]
 
 	for len(sectionBytes) > 2 && sectionBytes[0] != 0xFF {
 		tableLength := sectionLength(sectionBytes)
+		if len(sectionBytes) < int(tableLength)+3 {
+			return gots.ErrShortPayload
+		}
 
 		if tableID(sectionBytes) == 0x2 {
 			err := p.parsePMTSection(sectionBytes[0 : 3+tableLength])
@@ -277,7 +287,9 @@ func CanBuildPMT(payload []byte, sectionLength uint16) bool {
 
 // FilterPMTPacketsToPids filters the PMT contents of the provided packet to the PIDs provided and returns a new packet(s).
 // For example: if the provided PMT has PIDs 101, 102, and 103 and the provided PIDs are 101 and 102,
-//     the new PMT will have only descriptors for PID 101 and 102. The descriptor for PID 103 will be stripped from the new PMT packet.
+//
+//	the new PMT will have only descriptors for PID 101 and 102. The descriptor for PID 103 will be stripped from the new PMT packet.
+//
 // Returns packets and nil error if all pids are present in the PMT.
 // Returns packets and non-nil error if some pids are present in the PMT.
 // Returns nil packets and non-nil error if none of the pids are present in the PMT.
