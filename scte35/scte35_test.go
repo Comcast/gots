@@ -1,7 +1,7 @@
 /*
 MIT License
 
-Copyright 2016 Comcast Cable Communications Management, LLC
+# Copyright 2016 Comcast Cable Communications Management, LLC
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -406,5 +406,22 @@ func TestParseSegmentationDescriptor_Segments(t *testing.T) {
 		t.Error("segment_num not found in descriptor")
 	} else if want != got {
 		t.Errorf("want segment_num %d, got %d", want, got)
+	}
+}
+
+// TestNewSCTE35Truncated makes sure malformed/truncated input returns an error
+// instead of panicking. Empty input used to panic in psi.PointerField, which
+// reads data[0] before the length check ran.
+func TestNewSCTE35Truncated(t *testing.T) {
+	cases := [][]byte{
+		{},     // empty, panicked in PointerField
+		{0x00}, // pointer field only
+		{0x00, 0x02},
+	}
+	for i, data := range cases {
+		_, err := NewSCTE35(data)
+		if err != gots.ErrInvalidSCTE35Length {
+			t.Errorf("case %d (%v): expected ErrInvalidSCTE35Length, got %v", i, data, err)
+		}
 	}
 }
