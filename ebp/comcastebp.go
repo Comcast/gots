@@ -75,53 +75,65 @@ func readComcastEbp(data []byte) (ebp *comcastEbp, err error) {
 		return nil, gots.ErrNoPayload
 	}
 
-	index := uint8(0)
+	index := 0
 
 	ebp.DataFieldTag = data[index]
-	index += uint8(1)
+	index++
 
 	ebp.DataFieldLength = data[index]
-	index += uint8(1)
+	index++
 
 	// Check if the data is as advertised
 	if ebp.DataFieldLength > 0 {
 		if len(data) >= 3 {
 			ebp.DataFlags = data[index]
-			index += uint8(1)
+			index++
 		} else {
 			return nil, gots.ErrInvalidEBPLength
 		}
 	}
 
 	if ebp.ExtensionFlag() {
+		if index >= len(data) {
+			return nil, gots.ErrInvalidEBPLength
+		}
 		ebp.ExtensionFlags = data[index]
-		index += uint8(1)
+		index++
 	}
 
 	if ebp.SapFlag() {
+		if index >= len(data) {
+			return nil, gots.ErrInvalidEBPLength
+		}
 		ebp.SapType = data[index]
-		index += uint8(1)
+		index++
 	}
 
 	if ebp.GroupingFlag() {
+		if index >= len(data) {
+			return nil, gots.ErrInvalidEBPLength
+		}
 		group := data[index]
 		ebp.Grouping = append(ebp.Grouping, group)
-		index += uint8(1)
+		index++
 	}
 
 	if ebp.TimeFlag() {
-		ebp.TimeSeconds = binary.BigEndian.Uint32(data[index : index+4])
-		index += uint8(4)
-
-		ebp.TimeFraction = binary.BigEndian.Uint32(data[index : index+4])
-		index += uint8(4)
-	}
-
-	if index < ebp.DataFieldLength+2 {
-		if int(ebp.DataFieldLength+2) > len(data) {
+		if index+8 > len(data) {
 			return nil, gots.ErrInvalidEBPLength
 		}
-		ebp.ReservedBytes = data[index : ebp.DataFieldLength+2]
+		ebp.TimeSeconds = binary.BigEndian.Uint32(data[index : index+4])
+		index += 4
+
+		ebp.TimeFraction = binary.BigEndian.Uint32(data[index : index+4])
+		index += 4
+	}
+
+	if index < int(ebp.DataFieldLength)+2 {
+		if int(ebp.DataFieldLength)+2 > len(data) {
+			return nil, gots.ErrInvalidEBPLength
+		}
+		ebp.ReservedBytes = data[index : int(ebp.DataFieldLength)+2]
 	}
 
 	// update the successful read time
