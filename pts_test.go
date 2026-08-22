@@ -35,7 +35,7 @@ func TestPTSIsAfterWithoutRollover(t *testing.T) {
 
 func TestPTSIsAfterWithRollover(t *testing.T) {
 	p := PTS(1)
-	other := PTS(8589934591) // MaxPtsValue
+	other := PTS(MaxPtsValue)
 	if !p.After(other) {
 		t.Errorf("PTS=%v, not After other=%v", p, other)
 	}
@@ -125,8 +125,15 @@ func TestAdd(t *testing.T) {
 func TestInsertPTS(t *testing.T) {
 	var pts uint64 = 0x1DEADBEEF
 	b := make([]byte, 5)
+
 	InsertPTS(b, pts)
-	if ExtractTime(b) != 0x1DEADBEEF {
-		t.Error("Insert PTS test 1 failed")
+	if ots := ExtractTime(b); ots != pts {
+		t.Errorf("Insert PTS test 1 failed: %v != %v", ots, pts)
+	}
+
+	pts = MaxPtsValue
+	InsertPTS(b, pts)
+	if ots := ExtractTime(b); ots != pts {
+		t.Errorf("Insert PTS test 2 failed: %v != %v", ots, pts)
 	}
 }
