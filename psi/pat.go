@@ -122,35 +122,56 @@ func (pat pat) SPTSpmtPID() (int, error) {
 	return 0, errors.New("No programs in transport stream")
 }
 
-// ReadPAT extracts a PAT from a reader of a TS stream. It will read until a
-// PAT packet is found or EOF is reached.
-// It returns a new PAT object parsed from the packet, if found, and otherwise
-// returns an error.
+// PatAccumulatorDoneFunc is a doneFunc that can be used for packet accumulation
+// to create a PAT. It returns true once the accumulated bytes contain the
+// complete PAT section(s).
+func PatAccumulatorDoneFunc(b []byte) (bool, error) {
+	if len(b) < 1 {
+		return false, nil
+	}
+
+	start := 1 + int(PointerField(b))
+	if len(b) < start {
+		return false, nil
+	}
+
+	sectionBytes := b[start:]
+	for len(sectionBytes) > 2 && sectionBytes[0] != 0xFF {
+		tableLength := sectionLength(sectionBytes)
+		if len(sectionBytes) < int(tableLength)+3 {
+			return false, nil
+		}
+		sectionBytes = sectionBytes[3+tableLength:]
+	}
+
+	return true, nil
+}
+
+// ReadPAT extracts a PAT from a reader of a TS stream. It will read until PAT
+// packet(s) are found or EOF is reached.
+// It returns a new PAT object parsed from the packet(s), if found, and
+// otherwise returns an error.
 func ReadPAT(r io.Reader) (PAT, error) {
 	var pkt packet.Packet
-	var pat PAT
-	for pat == nil {
+
+	patAcc := packet.NewAccumulator(PatAccumulatorDoneFunc)
+
+	for {
 		if _, err := io.ReadFull(r, pkt[:]); err != nil {
 			if err == io.EOF || err == io.ErrUnexpectedEOF {
-				break
+				return nil, gots.ErrPATNotFound
 			}
 			return nil, err
 		}
-		isPat := packet.IsPat(&pkt)
+		if !packet.IsPat(&pkt) {
+			continue
+		}
 
-		if isPat {
-			pay, err := packet.Payload(&pkt)
-			if err != nil {
-				return nil, err
-			}
-			cp := make([]byte, len(pay))
-			copy(cp, pay)
-			pat, err := NewPAT(cp)
-			if err != nil {
-				return nil, err
-			}
-			return pat, nil
+		_, err := patAcc.WritePacket(&pkt)
+		if err == gots.ErrAccumulatorDone {
+			return NewPAT(patAcc.Bytes())
+		} else if err != nil {
+			return nil, err
 		}
 	}
-	return nil, gots.ErrPATNotFound
 }
